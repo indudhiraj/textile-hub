@@ -195,6 +195,77 @@ table.tbl tr:hover td{background:#faf7f1;}
   .history-card{display:none;}
 }
 </style>
+<!-- ══ FIREBASE SDK ══ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAAv1FeymRSJVspPW4-QVRYydP8m0O3XnI",
+  authDomain: "garment-cost-pro.firebaseapp.com",
+  projectId: "garment-cost-pro",
+  storageBucket: "garment-cost-pro.firebasestorage.app",
+  messagingSenderId: "41139778178",
+  appId: "1:41139778178:web:c4773bd4319b3a2b987a9b",
+  measurementId: "G-85GRQNC142"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const COLLECTION = 'fabric_cutting_history';
+
+// ── Firebase functions — window par expose karo taaki baaki JS use kar sake
+window.fbSaveEntry = async function(entry) {
+  try {
+    entry.savedAt = new Date().toISOString();
+    const docRef = await addDoc(collection(db, COLLECTION), entry);
+    entry.fbId = docRef.id;
+    return docRef.id;
+  } catch(e) {
+    console.error('Firebase save error:', e);
+    return null;
+  }
+};
+
+window.fbLoadHistory = async function() {
+  try {
+    const q = query(collection(db, COLLECTION), orderBy('savedAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ ...d.data(), fbId: d.id }));
+  } catch(e) {
+    console.error('Firebase load error:', e);
+    return [];
+  }
+};
+
+window.fbDeleteEntry = async function(fbId) {
+  try {
+    await deleteDoc(doc(db, COLLECTION, fbId));
+    return true;
+  } catch(e) {
+    console.error('Firebase delete error:', e);
+    return false;
+  }
+};
+
+// Page load par Firebase se history load karo
+window.addEventListener('load', async () => {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1410;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:9999;font-family:Rajdhani,sans-serif;';
+  toast.textContent = '☁️ Firebase se data load ho raha hai...';
+  document.body.appendChild(toast);
+
+  const fbHistory = await window.fbLoadHistory();
+  if (fbHistory.length > 0) {
+    fHistory = fbHistory;
+    localStorage.setItem('fccHistory', JSON.stringify(fHistory));
+    renderHistory();
+  }
+
+  toast.textContent = fbHistory.length > 0 ? `✅ ${fbHistory.length} records Firebase se load hue!` : '☁️ Firebase connected! Koi history nahi abhi.';
+  setTimeout(() => toast.remove(), 3000);
+});
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -1289,7 +1360,21 @@ function saveToHistory(){
   if(fHistory.length>100) fHistory.pop();
   localStorage.setItem('fccHistory',JSON.stringify(fHistory));
   renderHistory();
-  alert('✅ Saved: '+name+'\n📅 Date: '+dateKey+' '+timeStr);
+
+  // Firebase mein bhi save karo
+  if(window.fbSaveEntry) {
+    window.fbSaveEntry(entry).then(fbId => {
+      if(fbId) {
+        entry.fbId = fbId;
+        localStorage.setItem('fccHistory', JSON.stringify(fHistory));
+        showBackupToast('✅ Saved: '+name+' — Firebase par bhi save ho gaya! ☁️','success');
+      } else {
+        showBackupToast('✅ Saved locally. Firebase sync nahi hua.','success');
+      }
+    });
+  } else {
+    alert('✅ Saved: '+name+'\n📅 Date: '+dateKey+' '+timeStr);
+  }
 }
 
 function loadFromHistory(id){
@@ -1345,13 +1430,22 @@ function loadFromHistory(id){
 function deleteHistory(id,ev){
   ev.stopPropagation();
   if(!confirm('Delete karein?')) return;
+  const entry = fHistory.find(h=>h.id===id);
   fHistory=fHistory.filter(h=>h.id!==id);
   localStorage.setItem('fccHistory',JSON.stringify(fHistory));
   renderHistory();
+  // Firebase se bhi delete karo
+  if(entry && entry.fbId && window.fbDeleteEntry) {
+    window.fbDeleteEntry(entry.fbId);
+  }
 }
 
 function clearHistory(){
   if(!confirm('Sari saved calculations delete karein?')) return;
+  // Firebase se bhi delete karo
+  if(window.fbDeleteEntry) {
+    fHistory.forEach(h => { if(h.fbId) window.fbDeleteEntry(h.fbId); });
+  }
   fHistory=[];
   localStorage.setItem('fccHistory',JSON.stringify(fHistory));
   renderHistory();
