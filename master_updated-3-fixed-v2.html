@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Textile ERP — Master Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0d1220;
+  --card: #111827;
+  --card2: #161f2e;
+  --border: #1e2d42;
+  --border2: #2a3f5a;
+  --text: #e2e8f4;
+  --muted: #5a7090;
+  --gold: #f0b429;
+  --gold2: #ffd166;
+  --cyan: #22d3ee;
+  --green: #34d399;
+  --red: #f87171;
+  --orange: #fb923c;
+  --purple: #a78bfa;
+  --blue: #60a5fa;
+  --r: 14px;
+  --r-sm: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;animation:fadeUp .35s ease both}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 20px;
+  position:sticky;top:0;z-index:100;
+}
+.btn-back{
+  background:linear-gradient(135deg,var(--gold),#d4920a);
+  border:none;border-radius:var(--r-sm);
+  color:#1a0f00;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:700;
+  padding:8px 16px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+  transition:all .2s;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(240,180,41,.25);
+}
+.btn-back:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(240,180,41,.35)}
+.topbar-title{font-size:15px;font-weight:600;flex:1}
+.topbar-sub{font-size:11px;color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── MASTER DASHBOARD ── */
+.master-header{
+  padding:28px 20px 0;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.master-logo{
+  width:56px;height:56px;
+  background:linear-gradient(135deg,var(--gold),#f0c060);
+  border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:30px;box-shadow:0 0 30px rgba(240,180,41,.2);flex-shrink:0;
+}
+.master-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;line-height:1}
+.master-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.master-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--cyan);margin-left:auto}
+
+/* ── HIGHLIGHT TICKER ── */
+.ticker-wrap{
+  margin:20px 20px 0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  overflow:hidden;
+  display:flex;align-items:center;
+}
+.ticker-label{
+  background:linear-gradient(135deg,var(--gold),#d4920a);
+  color:#1a0f00;font-size:11px;font-weight:700;
+  padding:8px 14px;white-space:nowrap;
+  text-transform:uppercase;letter-spacing:.8px;flex-shrink:0;
+}
+.ticker-track{overflow:hidden;flex:1;padding:8px 14px}
+.ticker-inner{display:flex;gap:32px;animation:ticker 18s linear infinite;white-space:nowrap}
+.ticker-inner:hover{animation-play-state:paused}
+.tick-item{font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+.tick-item:hover{color:var(--gold)}
+.tick-val{font-family:'DM Mono',monospace}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── KPI GRID ── */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  padding:16px 20px 0;
+}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;position:relative;overflow:hidden;
+}
+.kpi-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.kpi-card.gold::after{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.kpi-card.cyan::after{background:linear-gradient(90deg,var(--cyan),#06b6d4)}
+.kpi-card.green::after{background:linear-gradient(90deg,var(--green),#10b981)}
+.kpi-card.orange::after{background:linear-gradient(90deg,var(--orange),#f59e0b)}
+.kpi-num{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-bottom:4px}
+.kpi-num.gold{color:var(--gold)}
+.kpi-num.cyan{color:var(--cyan)}
+.kpi-num.green{color:var(--green)}
+.kpi-num.orange{color:var(--orange)}
+.kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.kpi-change{font-size:11px;margin-top:6px;font-weight:600}
+.kpi-change.up{color:var(--green)}
+.kpi-change.down{color:var(--red)}
+
+/* ── HIGHLIGHT SECTION ── */
+.highlight-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  padding:16px 20px 0;
+}
+@media(max-width:700px){.highlight-row{grid-template-columns:1fr}}
+.hl-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.hl-card:hover{transform:translateY(-3px);border-color:var(--border2)}
+.hl-card.production:hover{box-shadow:0 8px 30px rgba(52,211,153,.12)}
+.hl-card.store:hover{box-shadow:0 8px 30px rgba(96,165,250,.12)}
+.hl-card.jobwork:hover{box-shadow:0 8px 30px rgba(251,146,60,.12)}
+.hl-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hl-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;margin-left:auto}
+.badge-live{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.hl-bar-wrap{margin-bottom:8px}
+.hl-bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+.hl-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.hl-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.fill-green{background:linear-gradient(90deg,var(--green),#10b981)}
+.fill-blue{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.fill-orange{background:linear-gradient(90deg,var(--orange),#f59e0b)}
+.hl-stat-row{display:flex;gap:12px;margin-top:12px}
+.hl-stat{flex:1;text-align:center}
+.hl-stat-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:700}
+.hl-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+
+/* ── DEPARTMENT GRID ── */
+.dept-section{padding:16px 20px 0}
+.section-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--muted);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.dept-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;cursor:pointer;
+  transition:all .25s;text-align:center;
+}
+.dept-card:hover{background:var(--card2);border-color:var(--border2);transform:translateY(-2px)}
+.dept-icon{font-size:28px;margin-bottom:8px}
+.dept-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.dept-sub{font-size:10px;color:var(--muted)}
+.dept-status{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;padding:2px 8px;border-radius:99px;
+  margin-top:6px;font-weight:600;
+}
+.status-fire{background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.25)}
+.status-local{background:rgba(96,165,250,.12);color:var(--blue);border:1px solid rgba(96,165,250,.25)}
+
+/* ── DEPT DASHBOARD PAGE ── */
+.dept-page-header{padding:20px 20px 0}
+.dept-big-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px}
+.dept-desc{font-size:12px;color:var(--muted);margin-top:4px}
+
+.dept-kpi-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  padding:16px 20px 0;
+}
+@media(max-width:600px){.dept-kpi-row{grid-template-columns:repeat(2,1fr)}}
+
+.mini-kpi{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:14px;
+}
+.mini-num{font-family:'DM Mono',monospace;font-size:24px;font-weight:700;margin-bottom:2px}
+.mini-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+
+/* ── CHARTS ── */
+.charts-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  padding:16px 20px 0;
+}
+@media(max-width:700px){.charts-row{grid-template-columns:1fr}}
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;
+}
+.chart-title{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text)}
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:11px;color:var(--muted);width:70px;text-align:right;flex-shrink:0}
+.bar-outer{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1.2s ease}
+.bar-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--text);width:38px;flex-shrink:0}
+
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:11px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── DETAIL TABLE ── */
+.detail-section{padding:16px 20px 24px}
+.detail-title{font-size:13px;font-weight:600;margin-bottom:10px}
+.detail-table{width:100%;border-collapse:collapse}
+.detail-table th{
+  background:var(--surface);color:var(--muted);
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.7px;padding:8px 10px;text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.detail-table td{
+  padding:9px 10px;font-size:12px;
+  border-bottom:1px solid var(--border);
+}
+.detail-table tr:hover td{background:var(--surface)}
+.tag{display:inline-flex;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.tag-green{background:rgba(52,211,153,.12);color:var(--green)}
+.tag-yellow{background:rgba(240,180,41,.12);color:var(--gold)}
+.tag-red{background:rgba(248,113,113,.12);color:var(--red)}
+.tag-blue{background:rgba(96,165,250,.12);color:var(--blue)}
+
+/* ── APP VIEWER ── */
+#appViewer{display:none;position:fixed;inset:0;background:var(--bg);z-index:900;flex-direction:column}
+#appViewer.open{display:flex}
+#appFrame{flex:1;border:none;width:100%}
+
+/* ── FOOTER ── */
+.footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
+
+/* ── COMPANY HEADER ── */
+.company-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+  background:linear-gradient(135deg,#0d1a2e,#111f38);
+  border-bottom:1px solid var(--border2);
+  flex-wrap:wrap;gap:10px;
+}
+.co-left{}
+.co-name{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:24px;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1.1;
+}
+.co-address{
+  font-size:11px;color:var(--muted);
+  margin-top:3px;letter-spacing:.3px;line-height:1.5;
+}
+.co-right{text-align:right;}
+.co-dev-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.co-dev-name{font-size:14px;font-weight:700;color:var(--cyan);margin-top:1px;}
+.co-phone{
+  font-family:'DM Mono',monospace;
+  font-size:13px;color:var(--gold);margin-top:3px;
+}
+.co-divider{height:1px;background:linear-gradient(90deg,var(--gold),transparent);margin:0 0 0 0;opacity:.3;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ MASTER DASHBOARD ═══════════════ -->
+<div id="page-master" class="page active">
+
+  <!-- Company Header -->
+  <div class="company-header">
+    <div class="co-left">
+      <div class="co-name" id="co-name-display">YOUR COMPANY NAME</div>
+      <div class="co-address" id="co-address-display">
+        Factory Address, City, State — PIN 000000<br>
+        GST: 00XXXXX0000X0XX &nbsp;|&nbsp; industry@company.com
+      </div>
+    </div>
+    <div class="co-right">
+      <div class="co-dev-label">Developed by</div>
+      <div class="co-dev-name" id="co-dev-display">YOUR NAME</div>
+      <div class="co-phone" id="co-phone-display">📞 +91 00000 00000</div>
+    </div>
+  </div>
+  <div class="co-divider"></div>
+
+  <div class="master-header">
+    <div class="master-logo">🏭</div>
+    <div>
+      <div class="master-title">Textile ERP</div>
+      <div class="master-sub">Master Dashboard — सभी Departments</div>
+    </div>
+    <div class="master-time" id="masterClock">--:--:--</div>
+  </div>
+
+  <!-- Live Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-label">⚡ Live</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner">
+        <span class="tick-item" onclick="goDept('production')">📦 Production: <span class="tick-val" style="color:var(--green)">485 pcs</span></span>
+        <span class="tick-item" onclick="goDept('store')">🏪 Store: <span class="tick-val" style="color:var(--blue)">₹2.4L stock</span></span>
+        <span class="tick-item" onclick="goDept('jobwork')">📋 Job Work: <span class="tick-val" style="color:var(--orange)">3 pending</span></span>
+        <span class="tick-item" onclick="goDept('production')">✅ QC Pass: <span class="tick-val" style="color:var(--green)">94.2%</span></span>
+        <span class="tick-item" onclick="goDept('store')">⚠️ Low Stock: <span class="tick-val" style="color:var(--red)">2 items</span></span>
+        <span class="tick-item" onclick="goDept('jobwork')">💰 Job Work Due: <span class="tick-val" style="color:var(--gold)">₹48,500</span></span>
+        <!-- Duplicate for seamless loop -->
+        <span class="tick-item" onclick="goDept('production')">📦 Production: <span class="tick-val" style="color:var(--green)">485 pcs</span></span>
+        <span class="tick-item" onclick="goDept('store')">🏪 Store: <span class="tick-val" style="color:var(--blue)">₹2.4L stock</span></span>
+        <span class="tick-item" onclick="goDept('jobwork')">📋 Job Work: <span class="tick-val" style="color:var(--orange)">3 pending</span></span>
+        <span class="tick-item" onclick="goDept('production')">✅ QC Pass: <span class="tick-val" style="color:var(--green)">94.2%</span></span>
+        <span class="tick-item" onclick="goDept('store')">⚠️ Low Stock: <span class="tick-val" style="color:var(--red)">2 items</span></span>
+        <span class="tick-item" onclick="goDept('jobwork')">💰 Job Work Due: <span class="tick-val" style="color:var(--gold)">₹48,500</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card gold"><div class="kpi-num gold" id="kpi1">485</div><div class="kpi-lbl">Today Production</div><div class="kpi-change up">↑ 12% vs yesterday</div></div>
+    <div class="kpi-card cyan"><div class="kpi-num cyan" id="kpi2">₹2.4L</div><div class="kpi-lbl">Store Value</div><div class="kpi-change up">↑ Stock level OK</div></div>
+    <div class="kpi-card green"><div class="kpi-num green" id="kpi3">94%</div><div class="kpi-lbl">QC Pass Rate</div><div class="kpi-change up">↑ 2% this week</div></div>
+    <div class="kpi-card orange"><div class="kpi-num orange" id="kpi4">3</div><div class="kpi-lbl">Job Work Pending</div><div class="kpi-change down">↓ 1 overdue</div></div>
+  </div>
+
+  <!-- Highlight Row — Production, Store, Job Work -->
+  <div class="highlight-row">
+
+    <!-- Production Highlight -->
+    <div class="hl-card production" onclick="goDept('production')">
+      <div class="hl-title">📦 Production <span class="hl-badge badge-live">● LIVE</span></div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Cutting</span><span style="color:var(--green)">500/500</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-green" style="width:100%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Stitching</span><span style="color:var(--green)">485/500</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-green" style="width:97%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Finishing</span><span style="color:var(--gold)">420/500</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-green" style="width:84%"></div></div>
+      </div>
+      <div class="hl-stat-row">
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--green)">420</div><div class="hl-stat-lbl">Ready</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--gold)">65</div><div class="hl-stat-lbl">WIP</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--red)">15</div><div class="hl-stat-lbl">QC Fail</div></div>
+      </div>
+    </div>
+
+    <!-- Store Highlight -->
+    <div class="hl-card store" onclick="goDept('store')">
+      <div class="hl-title">🏪 Store <span class="hl-badge badge-live">● LIVE</span></div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Fabric</span><span style="color:var(--blue)">78%</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-blue" style="width:78%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Thread</span><span style="color:var(--blue)">65%</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-blue" style="width:65%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Accessories</span><span style="color:var(--red)">18%</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-orange" style="width:18%"></div></div>
+      </div>
+      <div class="hl-stat-row">
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--blue)">142</div><div class="hl-stat-lbl">Items</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--red)">2</div><div class="hl-stat-lbl">Low Stock</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--gold)">₹2.4L</div><div class="hl-stat-lbl">Value</div></div>
+      </div>
+    </div>
+
+    <!-- Job Work Highlight -->
+    <div class="hl-card jobwork" onclick="goDept('jobwork')">
+      <div class="hl-title">📋 Job Work <span class="hl-badge badge-live">● LIVE</span></div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Stitching</span><span style="color:var(--orange)">8/10 done</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-orange" style="width:80%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Embroidery</span><span style="color:var(--green)">5/5 done</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-green" style="width:100%"></div></div>
+      </div>
+      <div class="hl-bar-wrap">
+        <div class="hl-bar-label"><span>Printing</span><span style="color:var(--gold)">3/6 done</span></div>
+        <div class="hl-bar"><div class="hl-bar-fill fill-orange" style="width:50%"></div></div>
+      </div>
+      <div class="hl-stat-row">
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--green)">16</div><div class="hl-stat-lbl">Done</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--orange)">3</div><div class="hl-stat-lbl">Pending</div></div>
+        <div class="hl-stat"><div class="hl-stat-num" style="color:var(--gold)">₹48.5K</div><div class="hl-stat-lbl">Due</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- All Departments -->
+  <div class="dept-section" style="margin-top:8px">
+    <div class="section-title">Sabhi Departments</div>
+    <div class="dept-grid">
+      <div class="dept-card" onclick="openApp('SKU_Production_Tracker-1.html','📦 Production','production')">
+        <div class="dept-icon">📦</div>
+        <div class="dept-name">Production</div>
+        <div class="dept-sub">SKU Tracker</div>
+        <div class="dept-status status-fire">🔥 Firebase</div>
+      </div>
+      <div class="dept-card" onclick="openApp('Garment_Cost_Pro_v2.html','💰 Costing','costing')">
+        <div class="dept-icon">💰</div>
+        <div class="dept-name">Costing</div>
+        <div class="dept-sub">Garment Cost</div>
+        <div class="dept-status status-fire">🔥 Firebase</div>
+      </div>
+      <div class="dept-card" onclick="openApp('qc-master-v4-1.html','🔍 QC Master','qc')">
+        <div class="dept-icon">🔍</div>
+        <div class="dept-name">QC Master</div>
+        <div class="dept-sub">Quality Check</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('store_management-1-1.html','🏪 Store','store')">
+        <div class="dept-icon">🏪</div>
+        <div class="dept-name">Store</div>
+        <div class="dept-sub">Inventory</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('Job_Work_Register_v2-2.html','📋 Job Work','jobwork')">
+        <div class="dept-icon">📋</div>
+        <div class="dept-name">Job Work</div>
+        <div class="dept-sub">Register</div>
+        <div class="dept-status status-fire">🔥 Firebase</div>
+      </div>
+      <div class="dept-card" onclick="openApp('textile_compliance_v2.html','📑 Compliance','compliance')">
+        <div class="dept-icon">📑</div>
+        <div class="dept-name">Compliance</div>
+        <div class="dept-sub">Documents</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('textile-rate-master-v4.html','📊 Rate Master','rates')">
+        <div class="dept-icon">📊</div>
+        <div class="dept-name">Rate Master</div>
+        <div class="dept-sub">Pricing</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('fabric_cutting_calculator.html','✂️ Cutting','cutting')">
+        <div class="dept-icon">✂️</div>
+        <div class="dept-name">Cutting</div>
+        <div class="dept-sub">Calculator</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('MTM_Sheet_v2_FIXED.html','📐 MTM','mtm')">
+        <div class="dept-icon">📐</div>
+        <div class="dept-name">MTM Sheet</div>
+        <div class="dept-sub">Measurements</div>
+        <div class="dept-status status-fire">🔥 Firebase</div>
+      </div>
+      <div class="dept-card" onclick="openApp('textile_compliance_v2-1.html','📑 Compliance','compliance')">
+        <div class="dept-icon">📑</div>
+        <div class="dept-name">Compliance</div>
+        <div class="dept-sub">Full System</div>
+        <div class="dept-status status-local">💻 Local</div>
+      </div>
+      <div class="dept-card" onclick="openApp('Lean_Pro_v2_Firebase.html','⚙️ Lean Pro','lean')">
+        <div class="dept-icon">⚙️</div>
+        <div class="dept-name">Lean Pro</div>
+        <div class="dept-sub">IE + Quality Mgmt</div>
+        <div class="dept-status status-fire">🔥 Firebase</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    🏭 Textile ERP Master Dashboard &nbsp;|&nbsp;
+    <span style="cursor:pointer;color:var(--gold);text-decoration:underline" onclick="openSettings()">⚙️ Company Settings</span>
+  </div>
+</div>
+
+<!-- ═══════════════ PRODUCTION DEPT DASHBOARD ═══════════════ -->
+<div id="page-production" class="page">
+  <div class="topbar">
+    <button class="btn-back" onclick="goMaster()">⬅ Master Dashboard</button>
+    <div><div class="topbar-title">📦 Production Dashboard</div><div class="topbar-sub">SKU-wise status</div></div>
+    <div class="live-dot"></div>
+  </div>
+  <div class="dept-page-header">
+    <div class="dept-big-title">Production Overview</div>
+    <div class="dept-desc">Cutting → Stitching → Finishing → QC → Packed → Shipped</div>
+  </div>
+  <div class="dept-kpi-row">
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--gold)">500</div><div class="mini-lbl">Target</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--green)">485</div><div class="mini-lbl">Produced</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--red)">15</div><div class="mini-lbl">QC Fail</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--cyan)">97%</div><div class="mini-lbl">Efficiency</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">📊 Stage-wise Progress</div>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Cutting</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:100%"></div></div><div class="bar-val">500</div></div>
+        <div class="bar-row"><div class="bar-label">Stitching</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:97%"></div></div><div class="bar-val">485</div></div>
+        <div class="bar-row"><div class="bar-label">Finishing</div><div class="bar-outer"><div class="bar-fill" style="width:84%;background:var(--gold)"></div></div><div class="bar-val">420</div></div>
+        <div class="bar-row"><div class="bar-label">QC Pass</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:81%"></div></div><div class="bar-val">405</div></div>
+        <div class="bar-row"><div class="bar-label">Packed</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:70%"></div></div><div class="bar-val">350</div></div>
+        <div class="bar-row"><div class="bar-label">Shipped</div><div class="bar-outer"><div class="bar-fill" style="width:40%;background:var(--cyan)"></div></div><div class="bar-val">200</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🍩 SKU Distribution</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--border)" stroke-width="14"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--green)" stroke-width="14" stroke-dasharray="88 132" stroke-dashoffset="25" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--gold)" stroke-width="14" stroke-dasharray="44 176" stroke-dashoffset="-63" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--red)" stroke-width="14" stroke-dasharray="22 198" stroke-dashoffset="-107" transform="rotate(-90 50 50)"/>
+          <text x="50" y="55" text-anchor="middle" font-size="14" fill="var(--text)" font-family="DM Mono">485</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Kurta — 200 pcs</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Shirt — 150 pcs</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Pants — 135 pcs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-section">
+    <div class="detail-title">📋 SKU Detail</div>
+    <table class="detail-table">
+      <tr><th>SKU</th><th>Style</th><th>Target</th><th>Done</th><th>Status</th></tr>
+      <tr><td>KRT-L-BLU</td><td>Blue Kurta L</td><td>200</td><td>195</td><td><span class="tag tag-green">On Track</span></td></tr>
+      <tr><td>SHT-M-WHT</td><td>White Shirt M</td><td>150</td><td>150</td><td><span class="tag tag-blue">Complete</span></td></tr>
+      <tr><td>PNT-XL-BLK</td><td>Black Pant XL</td><td>150</td><td>140</td><td><span class="tag tag-yellow">In Progress</span></td></tr>
+    </table>
+  </div>
+  <div style="padding:0 20px 20px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn-back" onclick="openApp('SKU_Production_Tracker-1.html','📦 Production','production')" style="background:linear-gradient(135deg,var(--green),#10b981);color:#001a0a">📦 Full App Kholo</button>
+  </div>
+</div>
+
+<!-- ═══════════════ STORE DEPT DASHBOARD ═══════════════ -->
+<div id="page-store" class="page">
+  <div class="topbar">
+    <button class="btn-back" onclick="goMaster()">⬅ Master Dashboard</button>
+    <div><div class="topbar-title">🏪 Store Dashboard</div><div class="topbar-sub">Inventory & Stock</div></div>
+    <div class="live-dot"></div>
+  </div>
+  <div class="dept-page-header">
+    <div class="dept-big-title">Store Overview</div>
+    <div class="dept-desc">Stock levels, movements, aur low stock alerts</div>
+  </div>
+  <div class="dept-kpi-row">
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--blue)">142</div><div class="mini-lbl">Total Items</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--green)">₹2.4L</div><div class="mini-lbl">Stock Value</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--red)">2</div><div class="mini-lbl">Low Stock</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--gold)">18</div><div class="mini-lbl">Today Out</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">📊 Category-wise Stock</div>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Fabric</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:78%"></div></div><div class="bar-val">78%</div></div>
+        <div class="bar-row"><div class="bar-label">Thread</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:65%"></div></div><div class="bar-val">65%</div></div>
+        <div class="bar-row"><div class="bar-label">Buttons</div><div class="bar-outer"><div class="bar-fill fill-orange" style="width:45%"></div></div><div class="bar-val">45%</div></div>
+        <div class="bar-row"><div class="bar-label">Zips</div><div class="bar-outer"><div class="bar-fill" style="width:18%;background:var(--red)"></div></div><div class="bar-val">18%</div></div>
+        <div class="bar-row"><div class="bar-label">Labels</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:90%"></div></div><div class="bar-val">90%</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📈 Weekly Movement</div>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Mon</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:60%"></div></div><div class="bar-val">24</div></div>
+        <div class="bar-row"><div class="bar-label">Tue</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:75%"></div></div><div class="bar-val">30</div></div>
+        <div class="bar-row"><div class="bar-label">Wed</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:45%"></div></div><div class="bar-val">18</div></div>
+        <div class="bar-row"><div class="bar-label">Thu</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:90%"></div></div><div class="bar-val">36</div></div>
+        <div class="bar-row"><div class="bar-label">Fri</div><div class="bar-outer"><div class="bar-fill fill-blue" style="width:55%"></div></div><div class="bar-val">22</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-section">
+    <div class="detail-title">⚠️ Low Stock Alert</div>
+    <table class="detail-table">
+      <tr><th>Item</th><th>Category</th><th>Stock</th><th>Min Level</th><th>Status</th></tr>
+      <tr><td>Metal Zips 8"</td><td>Accessory</td><td>12 pcs</td><td>50 pcs</td><td><span class="tag tag-red">Critical</span></td></tr>
+      <tr><td>Black Buttons</td><td>Accessory</td><td>28 dz</td><td>30 dz</td><td><span class="tag tag-yellow">Low</span></td></tr>
+      <tr><td>Cotton White</td><td>Fabric</td><td>180 m</td><td>100 m</td><td><span class="tag tag-green">OK</span></td></tr>
+    </table>
+  </div>
+  <div style="padding:0 20px 20px">
+    <button class="btn-back" onclick="openApp('store_management-1-1.html','🏪 Store','store')" style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#001a2a">🏪 Full App Kholo</button>
+  </div>
+</div>
+
+<!-- ═══════════════ JOB WORK DEPT DASHBOARD ═══════════════ -->
+<div id="page-jobwork" class="page">
+  <div class="topbar">
+    <button class="btn-back" onclick="goMaster()">⬅ Master Dashboard</button>
+    <div><div class="topbar-title">📋 Job Work Dashboard</div><div class="topbar-sub">Contractor-wise tracking</div></div>
+    <div class="live-dot"></div>
+  </div>
+  <div class="dept-page-header">
+    <div class="dept-big-title">Job Work Overview</div>
+    <div class="dept-desc">Bahar diye kaam ka hisaab — contractor aur payment tracking</div>
+  </div>
+  <div class="dept-kpi-row">
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--orange)">19</div><div class="mini-lbl">Total Jobs</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--green)">16</div><div class="mini-lbl">Completed</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--red)">3</div><div class="mini-lbl">Pending</div></div>
+    <div class="mini-kpi"><div class="mini-num" style="color:var(--gold)">₹48.5K</div><div class="mini-lbl">Amount Due</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">📊 Work Type Breakdown</div>
+      <div class="bar-chart">
+        <div class="bar-row"><div class="bar-label">Stitching</div><div class="bar-outer"><div class="bar-fill fill-orange" style="width:80%"></div></div><div class="bar-val">8/10</div></div>
+        <div class="bar-row"><div class="bar-label">Embroidery</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:100%"></div></div><div class="bar-val">5/5</div></div>
+        <div class="bar-row"><div class="bar-label">Printing</div><div class="bar-outer"><div class="bar-fill fill-orange" style="width:50%"></div></div><div class="bar-val">3/6</div></div>
+        <div class="bar-row"><div class="bar-label">Washing</div><div class="bar-outer"><div class="bar-fill fill-green" style="width:100%"></div></div><div class="bar-val">2/2</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💰 Payment Status</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--border)" stroke-width="14"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--green)" stroke-width="14" stroke-dasharray="132 88" stroke-dashoffset="25" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--gold)" stroke-width="14" stroke-dasharray="44 176" stroke-dashoffset="-107" transform="rotate(-90 50 50)"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--red)" stroke-width="14" stroke-dasharray="22 198" stroke-dashoffset="-151" transform="rotate(-90 50 50)"/>
+          <text x="50" y="55" text-anchor="middle" font-size="11" fill="var(--text)" font-family="DM Mono">₹1.8L</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Paid — ₹1.2L</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Partial — ₹36K</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Due — ₹48.5K</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-section">
+    <div class="detail-title">📋 Recent Job Work</div>
+    <table class="detail-table">
+      <tr><th>Job No</th><th>Contractor</th><th>Work</th><th>Qty</th><th>Amount</th><th>Status</th></tr>
+      <tr><td>JW-018</td><td>Ramesh Tailor</td><td>Stitching</td><td>200</td><td>₹7,000</td><td><span class="tag tag-red">Pending</span></td></tr>
+      <tr><td>JW-017</td><td>Suresh Emb</td><td>Embroidery</td><td>50</td><td>₹4,000</td><td><span class="tag tag-green">Paid</span></td></tr>
+      <tr><td>JW-016</td><td>Karim Prints</td><td>Printing</td><td>300</td><td>₹4,500</td><td><span class="tag tag-yellow">Partial</span></td></tr>
+    </table>
+  </div>
+  <div style="padding:0 20px 20px">
+    <button class="btn-back" onclick="openApp('Job_Work_Register_v2-2.html','📋 Job Work','jobwork')" style="background:linear-gradient(135deg,var(--orange),#f59e0b);color:#1a0a00">📋 Full App Kholo</button>
+  </div>
+</div>
+
+<!-- ═══════════════ APP VIEWER ═══════════════ -->
+<div id="appViewer">
+  <div class="topbar">
+    <button class="btn-back" onclick="closeViewer()">⬅ Dashboard par Wapas</button>
+    <div style="flex:1">
+      <div class="topbar-title" id="viewerTitle">App</div>
+      <div class="topbar-sub">Textile ERP</div>
+    </div>
+    <button class="btn-back" onclick="openInNewTab()" style="background:linear-gradient(135deg,var(--gold),#d4920a);color:#1a0f00;font-size:13px">↗ Naye Tab Mein Kholo</button>
+  </div>
+
+  <!-- Fallback message if iframe blocked -->
+  <div id="iframeBlockMsg" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px;text-align:center;">
+    <div style="font-size:48px">🔒</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--gold)">Browser Ne Block Kiya</div>
+    <div style="font-size:14px;color:var(--muted);max-width:400px;line-height:1.7">
+      Browser security ke wajah se file andar nahi khul sakti.<br>
+      <strong style="color:var(--text)">Naye tab mein kholo — bilkul kaam karega.</strong>
+    </div>
+    <button onclick="openInNewTab()" style="background:linear-gradient(135deg,var(--gold),#d4920a);border:none;border-radius:10px;color:#1a0f00;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px 32px;cursor:pointer;letter-spacing:.5px;">
+      ↗ Naye Tab Mein Kholo
+    </button>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">
+      Ya phir sabhi files ek folder mein rakh kar<br>
+      <strong style="color:var(--cyan)">VS Code Live Server</strong> se open karein
+    </div>
+  </div>
+
+  <iframe id="appFrame" src="" allowfullscreen style="flex:1;border:none;width:100%"
+    onload="document.getElementById('iframeBlockMsg').style.display='none'"
+    onerror="showIframeError()">
+  </iframe>
+</div>
+
+<!-- ═══════════════ SETTINGS MODAL ═══════════════ -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#111827;border:1px solid #2a3f5a;border-radius:14px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.7);">
+    <div style="padding:16px 20px;border-bottom:1px solid #1e2d42;display:flex;align-items:center;justify-content:space-between;background:#0d1220;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold);">⚙️ COMPANY SETTINGS</div>
+      <span style="font-size:20px;cursor:pointer;color:var(--muted);padding:2px 8px;border-radius:6px;" onclick="closeSettings()">✕</span>
+    </div>
+    <div style="padding:20px;">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:5px;">Company Name</label>
+        <input id="set-co" style="width:100%;background:#1e2d42;border:1px solid #2a3f5a;border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" placeholder="Your Company Name...">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:5px;">Factory Address</label>
+        <textarea id="set-addr" rows="2" style="width:100%;background:#1e2d42;border:1px solid #2a3f5a;border-radius:8px;color:var(--text);padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:none;" placeholder="Full address, City, State — PIN, GST, Email..."></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:5px;">Developed By</label>
+          <input id="set-dev" style="width:100%;background:#1e2d42;border:1px solid #2a3f5a;border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" placeholder="Your Name...">
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:5px;">Contact / Phone</label>
+          <input id="set-phone" style="width:100%;background:#1e2d42;border:1px solid #2a3f5a;border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;font-family:'DM Mono',monospace;outline:none;" placeholder="+91 00000 00000">
+        </div>
+      </div>
+      <div style="background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.15);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#5a7090;">
+        💡 Yeh details dashboard header mein dikhenge. Settings browser mein save hote hain.
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeSettings()" style="flex:1;padding:10px;background:#1e2d42;border:1px solid #2a3f5a;border-radius:8px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">Cancel</button>
+        <button onclick="saveSettings()" style="flex:2;padding:10px;background:linear-gradient(135deg,var(--gold),#d4920a);border:none;border-radius:8px;color:#1a0f00;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+let currentDept = null;
+let currentAppUrl = '';
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) { pg.classList.add('active'); window.scrollTo(0,0); }
+}
+
+function goMaster() { showPage('master'); currentDept = null; }
+function returnToDashboard() {
+  window.location.href = 'master_updated-3-fixed-v2.html';
+}
+
+
+function goDept(dept) {
+  const pg = document.getElementById('page-' + dept);
+  if (pg) { showPage(dept); currentDept = dept; }
+  else { openApp(deptFile(dept), deptName(dept), dept); }
+}
+
+function deptFile(d) {
+  const map = {
+    production:'SKU_Production_Tracker-1.html', costing:'Garment_Cost_Pro_v2.html',
+    qc:'qc-master-v4-1.html', store:'store_management-1-1.html',
+    jobwork:'Job_Work_Register_v2-2.html', compliance:'textile_compliance_v2-1.html',
+    rates:'textile-rate-master-v4.html', cutting:'fabric_cutting_calculator.html',
+    mtm:'MTM_Sheet_v2_FIXED.html',
+    lean:'Lean_Pro_v2_Firebase.html'
+  };
+  return map[d] || d;
+}
+function deptName(d) {
+  const map = {
+    production:'📦 Production', costing:'💰 Costing', qc:'🔍 QC Master',
+    store:'🏪 Store', jobwork:'📋 Job Work', compliance:'📑 Compliance',
+    rates:'📊 Rate Master', cutting:'✂️ Cutting', mtm:'📐 MTM',
+    lean:'⚙️ Lean Pro'
+  };
+  return map[d] || d;
+}
+
+function showIframeError() {
+  document.getElementById('iframeBlockMsg').style.display = 'flex';
+  document.getElementById('appFrame').style.display = 'none';
+}
+
+function openApp(file, name, dept) {
+  currentAppUrl = file;
+  document.getElementById('viewerTitle').textContent = name;
+
+  // Reset state
+  const frame = document.getElementById('appFrame');
+  const msg = document.getElementById('iframeBlockMsg');
+  frame.style.display = 'flex';
+  frame.src = '';
+  msg.style.display = 'none';
+
+  // Show viewer
+  document.getElementById('appViewer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Load file
+  frame.src = file;
+
+  // After 2.5s check if content loaded - if blank, show error message
+  setTimeout(function() {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      if (!doc || doc.body === null || doc.body.innerHTML.trim() === '') {
+        showIframeError();
+      }
+    } catch(e) {
+      // Cross-origin or file:// block
+      // Auto-open directly instead of showing block message
+      try {
+        window.location.href = file;
+      } catch(err) {
+        showIframeError();
+      }
+    }
+  }, 2500);
+
+  // Auto fallback for browsers that block iframe on local files
+  setTimeout(function() {
+    try {
+      const currentSrc = frame.contentWindow.location.href || '';
+      if (
+        currentSrc === 'about:blank' ||
+        currentSrc.includes('blocked') ||
+        currentSrc.includes('chrome-error')
+      ) {
+        window.location.href = file;
+      }
+    } catch(err) {
+      // If browser blocks iframe access, open directly
+      window.location.href = file;
+    }
+  }, 1800);
+}
+
+function closeViewer() {
+  document.getElementById('appViewer').classList.remove('open');
+  document.getElementById('appFrame').src = '';
+  document.getElementById('appFrame').style.display = 'flex';
+  document.getElementById('iframeBlockMsg').style.display = 'none';
+  currentAppUrl = '';
+  document.body.style.overflow = '';
+}
+
+function openInNewTab() {
+  if (currentAppUrl) window.open(currentAppUrl, '_blank');
+}
+
+// ════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const el = document.getElementById('masterClock');
+  if(el) el.textContent = h+':'+m+':'+s;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ════════════════════════════════════════
+// ANIMATE BARS ON PAGE SHOW
+// ════════════════════════════════════════
+const observer = new MutationObserver(() => {
+  document.querySelectorAll('.page.active .bar-fill, .page.active .hl-bar-fill').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => { bar.style.width = w; }, 100);
+  });
+});
+document.querySelectorAll('.page').forEach(p => observer.observe(p, {attributes:true, attributeFilter:['class']}));
+
+// ════════════════════════════════════════
+// COMPANY SETTINGS
+// ════════════════════════════════════════
+function applyBranding(co, addr, dev, phone) {
+  const coEl = document.getElementById('co-name-display');
+  const adEl = document.getElementById('co-address-display');
+  const dvEl = document.getElementById('co-dev-display');
+  const phEl = document.getElementById('co-phone-display');
+  if (coEl) coEl.textContent = co || 'YOUR COMPANY NAME';
+  if (adEl) adEl.innerHTML = (addr || 'Factory Address, City, State').replace(/\n/g,'<br>');
+  if (dvEl) dvEl.textContent = dev || 'YOUR NAME';
+  if (phEl) phEl.textContent = '📞 ' + (phone || '+91 00000 00000');
+  // Also update page title
+  document.title = (co || 'Textile ERP') + ' — Master Dashboard';
+}
+
+function loadBranding() {
+  const co = localStorage.getItem('erp_co');
+  const addr = localStorage.getItem('erp_addr');
+  const dev = localStorage.getItem('erp_dev');
+  const phone = localStorage.getItem('erp_phone');
+  if (co || dev) applyBranding(co, addr, dev, phone);
+  // Pre-fill settings fields
+  const sc = document.getElementById('set-co'); if (sc && co) sc.value = co;
+  const sa = document.getElementById('set-addr'); if (sa && addr) sa.value = addr;
+  const sd = document.getElementById('set-dev'); if (sd && dev) sd.value = dev;
+  const sp = document.getElementById('set-phone'); if (sp && phone) sp.value = phone;
+}
+
+function openSettings() {
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+function saveSettings() {
+  const co = document.getElementById('set-co').value.trim();
+  const addr = document.getElementById('set-addr').value.trim();
+  const dev = document.getElementById('set-dev').value.trim();
+  const phone = document.getElementById('set-phone').value.trim();
+  if (!co) { alert('Company name zaroori hai!'); return; }
+  localStorage.setItem('erp_co', co);
+  localStorage.setItem('erp_addr', addr);
+  localStorage.setItem('erp_dev', dev);
+  localStorage.setItem('erp_phone', phone);
+  applyBranding(co, addr, dev, phone);
+  closeSettings();
+}
+
+// Load on start
+loadBranding();
+</script>
+</body>
+</html>
