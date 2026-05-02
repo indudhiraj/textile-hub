@@ -827,6 +827,36 @@ tr:hover td { background: #faf7f1; }
 .sub-banner-text p  { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
 </style>
+<!-- ══ FIREBASE REALTIME DATABASE ══ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAAv1FeymRSJVspPW4-QVRYydP8m0O3XnI",
+  authDomain: "garment-cost-pro.firebaseapp.com",
+  databaseURL: "https://garment-cost-pro-default-rtdb.firebaseio.com",
+  projectId: "garment-cost-pro",
+  storageBucket: "garment-cost-pro.firebasestorage.app",
+  messagingSenderId: "41139778178",
+  appId: "1:41139778178:web:c4773bd4319b3a2b987a9b"
+};
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const fbDB = firebase.database();
+function fbSave(path, data) {
+  return fbDB.ref(path).set({ data: JSON.stringify(data), updatedAt: new Date().toISOString() });
+}
+function fbLoad(path, callback) {
+  fbDB.ref(path).once('value').then(snap => {
+    if (snap.exists()) { try { callback(JSON.parse(snap.val().data)); } catch(e) { callback(null); } }
+    else { callback(null); }
+  }).catch(() => callback(null));
+}
+function fbToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a2a1a;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+  t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -1396,6 +1426,16 @@ let items = [
 ];
 
 let nextId = 28;
+window.addEventListener('load', () => {
+  fbLoad('rate_master/items', data => {
+    if(data && data.items){
+      items = data.items;
+      nextId = data.nextId || (Math.max(...items.map(i=>i.id)) + 1);
+      render();
+      fbToast('☁️ Firebase se rates load hue!');
+    }
+  });
+});
 let activeCat = 'all';
 let searchTerm = '';
 let statusFilter = 'all';
@@ -1691,6 +1731,7 @@ function addItem() {
   items.push({ id:nextId++, cat, name, brand, widths, unit, price, prev:price, status:'pending', query, notes, updated:null });
   closeModal();
   ['mName','mBrand','mWidths','mPrice','mQuery','mNotes'].forEach(id => document.getElementById(id).value = '');
+  fbSave('rate_master/items', {items, nextId});
   render();
 }
 

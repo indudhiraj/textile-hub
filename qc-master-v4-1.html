@@ -164,6 +164,36 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-s
   .stat-row{grid-template-columns:repeat(3,1fr);}
 }
 </style>
+<!-- ══ FIREBASE REALTIME DATABASE ══ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAAv1FeymRSJVspPW4-QVRYydP8m0O3XnI",
+  authDomain: "garment-cost-pro.firebaseapp.com",
+  databaseURL: "https://garment-cost-pro-default-rtdb.firebaseio.com",
+  projectId: "garment-cost-pro",
+  storageBucket: "garment-cost-pro.firebasestorage.app",
+  messagingSenderId: "41139778178",
+  appId: "1:41139778178:web:c4773bd4319b3a2b987a9b"
+};
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const fbDB = firebase.database();
+function fbSave(path, data) {
+  return fbDB.ref(path).set({ data: JSON.stringify(data), updatedAt: new Date().toISOString() });
+}
+function fbLoad(path, callback) {
+  fbDB.ref(path).once('value').then(snap => {
+    if (snap.exists()) { try { callback(JSON.parse(snap.val().data)); } catch(e) { callback(null); } }
+    else { callback(null); }
+  }).catch(() => callback(null));
+}
+function fbToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a2a1a;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+  t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+</script>
 </head>
 <body>
 
@@ -878,6 +908,17 @@ let states    = {}; // {dept: {id: {status,note}}}
 let entries   = JSON.parse(localStorage.getItem('qcv4_entries')||'{}');
 // entries = {fabric:[...], cutting:[...], ...}
 DEPTS.forEach(d=>{ if(!entries[d]) entries[d]=[]; if(!states[d]) states[d]={}; });
+window.addEventListener('load', () => {
+  fbLoad('qc_master/data', data => {
+    if(data){
+      if(data.settings){ settings=data.settings; localStorage.setItem('qcv4_settings',JSON.stringify(settings)); updateTopBar(); }
+      if(data.checklists){ checklists=data.checklists; localStorage.setItem('qcv4_checklists',JSON.stringify(checklists)); }
+      if(data.entries){ entries=data.entries; DEPTS.forEach(d=>{if(!entries[d])entries[d]=[];}); localStorage.setItem('qcv4_entries',JSON.stringify(entries)); }
+      fbToast('☁️ Firebase se data load hua!');
+    }
+  });
+});
+function fbSaveAll(){ fbSave('qc_master/data', {settings, checklists, entries}); }
 
 function defaultChecklists(){
   return {
@@ -1208,6 +1249,7 @@ function saveEntry(dept){
   entries[dept].unshift(entry);
   if(entries[dept].length>100) entries[dept].pop();
   localStorage.setItem('qcv4_entries',JSON.stringify(entries));
+  fbSaveAll();
   renderEntries(dept);
   toast(`✅ ${DEPT_LABEL[dept]} entry save ho gayi! Score: ${score!==null?score+'%':'—'}`);
 }
@@ -1264,6 +1306,7 @@ function deleteEntry(dept,id){
   if(!confirm('Delete karein?')) return;
   entries[dept]=entries[dept].filter(e=>e.id!==id);
   localStorage.setItem('qcv4_entries',JSON.stringify(entries));
+  fbSaveAll();
   renderEntries(dept); renderReports();
   toast('🗑 Deleted!');
 }

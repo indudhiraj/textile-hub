@@ -6,8 +6,8 @@
 <title>SKU Production Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Firebase SDK (optional — app works without it too) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
   --bg:#0b0f17;--card:#111827;--surface:#161e2e;--border:#1e2d47;--faint:#0e1420;
@@ -1136,14 +1136,16 @@ function initFirebaseFromForm() {
 function initFirebase(cfg) {
   try {
     fbSetStatus('sync','Connecting...');
+    if(!cfg.databaseURL) cfg.databaseURL = "https://garment-cost-pro-default-rtdb.firebaseio.com";
     const app = firebase.apps.find(a=>a.name==='skuapp') || firebase.initializeApp(cfg,'skuapp');
-    fbDB = firebase.firestore(app);
-    fbDoc = fbDB.collection('sku_tracker').doc('main_data');
+    fbDB = firebase.database(app);
+    fbDoc = fbDB.ref('sku_tracker/main_data');
     // Try to load
-    fbDoc.get().then(snap=>{
-      if(snap.exists) {
-        const data = snap.data();
-        if(data.skus?.length>0 || data.company?.name) {
+    fbDoc.once('value').then(snap=>{
+      if(snap.exists()) {
+        const raw = snap.val();
+        const data = raw.data ? JSON.parse(raw.data) : raw;
+        if((data.skus||[]).length>0 || data.company?.name) {
           if(confirm(`☁️ Firebase mein data mila:\n• ${(data.skus||[]).length} SKUs\n• Company: ${data.company?.name||'—'}\n\nLoad karna chahte hain?`)) {
             DB.skus = data.skus||DB.skus;
             DB.buyers = data.buyers||DB.buyers;
@@ -1151,9 +1153,10 @@ function initFirebase(cfg) {
             saveLocal(); updateCoDisplay(); renderDashboard();
             showToast('✅ Firebase se data load ho gaya!','ok');
           }
+        } else {
+          fbSaveNow();
         }
       } else {
-        // First time — push local data
         fbSaveNow();
       }
       fbSetStatus('ok','Firebase Live ✅');
@@ -1168,7 +1171,7 @@ async function fbSaveNow() {
   if(!fbDoc) { showToast('⚠️ Firebase connected nahi. Config set karein.','warn'); return; }
   try {
     fbSetStatus('sync','Saving...');
-    await fbDoc.set({ skus:DB.skus, buyers:DB.buyers, company:DB.company, savedAt:new Date().toISOString() });
+    await fbDoc.set({ data: JSON.stringify({skus:DB.skus, buyers:DB.buyers, company:DB.company}), savedAt: new Date().toISOString() });
     fbSetStatus('ok','Saved ✅ '+new Date().toLocaleTimeString());
     showToast('✅ Firebase mein save ho gaya!','ok');
   } catch(err) { fbSetStatus('err','Save failed'); showToast('❌ Firebase save failed: '+err.message,'err'); }
@@ -1209,12 +1212,18 @@ function disconnectFirebase() {
 
 // ── AUTO-INIT FIREBASE from saved config ──
 function tryAutoFirebase() {
-  const cfg = JSON.parse(localStorage.getItem('skuFbConfig')||'{}');
-  if(cfg.apiKey && cfg.projectId) {
-    initFirebase(cfg);
-  } else {
-    fbSetStatus('','Offline Mode');
-  }
+  // Hardcoded config — automatically connect hoga
+  const hardcodedCfg = {
+    apiKey: "AIzaSyAAv1FeymRSJVspPW4-QVRYydP8m0O3XnI",
+    authDomain: "garment-cost-pro.firebaseapp.com",
+    projectId: "garment-cost-pro",
+    storageBucket: "garment-cost-pro.firebasestorage.app",
+    messagingSenderId: "41139778178",
+    appId: "1:41139778178:web:c4773bd4319b3a2b987a9b"
+  };
+  // Save to localStorage bhi karo taaki form mein dikhta rahe
+  localStorage.setItem('skuFbConfig', JSON.stringify(hardcodedCfg));
+  initFirebase(hardcodedCfg);
 }
 
 // ── MODAL OVERLAYS ────────────────────────
