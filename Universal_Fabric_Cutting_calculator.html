@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Universal Fabric Cutting Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+:root{
+  --cream:#faf7f2;--cream2:#f5f0e8;--cream3:#ede6d8;
+  --ink:#1a1410;--ink2:#4a3f35;--ink3:#8a7968;
+  --amber:#c17f3a;--amber2:#e8973f;--amber3:#f5b96a;
+  --green:#2d7a4f;--green2:#3d9a65;
+  --blue:#2563a8;--blue2:#3b82d4;
+  --red:#c0392b;--red2:#e74c3c;
+  --teal:#1a7a6e;--teal2:#22a896;
+  --purple:#6b46c1;--orange:#d4600a;
+  --card:#fff;--bg:var(--cream);
+  --border:#ddd5c5;--border2:#c8bfaf;
+  --shadow:0 2px 12px rgba(80,60,30,.08);
+  --shadow2:0 8px 32px rgba(80,60,30,.14);
+  --r:14px;--r2:9px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23c17f3a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0}
+
+/* ═══ TOPBAR ═══ */
+.topbar{background:var(--card);border-bottom:2px solid var(--cream3);padding:0 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:500;height:62px;box-shadow:var(--shadow)}
+.tb-logo{font-size:22px}
+.tb-company-area{flex:1;min-width:0}
+.tb-company{font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;border-bottom:1px dashed transparent;transition:all .2s;display:inline-block}
+.tb-company:hover{border-bottom-color:var(--amber);color:var(--amber)}
+.tb-sub{font-size:10px;color:var(--ink3);letter-spacing:.3px}
+.tb-sub span{cursor:pointer;transition:color .2s}
+.tb-sub span:hover{color:var(--amber)}
+.tb-sep{width:1px;height:30px;background:var(--border);flex-shrink:0}
+.tb-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.fb-pill{display:flex;align-items:center;gap:5px;background:var(--cream2);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:11px;font-weight:600;color:var(--ink3)}
+.fb-dot{width:6px;height:6px;border-radius:50%;background:#ccc;transition:all .3s}
+.fb-dot.ok{background:var(--green);box-shadow:0 0 5px var(--green2)}
+.fb-dot.err{background:var(--red)}
+.fb-dot.sync{background:var(--amber);animation:fbp .8s infinite}
+@keyframes fbp{0%,100%{opacity:1}50%{opacity:.3}}
+.topbtn{padding:6px 11px;border:1px solid var(--border2);border-radius:7px;background:var(--cream2);color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.topbtn:hover{background:var(--amber);color:#fff;border-color:var(--amber)}
+
+/* ═══ MODE BAR ═══ */
+.mode-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:62px;z-index:99;flex-wrap:wrap}
+.mode-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase}
+.mode-toggle,.unit-toggle{display:flex;background:var(--cream2);border:1.5px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.mode-btn,.unit-btn{padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;background:transparent;color:var(--ink3)}
+.mode-btn.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow);font-weight:700}
+.mode-btn.hf.active{color:var(--teal)}
+.mode-btn.gm.active{color:var(--blue)}
+.unit-btn.active{background:var(--amber);color:#fff;box-shadow:0 2px 6px rgba(193,127,58,.3)}
+
+/* ═══ TABS ═══ */
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);padding:0 24px;background:var(--card);overflow-x:auto}
+.tab-btn{padding:11px 16px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .25s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.tab-btn:hover{color:var(--amber)}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber)}
+.tab-count{background:var(--amber);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px}
+
+/* ═══ MAIN ═══ */
+.main{padding:18px 24px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.section{display:none}
+.section.active{display:block}
+
+/* ═══ CARD ═══ */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+.card-head{padding:12px 18px;background:var(--cream2);border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px}
+.card-title{font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.3px}
+.card-body{padding:16px}
+
+/* ═══ FORM ═══ */
+.fg{display:grid;gap:10px}
+.fg-2{grid-template-columns:1fr 1fr}
+.fg-3{grid-template-columns:1fr 1fr 1fr}
+.fg-4{grid-template-columns:repeat(4,1fr)}
+.fg-auto{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.8px;text-transform:uppercase}
+.field input,.field select,.field textarea{border:1.5px solid var(--border);border-radius:var(--r2);padding:8px 11px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--ink);background:var(--cream);outline:none;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber);background:#fff}
+.field input[readonly]{background:var(--cream2);color:var(--ink3)}
+
+/* ═══ FABRIC PANELS ═══ */
+.fp{border-radius:var(--r2);padding:14px;margin-bottom:10px;border:1.5px solid var(--border)}
+.fp-front{background:#f0faf6;border-left:4px solid var(--green2)}
+.fp-back{background:#f0f4fa;border-left:4px solid var(--blue2)}
+.fp-piping{background:#fef9f0;border-left:4px solid var(--amber2)}
+.fp-lining{background:#f4f0fa;border-left:4px solid var(--purple)}
+.fp-extra{background:#fff8f0;border-left:4px solid var(--orange)}
+.fp-sleeve{background:#f0f8ff;border-left:4px solid var(--teal2)}
+.fp-inter{background:#fff5f5;border-left:4px solid var(--red2)}
+.fp-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+
+/* ═══ SEAM ═══ */
+.seam-grid{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:6px;align-items:center;justify-items:center;max-width:240px;margin:0 auto}
+.seam-center{background:var(--cream2);border:2px solid var(--amber3);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:700;color:var(--amber);text-align:center;white-space:nowrap}
+.sfield{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sfield label{font-size:9px;font-weight:700;color:var(--ink3);letter-spacing:.8px;text-transform:uppercase}
+.sfield input{width:60px;padding:5px 6px;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:13px;text-align:center;outline:none;background:var(--cream);transition:border-color .2s}
+.sfield input:focus{border-color:var(--amber)}
+
+/* ═══ SIZE TABLE ═══ */
+.size-tbl-wrap{overflow-x:auto}
+table.sz-tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.sz-tbl th{background:var(--cream2);padding:7px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);border-bottom:1.5px solid var(--border)}
+table.sz-tbl td{padding:7px 10px;border-bottom:1px solid var(--cream3);vertical-align:middle}
+table.sz-tbl td input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 7px;font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;background:var(--cream);min-width:56px}
+table.sz-tbl td input:focus{border-color:var(--amber)}
+
+/* ═══ RESULT ═══ */
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+.res-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:all .3s}
+.res-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.rc-amber::before{background:linear-gradient(90deg,var(--amber),var(--amber3))}
+.rc-green::before{background:linear-gradient(90deg,var(--green),var(--green2))}
+.rc-blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+.rc-teal::before{background:linear-gradient(90deg,var(--teal),var(--teal2))}
+.rc-red::before{background:linear-gradient(90deg,var(--red),var(--red2))}
+.rc-purple::before{background:linear-gradient(90deg,var(--purple),#9b59b6)}
+.rc-orange::before{background:linear-gradient(90deg,var(--orange),var(--amber2))}
+.res-icon{font-size:22px;margin-bottom:6px}
+.res-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;line-height:1;color:var(--ink)}
+.res-lbl{font-size:10px;color:var(--ink3);margin-top:3px;font-weight:600;letter-spacing:.3px}
+
+/* ═══ SUMMARY BOX ═══ */
+.summary-box{background:linear-gradient(135deg,var(--cream2),var(--cream3));border:2px solid var(--amber3);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.summary-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--amber);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sum-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--border2);font-size:12px}
+.sum-row:last-child{border-bottom:none;font-weight:700;font-size:14px;color:var(--amber);margin-top:4px}
+.sum-row .lbl{color:var(--ink3)}
+.sum-row .val{font-family:'DM Mono',monospace;font-weight:700;color:var(--ink)}
+
+/* ═══ FABRIC COST TABLE ═══ */
+.fc-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+.fc-table th{background:var(--cream2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);border-bottom:1.5px solid var(--border)}
+.fc-table td{padding:8px 12px;border-bottom:1px solid var(--cream3);vertical-align:middle}
+.fc-table tr:last-child td{border-bottom:none;font-weight:700;background:var(--cream2)}
+.fc-table tr:hover td{background:var(--cream)}
+
+/* ═══ DIAGRAM ═══ */
+.diagram-area{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;overflow-x:auto}
+canvas#diagramCanvas{display:block;margin:0 auto;max-width:100%}
+.diagram-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding:12px;background:var(--cream2);border-radius:8px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);font-weight:600}
+.legend-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+/* ═══ WASTAGE REPORT ═══ */
+.wastage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+.wcard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.wcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--amber))}
+.wcard-name{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px}
+.wcard-bar{height:8px;background:var(--cream3);border-radius:4px;overflow:hidden;margin:6px 0}
+.wcard-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--red));transition:width .5s}
+.wcard-stats{display:flex;justify-content:space-between;font-size:11px;margin-top:4px}
+.wcard-stats .used{color:var(--green);font-weight:700;font-family:'DM Mono',monospace}
+.wcard-stats .wasted{color:var(--red);font-weight:700;font-family:'DM Mono',monospace}
+table.wt{width:100%;border-collapse:collapse;font-size:12px}
+table.wt th{background:var(--cream2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);border-bottom:1.5px solid var(--border)}
+table.wt td{padding:8px 12px;border-bottom:1px solid var(--cream3);font-family:'DM Mono',monospace;font-size:12px}
+table.wt tr:last-child td{border-bottom:none;background:var(--cream2);font-weight:700}
+table.wt tr:hover td{background:var(--cream)}
+
+/* ═══ DATA TABLE ═══ */
+.tbl-wrap{overflow-x:auto}
+table.db-tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.db-tbl th{background:var(--cream2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);border-bottom:1.5px solid var(--border);cursor:pointer;white-space:nowrap}
+table.db-tbl th:hover{background:var(--cream3)}
+table.db-tbl td{padding:8px 12px;border-bottom:1px solid var(--cream3);vertical-align:middle}
+table.db-tbl tr:hover td{background:var(--cream)}
+table.db-tbl tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.badge-hf{background:rgba(26,122,110,.1);color:var(--teal);border:1px solid rgba(26,122,110,.2)}
+.badge-gm{background:rgba(37,99,168,.1);color:var(--blue);border:1px solid rgba(37,99,168,.2)}
+
+/* ═══ BUTTONS ═══ */
+.btn{padding:8px 16px;border:none;border-radius:var(--r2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn-amber{background:var(--amber);color:#fff;box-shadow:0 3px 10px rgba(193,127,58,.3)}
+.btn-green{background:var(--green);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:var(--cream2);color:var(--ink2);border:1.5px solid var(--border2)}
+.btn-ghost:hover{background:var(--cream3)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ═══ MISC ═══ */
+.sbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.sinput{padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r2);font-family:'DM Sans',sans-serif;font-size:12px;background:var(--cream);outline:none;transition:border-color .2s;flex:1;min-width:140px}
+.sinput:focus{border-color:var(--amber)}
+.ssel{padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r2);font-family:'DM Sans',sans-serif;font-size:12px;background:var(--cream);outline:none;color:var(--ink2);cursor:pointer}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.sec-note{font-size:11px;color:var(--ink3);margin-bottom:10px;font-style:italic}
+
+/* ═══ CHECKBOX & BULK SELECT ═══ */
+.cb-wrap{display:flex;align-items:center;justify-content:center}
+input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--amber)}
+.bulk-bar{display:flex;align-items:center;gap:8px;background:var(--cream2);border:1.5px solid var(--amber3);border-radius:8px;padding:8px 14px;margin-bottom:10px;flex-wrap:wrap;transition:all .3s}
+.bulk-bar.hidden{display:none}
+.bulk-count{font-size:12px;font-weight:700;color:var(--amber);font-family:'DM Mono',monospace}
+.sel-row td{background:rgba(193,127,58,.06)!important}
+
+/* ═══ PRODUCT TYPE MODAL ═══ */
+.mo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;display:none;align-items:center;justify-content:center}
+.mo-overlay.show{display:flex}
+.mo-box{background:var(--card);border:1.5px solid var(--border2);border-radius:var(--r);padding:28px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow2);position:relative}
+.mo-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber),var(--amber3))}
+.mo-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--amber);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.mo-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border:none;background:var(--cream2);border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--ink3)}
+.type-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:280px;overflow-y:auto}
+.type-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--cream2);border:1.5px solid var(--border);border-radius:8px;transition:all .2s}
+.type-item:hover{border-color:var(--amber3)}
+.type-item .ti-name{flex:1;font-size:13px;font-weight:600;color:var(--ink2)}
+.type-item input.ti-edit{flex:1;border:1.5px solid var(--amber);border-radius:6px;padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:#fff;display:none}
+.ti-btn{padding:4px 9px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
+.ti-edit-btn{background:var(--cream3);color:var(--ink2)}
+.ti-del-btn{background:rgba(192,57,43,.1);color:var(--red)}
+.ti-save-btn{background:var(--green);color:#fff;display:none}
+.add-type-row{display:flex;gap:8px;margin-top:10px}
+.add-type-input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--cream);transition:border-color .2s}
+.add-type-input:focus{border-color:var(--amber)}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:9000;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ═══ BACK BTN ═══ */
+.back-btn{position:fixed;bottom:24px;right:24px;z-index:9999}
+.back-btn button{display:flex;align-items:center;gap:7px;padding:10px 16px;background:linear-gradient(135deg,#1a1410,#2d1f10);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:all .25s}
+.back-btn button:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* ═══ PRINT ═══ */
+@media print{
+  .topbar,.mode-bar,.tab-bar,.btn-row,.back-btn,#toast,.sbar,.no-print,
+  #moTypeModal,.panel-overlay{display:none!important}
+  .section{display:none!important}
+  .section.active{display:block!important}
+  .card{box-shadow:none!important;border:1px solid #ccc!important}
+  body::before{display:none}
+  .main{padding:0!important}
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:768px){.fg-3,.fg-4{grid-template-columns:1fr 1fr}.topbar{padding:0 12px;flex-wrap:wrap;height:auto;min-height:56px;gap:6px;padding:8px 12px}.main{padding:10px}.mode-bar{padding:8px 12px}}
+@media(max-width:480px){.fg,.fg-2,.fg-3,.fg-4{grid-template-columns:1fr}.res-grid{grid-template-columns:1fr 1fr}}
+
+/* ═══ DESIGN STUDIO ═══ */
+.ds-layout{display:grid;grid-template-columns:260px 1fr;gap:12px}
+@media(max-width:800px){.ds-layout{grid-template-columns:1fr}}
+.ds-panel{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.ds-panel-head{padding:9px 14px;background:var(--cream2);border-bottom:1.5px solid var(--border);font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.ds-panel-body{padding:12px}
+.ds-cat-row{display:flex;gap:5px;margin-bottom:10px}
+.ds-cat-btn{flex:1;padding:7px 4px;border:1.5px solid var(--border);border-radius:7px;background:var(--cream2);color:var(--ink3);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.ds-cat-btn.active{background:var(--amber);color:#fff;border-color:var(--amber)}
+.ds-mrow{display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.ds-mrow label{flex:0 0 110px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase}
+.ds-mrow input{flex:1;border:1.5px solid var(--border);border-radius:5px;padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);background:var(--cream);outline:none;min-width:0}
+.ds-mrow input:focus{border-color:var(--amber)}
+.ds-mrow .ds-unit{font-size:10px;color:var(--ink3);flex:0 0 22px}
+/* Toolbar */
+.ds-toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--cream2);border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;align-items:center}
+.ds-tool{padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--ink3);font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:600;white-space:nowrap}
+.ds-tool:hover{border-color:var(--amber);color:var(--amber)}
+.ds-tool.active{background:var(--amber);color:#fff;border-color:var(--amber)}
+.ds-tool-sep{width:1px;height:24px;background:var(--border);margin:0 2px}
+/* Canvas */
+.ds-canvas-outer{position:relative;border:2px solid var(--border);border-radius:10px;overflow:hidden;background:#f8f5f0;min-height:480px;cursor:crosshair}
+.ds-canvas-outer canvas{display:block;position:absolute;top:0;left:0}
+#dsImgCanvas{z-index:1}
+#dsDrawCanvas{z-index:2;background:transparent}
+#dsMeasCanvas{z-index:3;background:transparent;pointer-events:none}
+/* 3D */
+.ds-3d-outer{border:2px solid var(--border);border-radius:10px;overflow:hidden;background:#1a1008;min-height:480px;position:relative}
+#ds3dCanvas{display:block;width:100%;height:100%}
+/* Color palette */
+.ds-palette{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.ds-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s}
+.ds-swatch:hover{transform:scale(1.2)}
+.ds-swatch.active{border-color:var(--ink);transform:scale(1.1)}
+/* View toggle */
+.ds-view-toggle{display:flex;background:var(--cream2);border:1.5px solid var(--border);border-radius:8px;padding:3px;gap:2px;margin-bottom:8px}
+.ds-view-btn{flex:1;padding:7px 8px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--ink3)}
+.ds-view-btn.active{background:var(--card);color:var(--amber);box-shadow:var(--shadow)}
+.ds-saved-list{max-height:180px;overflow-y:auto}
+.ds-saved-item{padding:7px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;font-size:11px;cursor:pointer;transition:all .15s}
+.ds-saved-item:hover{border-color:var(--amber);background:var(--cream2)}
+.ds-img-zone{border:2px dashed var(--border2);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:var(--cream2)}
+.ds-img-zone:hover{border-color:var(--amber);background:#fff8ef}
+</style>
+</head>
+<body>
+
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">✂️</div>
+  <div class="tb-company-area">
+    <div class="tb-company" id="tbCompany" onclick="editInfo('company')" title="Click to edit">Your Company Name</div>
+    <div class="tb-sub">
+      <span id="tbAddress" onclick="editInfo('address')" title="Click">Company Address</span> | 
+      <span id="tbDev" onclick="editInfo('dev')" title="Click">Developer</span> | 
+      <span id="tbContact" onclick="editInfo('contact')" title="Click">Contact</span>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-right">
+    <div class="fb-pill"><div class="fb-dot sync" id="fbDot"></div><span id="fbTxt" style="font-size:10px">Firebase...</span></div>
+    <button class="topbtn no-print" onclick="fbSaveNow()">☁️ Save</button>
+    <button class="topbtn no-print" onclick="fbLoadNow()">📥 Load</button>
+    <button class="topbtn no-print" onclick="window.print()">🖨️ Print</button>
+  </div>
+</div>
+
+<!-- MODE BAR -->
+<div class="mode-bar">
+  <div class="mode-label">Mode:</div>
+  <div class="mode-toggle">
+    <button class="mode-btn hf active" id="modeHF" onclick="setMode('hf')">🏠 Home Furnishing</button>
+    <button class="mode-btn gm" id="modeGM" onclick="setMode('gm')">👕 Garments</button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="mode-label">Unit:</div>
+  <div class="unit-toggle">
+    <button class="unit-btn active" id="uInch" onclick="setUnit('inch')">Inch</button>
+    <button class="unit-btn" id="uCm" onclick="setUnit('cm')">CM</button>
+    <button class="unit-btn" id="uMtr" onclick="setUnit('mtr')">Meter</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-input" onclick="showTab('input')">📝 Input Sheet</button>
+  <button class="tab-btn" id="tab-result" onclick="showTab('result')">📊 Result Sheet</button>
+  <button class="tab-btn" id="tab-diagram" onclick="showTab('diagram')">📐 Diagram</button>
+  <button class="tab-btn" id="tab-wastage" onclick="showTab('wastage')">♻️ Wastage Report</button>
+  <button class="tab-btn" id="tab-data" onclick="showTab('data')">🗄️ Data Sheet <span class="tab-count" id="dataCount">0</span></button>
+  <button class="tab-btn" id="tab-design" onclick="showTab('design')">🎨 Design Studio</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ══════════ INPUT SHEET ══════════ -->
+<div class="section active" id="section-input">
+
+  <!-- Product Info -->
+  <div class="card">
+    <div class="card-head" style="border-left:4px solid var(--amber)"><span>📋</span><span class="card-title">Product Information</span></div>
+    <div class="card-body">
+      <div class="fg fg-auto">
+        <div class="field" style="grid-column:span 2"><label>Product / Order Name</label><input type="text" id="fProductName" placeholder="e.g. Cushion Cover Batch #1"></div>
+        <div class="field"><label>Product Type</label>
+          <div style="display:flex;gap:6px">
+            <select id="fProductType" style="flex:1"></select>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;flex-shrink:0" onclick="openTypeModal()" title="Add/Edit/Delete types">⚙️</button>
+          </div>
+        </div>
+        <div class="field"><label>Order Qty (Pieces)</label><input type="number" id="fQty" value="100" min="1" oninput="calculate()"></div>
+        <div class="field"><label>Fabric Width (<span class="uLabel">inch</span>)</label><input type="number" id="fFabricWidth" value="44" min="1" step="0.5" oninput="calculate()"></div>
+        <div class="field"><label>Wastage %</label><select id="fWastage" onchange="calculate()"><option value="3">3% Standard</option><option value="5" selected>5% Recommended</option><option value="7">7% Heavy Fabric</option><option value="10">10% Complex</option></select></div>
+        <div class="field"><label>Remarks</label><input type="text" id="fRemarks" placeholder="Any notes..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HOME FURNISHING ═══ -->
+  <div id="hfSection">
+
+    <!-- Dimensions -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--teal)"><span>📐</span><span class="card-title">Finished Dimensions & Seam Allowance</span></div>
+      <div class="card-body">
+        <div class="fg fg-2" style="margin-bottom:14px">
+          <div class="field"><label>Finished Length (<span class="uLabel">inch</span>)</label><input type="number" id="hfL" value="20" min="1" step="0.5" oninput="calculate()"></div>
+          <div class="field"><label>Finished Width (<span class="uLabel">inch</span>)</label><input type="number" id="hfW" value="20" min="1" step="0.5" oninput="calculate()"></div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:10px">SEAM ALLOWANCE (all sides)</div>
+        <div class="seam-grid">
+          <div></div><div class="sfield"><label>Top ↑</label><input type="number" id="hfST" value="1" min="0" step="0.25" oninput="calculate()"></div><div></div>
+          <div class="sfield"><label>Left ←</label><input type="number" id="hfSL" value="1" min="0" step="0.25" oninput="calculate()"></div>
+          <div class="seam-center" id="hfDimDisplay">0 × 0</div>
+          <div class="sfield"><label>Right →</label><input type="number" id="hfSR" value="1" min="0" step="0.25" oninput="calculate()"></div>
+          <div></div><div class="sfield"><label>Bottom ↓</label><input type="number" id="hfSB" value="1" min="0" step="0.25" oninput="calculate()"></div><div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HF Fabrics — FRONT / BACK / PIPING / LINING / EXTRA -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--green)"><span>🧵</span><span class="card-title">Fabric Panels — Each Fabric Separate</span></div>
+      <div class="card-body">
+        <div class="sec-note">Har fabric alag — rate alag, cost alag calculate hogi</div>
+
+        <!-- FRONT -->
+        <div class="fp fp-front">
+          <div class="fp-title" style="color:var(--green)">🟢 Front Fabric</div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Fabric Name</label><input type="text" id="hfFrontName" placeholder="Cotton, Velvet..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="hfFrontColor" placeholder="Red, Navy..."></div>
+            <div class="field"><label>GSM / Weight</label><input type="text" id="hfFrontGSM" placeholder="200 GSM..."></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="hfFrontRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- BACK -->
+        <div class="fp fp-back">
+          <div class="fp-title" style="color:var(--blue)">🔵 Back Fabric <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(alag fabric hai to fill karo)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Fabric Name</label><input type="text" id="hfBackName" placeholder="Same as front / Poly..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="hfBackColor" placeholder="Color..."></div>
+            <div class="field"><label>GSM / Weight</label><input type="text" id="hfBackGSM" placeholder="200 GSM..."></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="hfBackRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+          <div class="fg fg-2" style="margin-top:8px">
+            <div class="field"><label>Back Seam (extra allow. <span class="uLabel">inch</span>)</label><input type="number" id="hfBackSeam" value="0" min="0" step="0.25" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- PIPING -->
+        <div class="fp fp-piping">
+          <div class="fp-title" style="color:var(--amber)">〰️ Piping Fabric <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(agar ho to)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Piping Fabric Name</label><input type="text" id="hfPipeName" placeholder="Contrast fabric..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="hfPipeColor" placeholder="Color..."></div>
+            <div class="field"><label>Piping Length (<span class="uLabel">inch</span>)</label><input type="number" id="hfPipeLen" value="0" min="0" step="0.5" oninput="calculate()"></div>
+            <div class="field"><label>Piping Width (<span class="uLabel">inch</span>)</label><input type="number" id="hfPipeW" value="2" min="0" step="0.25" oninput="calculate()"></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="hfPipeRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- LINING -->
+        <div class="fp fp-lining">
+          <div class="fp-title" style="color:var(--purple)">🔶 Lining Fabric <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(agar ho to)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Lining Name</label><input type="text" id="hfLineName" placeholder="Poly lining..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="hfLineColor" placeholder="White, Black..."></div>
+            <div class="field"><label>Extra Seam (<span class="uLabel">inch</span>)</label><input type="number" id="hfLineSeam" value="0" min="0" step="0.25" oninput="calculate()"></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="hfLineRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- FRILL -->
+        <div class="fg fg-2" style="margin-top:10px">
+          <div class="field"><label>Frill % (if any)</label><select id="hfFrill" onchange="calculate()"><option value="0">No Frill</option><option value="150">1.5x Light Frill</option><option value="200">2x Medium Frill</option><option value="250">2.5x Heavy Frill</option></select></div>
+          <div class="field"><label>Frill Fabric Rate (₹/m)</label><input type="number" id="hfFrillRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+        </div>
+
+        <!-- EXTRA -->
+        <div id="hfExtraList"></div>
+        <button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="addHfExtra()">+ Extra Fabric Add Karo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GARMENTS ═══ -->
+  <div id="gmSection" style="display:none">
+
+    <!-- Measurements -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--blue)"><span>📏</span><span class="card-title">Measurements & Seam Allowance</span></div>
+      <div class="card-body">
+        <div class="fg fg-auto" style="margin-bottom:14px">
+          <div class="field"><label>Body Length (<span class="uLabel">inch</span>)</label><input type="number" id="gmLength" value="28" min="1" step="0.5" oninput="calculate()"></div>
+          <div class="field"><label>Chest / Width (<span class="uLabel">inch</span>)</label><input type="number" id="gmChest" value="22" min="1" step="0.5" oninput="calculate()"></div>
+          <div class="field"><label>Sleeve Length (<span class="uLabel">inch</span>)</label><input type="number" id="gmSleeve" value="24" min="0" step="0.5" oninput="calculate()"></div>
+          <div class="field"><label>Sleeve Width (<span class="uLabel">inch</span>)</label><input type="number" id="gmSleeveW" value="8" min="0" step="0.5" oninput="calculate()"></div>
+          <div class="field"><label>Shrinkage %</label><select id="gmShrink" onchange="calculate()"><option value="0">0%</option><option value="3" selected>3% Standard</option><option value="5">5% Heavy</option><option value="8">8% Knit</option></select></div>
+          <div class="field"><label>Pieces per Layer</label><input type="number" id="gmPPL" value="2" min="1" oninput="calculate()"></div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:10px">SEAM ALLOWANCE</div>
+        <div class="fg fg-4">
+          <div class="field"><label>Body (all sides)</label><input type="number" id="gmSeamBody" value="1" min="0" step="0.25" oninput="calculate()"></div>
+          <div class="field"><label>Sleeve</label><input type="number" id="gmSeamSleeve" value="1" min="0" step="0.25" oninput="calculate()"></div>
+          <div class="field"><label>Hem</label><input type="number" id="gmSeamHem" value="1.5" min="0" step="0.25" oninput="calculate()"></div>
+          <div class="field"><label>Collar</label><input type="number" id="gmSeamCollar" value="0.5" min="0" step="0.25" oninput="calculate()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Size Chart -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--blue)"><span>📊</span><span class="card-title">Size-wise Quantity</span></div>
+      <div class="card-body">
+        <div class="size-tbl-wrap">
+          <table class="sz-tbl">
+            <thead><tr><th>Size</th><th>Qty (pcs)</th><th>Length +(<span class="uLabel">inch</span>)</th><th>Chest +(<span class="uLabel">inch</span>)</th></tr></thead>
+            <tbody id="sizeTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GM Fabrics -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--blue)"><span>🧵</span><span class="card-title">Fabric Panels — Each Alag</span></div>
+      <div class="card-body">
+        <div class="sec-note">Front body, Back body, Sleeve — sab alag fabric specify kar sakte ho</div>
+
+        <!-- FRONT BODY -->
+        <div class="fp fp-front">
+          <div class="fp-title" style="color:var(--green)">🟢 Front Body Fabric</div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Fabric Name</label><input type="text" id="gmFrontName" placeholder="100% Cotton..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="gmFrontColor" placeholder="White..."></div>
+            <div class="field"><label>GSM</label><input type="text" id="gmFrontGSM" placeholder="160 GSM..."></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="gmFrontRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- BACK BODY -->
+        <div class="fp fp-back">
+          <div class="fp-title" style="color:var(--blue)">🔵 Back Body Fabric <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(alag ho to fill karo)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Fabric Name</label><input type="text" id="gmBackName" placeholder="Same as front..."></div>
+            <div class="field"><label>Color</label><input type="text" id="gmBackColor" placeholder="Color..."></div>
+            <div class="field"><label>GSM</label><input type="text" id="gmBackGSM" placeholder="GSM..."></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="gmBackRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- SLEEVE -->
+        <div class="fp fp-sleeve">
+          <div class="fp-title" style="color:var(--teal)">💪 Sleeve Fabric <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(agar alag ho to)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Fabric Name</label><input type="text" id="gmSleeveName" placeholder="Rib, contrast..." oninput="calculate()"></div>
+            <div class="field"><label>Color</label><input type="text" id="gmSleeveColor" placeholder="Color..."></div>
+            <div class="field"><label>GSM</label><input type="text" id="gmSleeveGSM" placeholder="GSM..."></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="gmSleeveRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- INTERLINING -->
+        <div class="fp fp-inter">
+          <div class="fp-title" style="color:var(--red)">🔶 Interlining / Fusible <small style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">(agar ho to)</small></div>
+          <div class="fg fg-auto">
+            <div class="field"><label>Interlining Name</label><input type="text" id="gmInterName" placeholder="Woven fusible..."></div>
+            <div class="field"><label>Area used</label><input type="text" id="gmInterArea" placeholder="Collar, Cuff..."></div>
+            <div class="field"><label>Qty per piece (<span class="uLabel">inch</span>)</label><input type="number" id="gmInterQty" value="0" min="0" step="0.5" oninput="calculate()"></div>
+            <div class="field"><label>Rate (₹/meter)</label><input type="number" id="gmInterRate" value="0" min="0" step="0.5" oninput="calculate()"></div>
+          </div>
+        </div>
+
+        <!-- EXTRA -->
+        <div id="gmExtraList"></div>
+        <button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="addGmExtra()">+ Extra Fabric Add Karo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap">
+    <button class="btn btn-ghost" onclick="resetForm()">🔄 Reset</button>
+    <button class="btn btn-ghost" onclick="showTab('diagram')">📐 Diagram Dekho</button>
+    <button class="btn btn-amber" onclick="calculate();showTab('result')">⚡ Calculate & View Result →</button>
+  </div>
+</div>
+
+<!-- ══════════ RESULT SHEET ══════════ -->
+<div class="section" id="section-result">
+  <div id="resultContent">
+    <div style="text-align:center;padding:48px;color:var(--ink3)">
+      <div style="font-size:48px;margin-bottom:12px">📊</div>
+      <div style="font-weight:700;font-size:16px">Input Sheet mein data bharo</div>
+      <div style="font-size:13px;margin-top:6px">Phir "Calculate & View Result" click karo</div>
+    </div>
+  </div>
+  <div class="btn-row no-print" id="resultBtns" style="display:none">
+    <button class="btn btn-amber" onclick="saveToData()">💾 Data Sheet mein Save</button>
+    <button class="btn btn-ghost" onclick="window.print()">🖨️ Print</button>
+    <button class="btn btn-ghost" onclick="exportResultCSV()">📊 Excel</button>
+    <button class="btn btn-ghost" onclick="shareWhatsApp()">📲 WhatsApp</button>
+  </div>
+</div>
+
+<!-- ══════════ DIAGRAM SHEET ══════════ -->
+<div class="section" id="section-diagram">
+  <div class="card">
+    <div class="card-head" style="border-left:4px solid var(--blue)"><span>📐</span><span class="card-title">Cutting Diagram — Visual Guide</span></div>
+    <div class="card-body">
+      <div class="sec-note">Diagram mein cut size, seam allowance aur panel labels ke saath marking dikhayi degi</div>
+      <div class="diagram-area">
+        <canvas id="diagramCanvas" width="700" height="420"></canvas>
+      </div>
+      <div class="diagram-legend" id="diagramLegend"></div>
+      <div class="btn-row no-print">
+        <button class="btn btn-amber" onclick="drawDiagram()">🔄 Diagram Refresh Karo</button>
+        <button class="btn btn-ghost" onclick="downloadDiagram()">💾 Download PNG</button>
+        <button class="btn btn-ghost" onclick="window.print()">🖨️ Print Diagram</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WASTAGE REPORT ══════════ -->
+<div class="section" id="section-wastage">
+  <div id="wastageContent">
+    <div style="text-align:center;padding:48px;color:var(--ink3)">
+      <div style="font-size:48px;margin-bottom:12px">♻️</div>
+      <div style="font-weight:700;font-size:16px">Pehle calculate karo</div>
+      <div style="font-size:13px;margin-top:6px">Result mein jaao phir wastage report yahan dikhngi</div>
+    </div>
+  </div>
+  <div class="btn-row no-print" id="wastageBtns" style="display:none">
+    <button class="btn btn-ghost" onclick="window.print()">🖨️ Print Report</button>
+    <button class="btn btn-ghost" onclick="exportWastageCSV()">📊 Excel Export</button>
+  </div>
+</div>
+
+<!-- ══════════ DATA SHEET ══════════ -->
+<div class="section" id="section-data">
+  <div class="card">
+    <div class="card-head" style="border-left:4px solid var(--amber)"><span>🗄️</span><span class="card-title">Saved Calculations</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3)" id="totalRecords">0 records</span></div>
+    <div class="card-body">
+      <div class="sbar">
+        <input class="sinput" id="dataSearch" placeholder="🔍 Search..." oninput="renderData()">
+        <select class="ssel" id="dataFilterMode" onchange="renderData()"><option value="">All Modes</option><option value="hf">🏠 HF</option><option value="gm">👕 GM</option></select>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="exportAllCSV()">📊 Export All</button>
+        <button class="btn btn-red" style="font-size:11px" onclick="clearAllData()">🗑️ Clear All</button>
+      </div>
+      <!-- BULK ACTION BAR -->
+      <div class="bulk-bar hidden" id="dataBulkBar">
+        <span class="bulk-count" id="dataBulkCount">0 selected</span>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="bulkExportData()">📊 Export Selected</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="bulkDeleteData()">🗑️ Delete Selected</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="clearDataSelection()">✕ Clear Selection</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="db-tbl">
+          <thead><tr>
+            <th class="no-print cb-wrap"><input type="checkbox" id="dataSelectAll" onchange="toggleDataSelectAll(this)"></th>
+            <th onclick="sortData('date')"># Date ↕</th>
+            <th onclick="sortData('name')">Product ↕</th>
+            <th>Mode</th><th>Type</th>
+            <th onclick="sortData('qty')">Qty ↕</th>
+            <th onclick="sortData('fabric')">Total Fabric ↕</th>
+            <th>Total Cost</th><th>Unit</th>
+            <th class="no-print">Actions</th>
+          </tr></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ DESIGN STUDIO ══════════ -->
+<div class="section" id="section-design">
+<div class="card">
+  <div class="card-head" style="border-left:4px solid var(--purple)">
+    <span>🎨</span><span class="card-title">Design Studio — Custom Drawing · 2D · 3D</span>
+    <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+      <input type="text" id="dsDesignName" placeholder="Design ka naam..." style="border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:12px;width:160px;background:var(--cream);color:var(--ink);outline:none">
+      <button class="btn btn-amber no-print" style="font-size:11px" onclick="dsSave()">☁️ Save</button>
+      <button class="btn btn-ghost no-print" style="font-size:11px" onclick="dsExportPNG()">⬇️ Export</button>
+      <button class="btn btn-ghost no-print" style="font-size:11px" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <div class="ds-layout">
+
+      <!-- ── LEFT PANEL ── -->
+      <div>
+
+        <!-- Category + Product -->
+        <div class="ds-panel">
+          <div class="ds-panel-head">📦 Product</div>
+          <div class="ds-panel-body">
+            <div class="ds-cat-row">
+              <button class="ds-cat-btn active" id="dsCatGM" onclick="dsSetCat('gm')">👕 Garments</button>
+              <button class="ds-cat-btn" id="dsCatHF" onclick="dsSetCat('hf')">🏠 Home Furn.</button>
+            </div>
+            <select id="dsProductType" onchange="dsProductChanged()" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--cream);outline:none;margin-bottom:8px">
+              <option value="">-- Product Type --</option>
+            </select>
+            <button class="btn btn-amber" style="width:100%;font-size:11px" onclick="dsGenOverlay()">📐 Measurement Overlay Lagao</button>
+          </div>
+        </div>
+
+        <!-- Measurements -->
+        <div class="ds-panel">
+          <div class="ds-panel-head">📏 Measurements <span style="margin-left:auto;font-size:9px;font-weight:400;color:var(--ink3)" id="dsUnitLbl">Inch</span></div>
+          <div class="ds-panel-body">
+            <div id="dsMeasFields"><p style="color:var(--ink3);font-size:11px;text-align:center;padding:12px 0">Product select karein</p></div>
+            <div style="display:flex;gap:5px;margin-top:8px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--ink3)">
+                <input type="checkbox" id="dsMeasVisible" onchange="dsToggleMeas(this.checked)" style="accent-color:var(--amber)"> Measurements Show Karo
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="ds-panel">
+          <div class="ds-panel-head">📸 Image Upload</div>
+          <div class="ds-panel-body">
+            <div class="ds-img-zone" id="dsImgZone" onclick="document.getElementById('dsFileIn').click()" ondragover="event.preventDefault()" ondrop="dsDropImg(event)">
+              <div style="font-size:28px">📁</div>
+              <p style="font-size:11px;color:var(--ink3);margin:4px 0">Click ya drag karein<br><span style="color:var(--amber);font-size:10px">JPG · PNG · WEBP</span></p>
+            </div>
+            <input type="file" id="dsFileIn" accept="image/*" style="display:none" onchange="dsLoadImg(event)">
+            <div id="dsImgThumbWrap" style="display:none;margin-top:8px;text-align:center">
+              <img id="dsImgThumb" style="max-width:100%;max-height:100px;border-radius:6px;border:1.5px solid var(--border)">
+              <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+                <label style="font-size:10px;color:var(--ink3);display:flex;align-items:center;gap:4px;cursor:pointer">
+                  <input type="range" id="dsImgOpacity" min="10" max="100" value="100" oninput="dsSetImgOpacity(this.value)" style="width:80px;accent-color:var(--amber)"> Opacity
+                </label>
+                <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;margin-left:auto" onclick="dsClearImg()">✕ Remove</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Colors -->
+        <div class="ds-panel" id="ds3dColorPanel" style="display:none">
+          <div class="ds-panel-head">🎨 3D Colour</div>
+          <div class="ds-panel-body">
+            <div class="ds-palette" id="ds3dPalette"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <label style="font-size:11px;color:var(--ink3)">Custom:</label>
+              <input type="color" id="ds3dColorPick" value="#d4a843" oninput="dsSet3dColor(this.value)" style="width:40px;height:28px;border:none;cursor:pointer;border-radius:4px">
+              <label style="font-size:10px;color:var(--ink3);display:flex;align-items:center;gap:4px;cursor:pointer;margin-left:auto">
+                <input type="checkbox" id="dsUseTexture" onchange="dsRender3D()" style="accent-color:var(--amber)"> Image Texture
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Designs -->
+        <div class="ds-panel">
+          <div class="ds-panel-head">💾 Saved Designs <button class="topbtn no-print" style="font-size:10px;padding:3px 8px;margin-left:auto" onclick="dsLoadSaved()">🔄</button></div>
+          <div class="ds-panel-body">
+            <div class="ds-saved-list" id="dsSavedList"><p style="color:var(--ink3);font-size:11px;text-align:center">Load karein...</p></div>
+          </div>
+        </div>
+
+      </div><!-- left panel -->
+
+      <!-- ── RIGHT: Drawing Area ── -->
+      <div>
+
+        <!-- View Toggle -->
+        <div class="ds-view-toggle">
+          <button class="ds-view-btn active" id="dsvBtn2d" onclick="dsSetView('2d')">✏️ 2D Drawing</button>
+          <button class="ds-view-btn" id="dsvBtn3d" onclick="dsSetView('3d')">🔮 3D View</button>
+        </div>
+
+        <!-- 2D Drawing Toolbar -->
+        <div id="ds2dToolbar" class="ds-toolbar">
+          <button class="ds-tool active" id="dstSelect" onclick="dsTool('select')" title="Select/Move">⬆️ Select</button>
+          <button class="ds-tool" id="dstPencil" onclick="dsTool('pencil')" title="Free Draw">✏️ Pencil</button>
+          <button class="ds-tool" id="dstLine" onclick="dsTool('line')" title="Line">╱ Line</button>
+          <button class="ds-tool" id="dstRect" onclick="dsTool('rect')" title="Rectangle">▭ Rect</button>
+          <button class="ds-tool" id="dstCircle" onclick="dsTool('circle')" title="Circle/Ellipse">○ Circle</button>
+          <button class="ds-tool" id="dstText" onclick="dsTool('text')" title="Text">T Text</button>
+          <button class="ds-tool" id="dstEraser" onclick="dsTool('eraser')" title="Eraser">⌫ Erase</button>
+          <div class="ds-tool-sep"></div>
+          <div class="ds-palette" id="ds2dPalette" style="margin:0;gap:4px"></div>
+          <input type="color" id="ds2dColorPick" value="#1a1410" oninput="dsSet2dColor(this.value)" style="width:26px;height:26px;border:none;cursor:pointer;border-radius:50%;padding:0" title="Color">
+          <select id="dsLineW" onchange="dsLineW=parseInt(this.value)" style="border:1.5px solid var(--border);border-radius:5px;padding:4px 5px;font-size:11px;background:var(--cream);color:var(--ink);outline:none" title="Line Width">
+            <option value="1">1px</option><option value="2" selected>2px</option><option value="3">3px</option><option value="5">5px</option><option value="8">8px</option><option value="12">12px</option>
+          </select>
+          <div class="ds-tool-sep"></div>
+          <button class="ds-tool" onclick="dsUndo()" title="Undo">↩ Undo</button>
+          <button class="ds-tool" onclick="dsRedo()" title="Redo">↪ Redo</button>
+          <button class="ds-tool" onclick="dsDeleteSelected()" title="Delete Selected" style="color:#e53e3e">🗑️ Del</button>
+          <button class="ds-tool" onclick="dsClearCanvas()" title="Clear All" style="color:#e53e3e">✕ Clear</button>
+        </div>
+
+        <!-- 2D Canvas -->
+        <div class="ds-canvas-outer" id="ds2dWrap" style="height:500px">
+          <canvas id="dsImgCanvas"></canvas>
+          <canvas id="dsDrawCanvas"
+            onmousedown="dsMD(event)" onmousemove="dsMM(event)" onmouseup="dsMU(event)" onmouseleave="dsMU(event)"
+            ontouchstart="dsTD(event)" ontouchmove="dsTMv(event)" ontouchend="dsTU(event)">
+          </canvas>
+          <canvas id="dsMeasCanvas"></canvas>
+        </div>
+
+        <!-- 3D View -->
+        <div class="ds-3d-outer" id="ds3dWrap" style="display:none;height:500px">
+          <canvas id="ds3dCanvas"></canvas>
+          <div id="ds3dMsg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#8a7040;font-size:13px;font-family:'DM Sans',sans-serif;text-align:center;pointer-events:none">
+            Product select karke 3D View pe aayein
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="ds2dActions">
+          <button class="btn btn-ghost no-print" style="font-size:11px" onclick="dsExportPNG()">⬇️ PNG Download</button>
+          <button class="btn btn-ghost no-print" style="font-size:11px" onclick="dsExportSVG()">⬇️ SVG Download</button>
+          <button class="btn btn-ghost no-print" style="font-size:11px" onclick="window.print()">🖨️ Print</button>
+          <button class="btn btn-amber no-print" style="font-size:11px;margin-left:auto" onclick="dsSave()">☁️ Save Design</button>
+        </div>
+
+      </div><!-- right -->
+    </div><!-- ds-layout -->
+  </div><!-- card-body -->
+</div><!-- card -->
+</div><!-- section-design -->
+
+
+</div><!-- end main -->
+
+<!-- BACK BUTTON -->
+<div class="back-btn no-print"><button onclick="window.location.href='Master_Launcher.html'">🏠 Dashboard</button></div>
+<div id="toast"></div>
+
+<!-- PRODUCT TYPE MODAL -->
+<div class="mo-overlay" id="moTypeModal">
+  <div class="mo-box">
+    <div class="mo-title">⚙️ Product Types Manage Karo</div>
+    <button class="mo-close" onclick="closeTypeModal()">✕</button>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:12px">Add, Edit ya Delete karo — changes turant dropdown mein aa jayenge</div>
+    <div class="type-list" id="typeList"></div>
+    <div class="add-type-row">
+      <input class="add-type-input" id="newTypeName" placeholder="Naya product type naam..." onkeydown="if(event.key==='Enter')addNewType()">
+      <button class="btn btn-amber" onclick="addNewType()">+ Add</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" onclick="resetTypesToDefault()">🔄 Default Reset</button>
+      <button class="btn btn-amber" style="margin-left:auto" onclick="closeTypeModal()">✅ Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// PRODUCT TYPE MANAGEMENT
+// ═══════════════════════════════════════
+const DEFAULT_HF=['Cushion Cover','Pillow Cover','Bed Sheet','Table Cloth','Table Runner','Curtain / Drape','Sofa Cover','Window Panel','Placemat','Napkin'];
+const DEFAULT_GM=['T-Shirt','Polo Shirt','Formal Shirt','Trouser / Pant','Shorts','Kurta','Salwar Kameez','Jacket','Blazer','Skirt','Dress'];
+
+let customTypes={hf:[...DEFAULT_HF],gm:[...DEFAULT_GM]};
+
+function loadCustomTypes(){
+  const d=localStorage.getItem('ucc2_types');
+  if(d)customTypes=JSON.parse(d);
+}
+function saveCustomTypes(){
+  localStorage.setItem('ucc2_types',JSON.stringify(customTypes));
+}
+function populateProductType(){
+  const sel=document.getElementById('fProductType');
+  const list=customTypes[currentMode]||[];
+  sel.innerHTML='<option value="">-- Select Type --</option>'+list.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+function openTypeModal(){
+  renderTypeList();
+  document.getElementById('moTypeModal').classList.add('show');
+}
+function closeTypeModal(){
+  document.getElementById('moTypeModal').classList.remove('show');
+  populateProductType();
+}
+function renderTypeList(){
+  const list=customTypes[currentMode]||[];
+  document.getElementById('typeList').innerHTML=list.length?list.map((t,i)=>`
+    <div class="type-item" id="ti_${i}">
+      <span class="ti-name" id="tiName_${i}">${t}</span>
+      <input class="ti-edit" id="tiInput_${i}" value="${t}" onkeydown="if(event.key==='Enter')saveTypeEdit(${i})">
+      <button class="ti-btn ti-edit-btn" id="tiEditBtn_${i}" onclick="startTypeEdit(${i})">✏️</button>
+      <button class="ti-btn ti-save-btn" id="tiSaveBtn_${i}" onclick="saveTypeEdit(${i})">✅</button>
+      <button class="ti-btn ti-del-btn" onclick="deleteType(${i})">🗑️</button>
+    </div>`).join('')
+  :'<div style="text-align:center;padding:20px;color:var(--ink3);font-size:12px">Koi types nahi — add karo!</div>';
+}
+function startTypeEdit(i){
+  document.getElementById('tiName_'+i).style.display='none';
+  document.getElementById('tiInput_'+i).style.display='block';
+  document.getElementById('tiEditBtn_'+i).style.display='none';
+  document.getElementById('tiSaveBtn_'+i).style.display='block';
+  document.getElementById('tiInput_'+i).focus();
+}
+function saveTypeEdit(i){
+  const val=document.getElementById('tiInput_'+i).value.trim();
+  if(!val){showToast('⚠️ Naam khali nahi ho sakta');return;}
+  customTypes[currentMode][i]=val;
+  saveCustomTypes();renderTypeList();
+  showToast('✅ Type update ho gaya!');
+}
+function deleteType(i){
+  if(!confirm('Delete kar dein: '+customTypes[currentMode][i]+'?'))return;
+  customTypes[currentMode].splice(i,1);
+  saveCustomTypes();renderTypeList();
+  showToast('🗑️ Type delete ho gaya!');
+}
+function addNewType(){
+  const val=document.getElementById('newTypeName').value.trim();
+  if(!val){showToast('⚠️ Naam likho!');return;}
+  if(customTypes[currentMode].includes(val)){showToast('⚠️ Ye type already hai!');return;}
+  customTypes[currentMode].push(val);
+  saveCustomTypes();renderTypeList();
+  document.getElementById('newTypeName').value='';
+  showToast('✅ Naya type add ho gaya: '+val);
+}
+function resetTypesToDefault(){
+  if(!confirm('Sab custom types reset ho jayenge!'))return;
+  customTypes={hf:[...DEFAULT_HF],gm:[...DEFAULT_GM]};
+  saveCustomTypes();renderTypeList();
+  showToast('🔄 Default types restore ho gaye!');
+}
+
+// ═══════════════════════════════════════
+// DATA BULK SELECT
+// ═══════════════════════════════════════
+let selectedDataIds=new Set();
+
+function toggleDataSelect(id,cb){
+  if(cb.checked)selectedDataIds.add(id);
+  else selectedDataIds.delete(id);
+  updateDataBulkBar();
+}
+function toggleDataSelectAll(masterCb){
+  const cbs=document.querySelectorAll('.data-cb');
+  cbs.forEach(cb=>{
+    cb.checked=masterCb.checked;
+    const id=parseInt(cb.dataset.id);
+    if(masterCb.checked)selectedDataIds.add(id);
+    else selectedDataIds.delete(id);
+  });
+  updateDataBulkBar();
+}
+function updateDataBulkBar(){
+  const bar=document.getElementById('dataBulkBar');
+  const count=document.getElementById('dataBulkCount');
+  if(selectedDataIds.size>0){bar.classList.remove('hidden');count.textContent=selectedDataIds.size+' selected';}
+  else{bar.classList.add('hidden');}
+}
+function clearDataSelection(){
+  selectedDataIds.clear();
+  document.querySelectorAll('.data-cb').forEach(cb=>cb.checked=false);
+  const masterCb=document.getElementById('dataSelectAll');
+  if(masterCb)masterCb.checked=false;
+  updateDataBulkBar();
+}
+function bulkDeleteData(){
+  if(!selectedDataIds.size)return;
+  if(!confirm(selectedDataIds.size+' records delete kar dein?'))return;
+  records=records.filter(r=>!selectedDataIds.has(r.id));
+  selectedDataIds.clear();saveLocal();renderData();
+  showToast('🗑️ '+selectedDataIds.size+' records delete ho gaye');
+  selectedDataIds.clear();updateDataBulkBar();
+}
+function bulkExportData(){
+  if(!selectedDataIds.size)return;
+  const selected=records.filter(r=>selectedDataIds.has(r.id));
+  const rows=[['Date','Product','Mode','Type','Qty','Total Fabric (m)','Total Cost','Unit'],...selected.map(r=>[r.date,r.productName,r.mode,r.productType,r.qty,r.totalMeters,r.totalCost,r.unit])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Selected_Records.csv';a.click();
+  showToast('📊 '+selected.length+' records export ho rahe hain!');
+}
+
+// ═══════════════════════════════════════
+// WASTAGE BULK SELECT
+// ═══════════════════════════════════════
+let selectedWastageIds=new Set();
+
+function toggleWastageSelect(name,cb){
+  if(cb.checked)selectedWastageIds.add(name);else selectedWastageIds.delete(name);
+  updateWastageBulkBar();
+}
+function toggleWastageSelectAll(masterCb){
+  const cbs=document.querySelectorAll('.wastage-cb');
+  cbs.forEach(cb=>{cb.checked=masterCb.checked;if(masterCb.checked)selectedWastageIds.add(cb.dataset.name);else selectedWastageIds.delete(cb.dataset.name);});
+  updateWastageBulkBar();
+}
+function updateWastageBulkBar(){
+  const bar=document.getElementById('wastageBulkBar');
+  const count=document.getElementById('wastageBulkCount');
+  if(bar){if(selectedWastageIds.size>0){bar.classList.remove('hidden');count.textContent=selectedWastageIds.size+' selected';}else bar.classList.add('hidden');}
+}
+function bulkExportWastage(){
+  const selected=lastFabrics.filter(f=>selectedWastageIds.has(f.name));
+  if(!selected.length)return;
+  const rows=[['Fabric','Total Req (m)','Net Used (m)','Wastage (m)','Wastage %','Wastage Cost ₹'],...selected.map(f=>[f.name,f.meters.toFixed(3),f.netM.toFixed(3),f.wastageM.toFixed(3),lastResult.wastage+'%',f.rate>0?(f.wastageM*f.rate).toFixed(2):'—'])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Selected_Wastage.csv';a.click();
+  showToast('📊 Selected wastage export ho raha hai!');
+}
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCXCdGOQ1RwjxX9e-fx_4qxU3fzyfyMa_E",
+  authDomain: "cutting-master-18d6d.firebaseapp.com",
+  databaseURL: "https://cutting-master-18d6d-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cutting-master-18d6d",
+  storageBucket: "cutting-master-18d6d.firebasestorage.app",
+  messagingSenderId: "568005866816",
+  appId: "1:568005866816:web:b19b627f487d63e1a636a5",
+  measurementId: "G-6QG8F26FQ8"
+};
+let fbDB = null;
+try { if(FIREBASE_CONFIG.apiKey){if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);fbDB=firebase.database();} } catch(e){}
+
+function initFbStatus(){
+  const dot=document.getElementById('fbDot'),txt=document.getElementById('fbTxt');
+  if(!fbDB){dot.className='fb-dot err';txt.textContent='No Firebase';return;}
+  fbDB.ref('.info/connected').on('value',s=>{
+    if(s.val()){dot.className='fb-dot ok';txt.textContent='Connected';txt.style.color='var(--green)';}
+    else{dot.className='fb-dot err';txt.textContent='Offline';txt.style.color='var(--red)';}
+  });
+}
+function fbSaveNow(){
+  if(!fbDB){showToast('❌ Firebase configure nahi hai');return;}
+  fbDB.ref('cuttingcalc/v2').set({data:JSON.stringify({records,settings}),updatedAt:new Date().toISOString()})
+    .then(()=>showToast('☁️ Firebase mein save ho gaya!'))
+    .catch(()=>showToast('❌ Save fail'));
+}
+function fbLoadNow(){
+  if(!fbDB){showToast('❌ Firebase configure nahi hai');return;}
+  fbDB.ref('cuttingcalc/v2').once('value').then(snap=>{
+    if(snap.exists()){
+      try{const d=JSON.parse(snap.val().data);
+        if(d.records){records=d.records;saveLocal();renderData();}
+        if(d.settings){settings=Object.assign(settings,d.settings);applySettings();}
+        showToast('✅ Firebase se load hua!');
+      }catch(e){showToast('❌ Parse error');}
+    }else showToast('⚠️ Firebase mein koi data nahi');
+  }).catch(()=>showToast('❌ Load fail'));
+}
+
+// ═══════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════
+let settings={company:'Your Company Name',address:'Company Address',dev:'Developer Name',contact:'+91-XXXXXXXXXX'};
+function loadSettings(){const s=localStorage.getItem('ucc2_settings');if(s)settings=Object.assign(settings,JSON.parse(s));applySettings();}
+function saveSettings(){localStorage.setItem('ucc2_settings',JSON.stringify(settings));}
+function applySettings(){
+  setText('tbCompany',settings.company);setText('tbAddress',settings.address);
+  setText('tbDev',settings.dev);setText('tbContact',settings.contact);
+}
+function editInfo(field){
+  const labels={company:'Company Name',address:'Address',dev:'Developer Name',contact:'Contact'};
+  const val=prompt(labels[field]+' edit karein:',settings[field]);
+  if(val!==null&&val.trim()){settings[field]=val.trim();saveSettings();applySettings();showToast('✅ '+labels[field]+' saved!');}
+}
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentMode='hf',currentUnit='inch';
+let records=[],lastResult=null,lastFabrics=[];
+let sortKey='date',sortDir=-1;
+let hfExtras=[],gmExtras=[];
+const HF_PRODUCTS=['Cushion Cover','Pillow Cover','Bed Sheet','Table Cloth','Table Runner','Curtain / Drape','Sofa Cover','Window Panel','Placemat','Napkin'];
+const GM_PRODUCTS=['T-Shirt','Polo Shirt','Formal Shirt','Trouser / Pant','Shorts','Kurta','Salwar Kameez','Jacket','Blazer','Skirt','Dress'];
+const SIZES=['XS','S','M','L','XL','XXL'];
+
+function toInch(v){if(currentUnit==='cm')return v/2.54;if(currentUnit==='mtr')return v*39.37;return v;}
+function fromInch(v){if(currentUnit==='cm')return v*2.54;if(currentUnit==='mtr')return v/39.37;return v;}
+function mFromIn(v){return v/39.37;}
+
+// ═══════════════════════════════════════
+// MODE & UNIT
+// ═══════════════════════════════════════
+function setMode(mode){
+  currentMode=mode;
+  document.getElementById('modeHF').classList.toggle('active',mode==='hf');
+  document.getElementById('modeGM').classList.toggle('active',mode==='gm');
+  document.getElementById('hfSection').style.display=mode==='hf'?'block':'none';
+  document.getElementById('gmSection').style.display=mode==='gm'?'block':'none';
+  populateProductType();calculate();
+}
+function setUnit(unit){
+  currentUnit=unit;
+  ['uInch','uCm','uMtr'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('u'+unit.charAt(0).toUpperCase()+unit.slice(1)).classList.add('active');
+  document.querySelectorAll('.uLabel').forEach(el=>el.textContent=unit);
+  calculate();
+}
+function populateProductType(){
+  const sel=document.getElementById('fProductType');
+  const list=currentMode==='hf'?HF_PRODUCTS:GM_PRODUCTS;
+  sel.innerHTML='<option value="">-- Select Type --</option>'+list.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+function buildSizeTable(){
+  document.getElementById('sizeTableBody').innerHTML=SIZES.map(sz=>`
+    <tr><td><strong>${sz}</strong></td>
+    <td><input type="number" id="szQty_${sz}" value="0" min="0" oninput="calculate()"></td>
+    <td><input type="number" id="szLadd_${sz}" value="0" min="0" step="0.25" oninput="calculate()"></td>
+    <td><input type="number" id="szCadd_${sz}" value="0" min="0" step="0.25" oninput="calculate()"></td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════
+// EXTRA FABRICS
+// ═══════════════════════════════════════
+function addHfExtra(){
+  const id=Date.now();hfExtras.push(id);
+  const div=document.createElement('div');div.id='hfex_'+id;div.className='fp fp-extra';
+  div.innerHTML=`<div class="fp-title" style="color:var(--orange)">➕ Extra Fabric <button class="btn btn-ghost" style="font-size:10px;padding:2px 7px" onclick="removeExtra('hf',${id})">✕</button></div>
+    <div class="fg fg-auto">
+      <div class="field"><label>Name</label><input type="text" id="hfex_name_${id}" placeholder="Border fabric..."></div>
+      <div class="field"><label>Length (<span class="uLabel">${currentUnit}</span>)</label><input type="number" id="hfex_len_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+      <div class="field"><label>Width (<span class="uLabel">${currentUnit}</span>)</label><input type="number" id="hfex_w_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+      <div class="field"><label>Rate (₹/m)</label><input type="number" id="hfex_rate_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+    </div>`;
+  document.getElementById('hfExtraList').appendChild(div);
+}
+function addGmExtra(){
+  const id=Date.now();gmExtras.push(id);
+  const div=document.createElement('div');div.id='gmex_'+id;div.className='fp fp-extra';
+  div.innerHTML=`<div class="fp-title" style="color:var(--orange)">➕ Extra Fabric <button class="btn btn-ghost" style="font-size:10px;padding:2px 7px" onclick="removeExtra('gm',${id})">✕</button></div>
+    <div class="fg fg-auto">
+      <div class="field"><label>Name</label><input type="text" id="gmex_name_${id}" placeholder="Pocket lining..."></div>
+      <div class="field"><label>Qty (<span class="uLabel">${currentUnit}</span>)</label><input type="number" id="gmex_qty_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+      <div class="field"><label>Width (<span class="uLabel">${currentUnit}</span>)</label><input type="number" id="gmex_w_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+      <div class="field"><label>Rate (₹/m)</label><input type="number" id="gmex_rate_${id}" value="0" min="0" step="0.5" oninput="calculate()"></div>
+    </div>`;
+  document.getElementById('gmExtraList').appendChild(div);
+}
+function removeExtra(mode,id){
+  const el=document.getElementById((mode==='hf'?'hfex_':'gmex_')+id);if(el)el.remove();
+  if(mode==='hf')hfExtras=hfExtras.filter(x=>x!==id);else gmExtras=gmExtras.filter(x=>x!==id);
+  calculate();
+}
+
+// ═══════════════════════════════════════
+// CALCULATE
+// ═══════════════════════════════════════
+function getNum(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function getStr(id){return document.getElementById(id)?.value?.trim()||'';}
+
+function calculate(){if(currentMode==='hf')calculateHF();else calculateGM();}
+
+function calculateHF(){
+  const L=toInch(getNum('hfL')),W=toInch(getNum('hfW'));
+  const sT=toInch(getNum('hfST')),sB=toInch(getNum('hfSB'));
+  const sL=toInch(getNum('hfSL')),sR=toInch(getNum('hfSR'));
+  const cutL=L+sT+sB,cutW=W+sL+sR;
+  const bkSeam=toInch(getNum('hfBackSeam'));
+  const lineSeam=toInch(getNum('hfLineSeam'));
+  const fabricW=toInch(getNum('fFabricWidth'));
+  const qty=getNum('fQty')||1;
+  const wPct=1+(getNum('fWastage')/100);
+  const frill=parseInt(getStr('hfFrill'))/100||0;
+
+  const ppr=Math.max(1,Math.floor(fabricW/cutW));
+  const frontIn=(Math.ceil(cutL)*qty/ppr)*wPct;
+  const backCutL=cutL+bkSeam*2;
+  const backIn=(Math.ceil(backCutL)*qty/ppr)*wPct;
+  const lineIn=lineSeam>0?(Math.ceil(cutL+lineSeam*2)*qty/ppr)*wPct:0;
+  const frillLen=frill>0?(L*2+W*2)*frill:0;
+  const frillIn=frillLen>0?(frillLen/fabricW)*qty*wPct:0;
+  const pipeLen=toInch(getNum('hfPipeLen'));
+  const pipeW=toInch(getNum('hfPipeW'));
+  const pipeIn=pipeLen>0?((pipeLen*(pipeW+2))/fabricW)*qty*wPct:0;
+
+  let extraItems=[];
+  hfExtras.forEach(id=>{
+    const name=getStr('hfex_name_'+id)||'Extra';
+    const len=toInch(getNum('hfex_len_'+id));
+    const w=toInch(getNum('hfex_w_'+id));
+    const rate=getNum('hfex_rate_'+id);
+    const meters=len>0?mFromIn((len*w/fabricW)*qty*wPct):0;
+    if(meters>0)extraItems.push({name,meters,rate,cost:meters*rate});
+  });
+
+  const frontM=mFromIn(frontIn),backM=mFromIn(backIn);
+  const lineM=mFromIn(lineIn),frillM=mFromIn(frillIn),pipeM=mFromIn(pipeIn);
+  const extraM=extraItems.reduce((s,e)=>s+e.meters,0);
+
+  const fabrics=[
+    {name:getStr('hfFrontName')||'Front Fabric',meters:frontM,rate:getNum('hfFrontRate'),color:'#2d7a4f',icon:'🟢',used:frontM,ordered:frontM},
+    {name:getStr('hfBackName')||'Back Fabric',meters:backM,rate:getNum('hfBackRate'),color:'#2563a8',icon:'🔵',used:backM,ordered:backM},
+    {name:getStr('hfPipeName')||'Piping Fabric',meters:pipeM,rate:getNum('hfPipeRate'),color:'#c17f3a',icon:'〰️',used:pipeM,ordered:pipeM},
+    {name:'Lining',meters:lineM,rate:getNum('hfLineRate'),color:'#6b46c1',icon:'🔶',used:lineM,ordered:lineM},
+    {name:'Frill Fabric',meters:frillM,rate:getNum('hfFrillRate'),color:'#1a7a6e',icon:'🌊',used:frillM,ordered:frillM},
+    ...extraItems.map(e=>({name:e.name,meters:e.meters,rate:e.rate,color:'#d4600a',icon:'➕',used:e.meters,ordered:e.meters}))
+  ].filter(f=>f.meters>0);
+
+  fabrics.forEach(f=>{f.cost=f.meters*f.rate;f.wastageM=f.meters*(getNum('fWastage')/100);f.netM=f.meters-f.wastageM;});
+  const totalM=fabrics.reduce((s,f)=>s+f.meters,0);
+  const totalCost=fabrics.reduce((s,f)=>s+f.cost,0);
+
+  document.getElementById('hfDimDisplay').textContent=fromInch(cutL).toFixed(1)+' × '+fromInch(cutW).toFixed(1)+' '+currentUnit;
+
+  lastFabrics=fabrics;
+  lastResult={mode:'hf',unit:currentUnit,productName:getStr('fProductName'),productType:getStr('fProductType'),
+    qty,fabricWidth:getNum('fFabricWidth'),wastage:getNum('fWastage'),
+    cutL:fromInch(cutL).toFixed(2),cutW:fromInch(cutW).toFixed(2),ppr,
+    totalMeters:totalM.toFixed(3),totalCost:totalCost.toFixed(2),
+    fabrics:fabrics.map(f=>({...f})),remarks:getStr('fRemarks'),date:new Date().toLocaleString('en-IN')};
+}
+
+function calculateGM(){
+  const bodyLen=toInch(getNum('gmLength')),chest=toInch(getNum('gmChest'));
+  const sleeveLen=toInch(getNum('gmSleeve')),sleeveW=toInch(getNum('gmSleeveW'));
+  const sBody=toInch(getNum('gmSeamBody')),sSleeve=toInch(getNum('gmSeamSleeve'));
+  const sHem=toInch(getNum('gmSeamHem'));
+  const shrink=1+(getNum('gmShrink')/100);
+  const fabricW=toInch(getNum('fFabricWidth'));
+  const qty=getNum('fQty')||1;
+  const wPct=1+(getNum('fWastage')/100);
+
+  let totalSzQty=0;
+  SIZES.forEach(sz=>{totalSzQty+=getNum('szQty_'+sz);});
+  const effQty=totalSzQty>0?totalSzQty:qty;
+
+  const cutBodyL=(bodyLen+sBody*2+sHem)*shrink,cutBodyW=(chest+sBody*2)*shrink;
+  const cutSlvL=(sleeveLen+sSleeve*2)*shrink,cutSlvW=(sleeveW+sSleeve*2)*shrink;
+  const pprFront=Math.max(1,Math.floor(fabricW/cutBodyW));
+  const pprSleeve=Math.max(1,Math.floor(fabricW/cutSlvW));
+
+  const frontIn=(cutBodyL*Math.ceil(effQty/pprFront))*wPct;
+  const backIn=(cutBodyL*Math.ceil(effQty/pprFront))*wPct;
+  const slvIn=sleeveLen>0?(cutSlvL*2*Math.ceil(effQty/pprSleeve))*wPct:0;
+  const interQty=toInch(getNum('gmInterQty'));
+  const interIn=interQty>0?(interQty*effQty/fabricW)*wPct:0;
+
+  let extraItems=[];
+  gmExtras.forEach(id=>{
+    const name=getStr('gmex_name_'+id)||'Extra';
+    const q=toInch(getNum('gmex_qty_'+id));
+    const w=toInch(getNum('gmex_w_'+id));
+    const rate=getNum('gmex_rate_'+id);
+    const meters=q>0?mFromIn((q*w/fabricW)*wPct):0;
+    if(meters>0)extraItems.push({name,meters,rate,cost:meters*rate});
+  });
+
+  const frontM=mFromIn(frontIn),backM=mFromIn(backIn),slvM=mFromIn(slvIn),interM=mFromIn(interIn);
+  const wPctVal=getNum('fWastage')/100;
+
+  const fabrics=[
+    {name:getStr('gmFrontName')||'Front Body',meters:frontM,rate:getNum('gmFrontRate'),color:'#2d7a4f',icon:'🟢'},
+    {name:getStr('gmBackName')||'Back Body',meters:backM,rate:getNum('gmBackRate'),color:'#2563a8',icon:'🔵'},
+    {name:getStr('gmSleeveName')||'Sleeve',meters:slvM,rate:getNum('gmSleeveRate'),color:'#1a7a6e',icon:'💪'},
+    {name:getStr('gmInterName')||'Interlining',meters:interM,rate:getNum('gmInterRate'),color:'#c0392b',icon:'🔶'},
+    ...extraItems.map(e=>({name:e.name,meters:e.meters,rate:e.rate,color:'#d4600a',icon:'➕'}))
+  ].filter(f=>f.meters>0);
+
+  fabrics.forEach(f=>{f.cost=f.meters*f.rate;f.wastageM=f.meters*wPctVal;f.netM=f.meters-f.wastageM;});
+  const totalM=fabrics.reduce((s,f)=>s+f.meters,0);
+  const totalCost=fabrics.reduce((s,f)=>s+f.cost,0);
+
+  lastFabrics=fabrics;
+  lastResult={mode:'gm',unit:currentUnit,productName:getStr('fProductName'),productType:getStr('fProductType'),
+    qty:effQty,fabricWidth:getNum('fFabricWidth'),wastage:getNum('fWastage'),
+    cutBodyL:fromInch(cutBodyL).toFixed(2),cutBodyW:fromInch(cutBodyW).toFixed(2),
+    cutSlvL:sleeveLen>0?fromInch(cutSlvL).toFixed(2):'—',cutSlvW:sleeveLen>0?fromInch(cutSlvW).toFixed(2):'—',
+    ppr:pprFront,totalMeters:totalM.toFixed(3),totalCost:totalCost.toFixed(2),
+    fabrics:fabrics.map(f=>({...f})),remarks:getStr('fRemarks'),date:new Date().toLocaleString('en-IN')};
+}
+
+// ═══════════════════════════════════════
+// RENDER RESULT
+// ═══════════════════════════════════════
+function renderResult(){
+  if(!lastResult){return;}
+  const r=lastResult;const isHF=r.mode==='hf';const u=r.unit;
+  const colors=['rc-green','rc-blue','rc-amber','rc-purple','rc-teal','rc-orange','rc-red'];
+
+  const fabricCards=r.fabrics.map((f,i)=>`
+    <div class="res-card ${colors[i%colors.length]}">
+      <div class="res-icon">${f.icon}</div>
+      <div class="res-val">${f.meters.toFixed(3)} m</div>
+      <div class="res-lbl">${f.name}</div>
+      ${f.rate>0?`<div style="font-size:10px;color:var(--ink3);margin-top:2px">₹${f.cost.toFixed(2)}</div>`:''}
+    </div>`).join('');
+
+  const summaryRows=isHF?[
+    ['Product',r.productName||'—'],['Type',r.productType||'—'],['Quantity',r.qty+' pcs'],
+    ['Cut Size',r.cutL+' × '+r.cutW+' '+u],['Pieces per Row',r.ppr],
+    ['Wastage',r.wastage+'%'],['Fabric Width',r.fabricWidth+' '+u],
+    ['Total Fabric',r.totalMeters+' meters'],['TOTAL COST',r.totalCost>0?'₹ '+r.totalCost:'—'],
+  ]:[
+    ['Product',r.productName||'—'],['Type',r.productType||'—'],['Total Qty',r.qty+' pcs'],
+    ['Body Cut Size',r.cutBodyL+' × '+r.cutBodyW+' '+u],
+    ['Sleeve Cut Size',r.cutSlvL!=='—'?r.cutSlvL+' × '+r.cutSlvW+' '+u:'—'],
+    ['Wastage',r.wastage+'%'],['Fabric Width',r.fabricWidth+' '+u],
+    ['Total Fabric',r.totalMeters+' meters'],['TOTAL COST',r.totalCost>0?'₹ '+r.totalCost:'—'],
+  ];
+
+  const fabricTable=`<div class="card"><div class="card-head" style="border-left:4px solid var(--amber)"><span>🧵</span><span class="card-title">Fabric-wise Breakdown</span></div><div class="card-body"><div class="tbl-wrap"><table class="fc-table"><thead><tr><th>Fabric</th><th>Meters Required</th><th>Net (after wastage)</th><th>Wastage (m)</th><th>Rate ₹/m</th><th>Cost ₹</th></tr></thead><tbody>
+    ${r.fabrics.map(f=>`<tr><td>${f.icon} <strong>${f.name}</strong></td><td style="font-family:'DM Mono',monospace">${f.meters.toFixed(3)}</td><td style="font-family:'DM Mono',monospace;color:var(--green)">${f.netM.toFixed(3)}</td><td style="font-family:'DM Mono',monospace;color:var(--red)">${f.wastageM.toFixed(3)}</td><td style="font-family:'DM Mono',monospace">${f.rate>0?'₹'+f.rate:'—'}</td><td style="font-family:'DM Mono',monospace;font-weight:700">${f.rate>0?'₹'+f.cost.toFixed(2):'—'}</td></tr>`).join('')}
+    <tr><td><strong>TOTAL</strong></td><td style="font-family:'DM Mono',monospace"><strong>${r.totalMeters}</strong></td><td></td><td></td><td></td><td style="font-family:'DM Mono',monospace;color:var(--amber)"><strong>${r.totalCost>0?'₹'+r.totalCost:'—'}</strong></td></tr>
+    </tbody></table></div></div></div>`;
+
+  document.getElementById('resultContent').innerHTML=`
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-family:'Playfair Display',serif;font-size:20px;color:var(--amber)">📊 Cutting Result</span>
+      <span class="badge ${isHF?'badge-hf':'badge-gm'}">${isHF?'🏠 Home Furnishing':'👕 Garments'}</span>
+      <span style="font-size:11px;color:var(--ink3);margin-left:auto">${r.date}</span>
+    </div>
+    <div class="res-grid">${fabricCards}
+      <div class="res-card rc-amber" style="border:2px solid var(--amber3)">
+        <div class="res-icon">📦</div>
+        <div class="res-val" style="font-size:18px">${r.totalMeters} m</div>
+        <div class="res-lbl">TOTAL FABRIC</div>
+        ${r.totalCost>0?`<div style="font-size:12px;font-weight:700;color:var(--amber);margin-top:4px">₹ ${r.totalCost}</div>`:''}
+      </div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-title">📋 Full Summary — ${r.productName||'Untitled'}</div>
+      ${summaryRows.map(([l,v])=>`<div class="sum-row"><span class="lbl">${l}</span><span class="val">${v}</span></div>`).join('')}
+    </div>
+    ${fabricTable}`;
+  document.getElementById('resultBtns').style.display='flex';
+}
+
+// ═══════════════════════════════════════
+// DIAGRAM
+// ═══════════════════════════════════════
+function drawDiagram(){
+  calculate();
+  const canvas=document.getElementById('diagramCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=720;canvas.height=480;
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#faf7f2';ctx.fillRect(0,0,W,H);
+
+  if(!lastResult){
+    ctx.fillStyle='#8a7968';ctx.font='15px DM Sans,sans-serif';ctx.textAlign='center';
+    ctx.fillText('Pehle data bharo aur Calculate karo',W/2,H/2);
+    document.getElementById('diagramLegend').innerHTML='';return;
+  }
+
+  const r=lastResult;const isHF=r.mode==='hf';
+  const wPct=parseFloat(r.wastage)/100;
+  const COLORS={front:'#2d7a4f',back:'#2563a8',seam:'#c17f3a',piping:'#d4600a',sleeve:'#1a7a6e',waste:'#e74c3c'};
+  const marginL=40,marginT=70,fabricDisplayW=640,fabricH=isHF?190:175;
+
+  // Title
+  ctx.fillStyle='#1a1410';ctx.font='bold 12px DM Sans,sans-serif';ctx.textAlign='left';
+  ctx.fillText('✂️ CUTTING LAYOUT — '+(r.productName||'Untitled'),marginL,20);
+  ctx.fillStyle='#8a7968';ctx.font='9px DM Mono,monospace';
+  ctx.fillText((isHF?'🏠 HF':'👕 GM')+' | Qty: '+r.qty+' pcs | Width: '+r.fabricWidth+' '+r.unit+' | Wastage: '+r.wastage+'%',marginL,34);
+
+  // Width arrow
+  ctx.fillStyle='#8a7968';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+  ctx.fillText('◄── Fabric Width: '+r.fabricWidth+' '+r.unit+' ──►',marginL+fabricDisplayW/2,marginT-20);
+  ctx.strokeStyle='#c8bfaf';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(marginL,marginT-10);ctx.lineTo(marginL+fabricDisplayW,marginT-10);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Fabric background
+  ctx.fillStyle='#f5f0e8';ctx.fillRect(marginL,marginT,fabricDisplayW,fabricH);
+  ctx.strokeStyle='#c8bfaf';ctx.lineWidth=1.5;ctx.strokeRect(marginL,marginT,fabricDisplayW,fabricH);
+  // Grid
+  ctx.strokeStyle='#e8e0d0';ctx.lineWidth=0.4;
+  for(let x=marginL+40;x<marginL+fabricDisplayW;x+=40){ctx.beginPath();ctx.moveTo(x,marginT);ctx.lineTo(x,marginT+fabricH);ctx.stroke();}
+  for(let y=marginT+30;y<marginT+fabricH;y+=30){ctx.beginPath();ctx.moveTo(marginL,y);ctx.lineTo(marginL+fabricDisplayW,y);ctx.stroke();}
+
+  // Calculate layouts
+  function getLayout(){
+    if(isHF){
+      const cutW=parseFloat(r.cutW)||20,cutL=parseFloat(r.cutL)||20;
+      const fw=parseFloat(r.fabricWidth)||44;
+      const ppr=Math.max(1,Math.floor(fw/cutW));
+      const pw=Math.min((fabricDisplayW/fw)*cutW,fabricDisplayW/3-8);
+      const ph=Math.min(fabricH*0.65,150);
+      const panels=[];
+      for(let i=0;i<Math.min(ppr,3);i++){
+        panels.push({x:marginL+i*(pw+4)+4,y:marginT+10,w:pw,h:ph,label:'FRONT',sub:r.cutL+'x'+r.cutW+' '+r.unit,color:COLORS.front,seam:true});
+      }
+      for(let i=0;i<Math.min(ppr,2);i++){
+        const bh=Math.min(fabricH-ph-22,55);
+        if(bh>15)panels.push({x:marginL+i*(pw+4)+4,y:marginT+ph+14,w:pw,h:bh,label:'BACK',sub:r.cutL+'x'+r.cutW,color:COLORS.back,seam:false});
+      }
+      const usedPx=Math.min(ppr,3)*(pw+4);
+      return{panels,wasteX:marginL+usedPx+4,wasteW:fabricDisplayW-usedPx-8,ppr};
+    } else {
+      const bL=Math.min(parseFloat(r.cutBodyL||28)*6,fabricH-18);
+      const bW=Math.min(parseFloat(r.cutBodyW||22)*6,115);
+      const sL=r.cutSlvL&&r.cutSlvL!=='—'?Math.min(parseFloat(r.cutSlvL)*6,fabricH-18):0;
+      const sW=sL>0?Math.min(parseFloat(r.cutSlvW||8)*6,60):0;
+      const panels=[];
+      panels.push({x:marginL+6,y:marginT+8,w:bW,h:bL,label:'FRONT',sub:r.cutBodyL+'x'+r.cutBodyW,color:COLORS.front,seam:true});
+      panels.push({x:marginL+bW+14,y:marginT+8,w:bW,h:bL,label:'BACK',sub:r.cutBodyL+'x'+r.cutBodyW,color:COLORS.back,seam:true});
+      if(sL>0){
+        panels.push({x:marginL+bW*2+22,y:marginT+8,w:sW,h:sL,label:'SLV 1',sub:r.cutSlvL+'x'+r.cutSlvW,color:COLORS.sleeve,seam:false});
+        panels.push({x:marginL+bW*2+22+sW+6,y:marginT+8,w:sW,h:sL,label:'SLV 2',sub:'',color:COLORS.sleeve,seam:false});
+      }
+      const last=panels[panels.length-1];
+      const usedPx=(last.x-marginL)+last.w+4;
+      return{panels,wasteX:marginL+usedPx+4,wasteW:fabricDisplayW-usedPx-8,ppr:2};
+    }
+  }
+
+  const layout=getLayout();
+
+  // Draw WASTAGE AREA (hatched red)
+  const wx=layout.wasteX,wy=marginT,ww=Math.max(layout.wasteW,10),wh=fabricH;
+  if(ww>10){
+    ctx.fillStyle='rgba(231,76,60,0.07)';ctx.fillRect(wx,wy,ww,wh);
+    ctx.strokeStyle=COLORS.waste;ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.strokeRect(wx,wy,ww,wh);
+    // Hatch lines
+    ctx.save();ctx.beginPath();ctx.rect(wx,wy,ww,wh);ctx.clip();
+    ctx.strokeStyle='rgba(231,76,60,0.22)';ctx.lineWidth=1;
+    for(let i=-wh;i<ww+wh;i+=10){ctx.beginPath();ctx.moveTo(wx+i,wy);ctx.lineTo(wx+i+wh,wy+wh);ctx.stroke();}
+    ctx.restore();
+    if(ww>38){
+      ctx.fillStyle=COLORS.waste;ctx.font='bold 10px DM Sans,sans-serif';ctx.textAlign='center';
+      ctx.fillText('⚠️ WASTE',wx+ww/2,wy+wh/2-10);
+      ctx.font='9px DM Mono,monospace';
+      ctx.fillText(r.wastage+'%',wx+ww/2,wy+wh/2+4);
+      ctx.fillText((parseFloat(r.totalMeters)*wPct).toFixed(3)+'m',wx+ww/2,wy+wh/2+18);
+    }
+  }
+
+  // Draw PIECES
+  layout.panels.forEach(p=>{
+    ctx.fillStyle=p.color+'22';ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.strokeStyle=p.color;ctx.lineWidth=2;ctx.setLineDash([]);ctx.strokeRect(p.x,p.y,p.w,p.h);
+    if(p.seam&&p.w>28&&p.h>28){
+      ctx.strokeStyle=COLORS.seam+'99';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.strokeRect(p.x+7,p.y+7,p.w-14,p.h-14);ctx.setLineDash([]);
+    }
+    if(p.w>24&&p.h>22){
+      ctx.fillStyle=p.color;ctx.font='bold '+(p.w>55?'10':'8')+'px DM Sans,sans-serif';ctx.textAlign='center';
+      ctx.fillText(p.label,p.x+p.w/2,p.y+p.h/2+(p.h>45?-6:3));
+      if(p.h>45&&p.sub){ctx.font='8px DM Mono,monospace';ctx.fillStyle='#4a3f35';ctx.fillText(p.sub,p.x+p.w/2,p.y+p.h/2+8);}
+    }
+  });
+
+  // WASTAGE BAR
+  const bY=marginT+fabricH+14;
+  const usedW2=fabricDisplayW*(1-wPct);const wasteW2=fabricDisplayW*wPct;
+  ctx.fillStyle=COLORS.front+'cc';ctx.fillRect(marginL,bY,usedW2,16);
+  ctx.fillStyle=COLORS.waste+'cc';ctx.fillRect(marginL+usedW2,bY,wasteW2,16);
+  ctx.strokeStyle='#c8bfaf';ctx.lineWidth=1;ctx.strokeRect(marginL,bY,fabricDisplayW,16);
+  ctx.fillStyle='#fff';ctx.font='bold 8px DM Sans,sans-serif';ctx.textAlign='center';
+  if(usedW2>70)ctx.fillText('✅ USED '+(100-parseFloat(r.wastage))+'%  ('+((parseFloat(r.totalMeters))*(1-wPct)).toFixed(3)+'m)',marginL+usedW2/2,bY+11);
+  if(wasteW2>50)ctx.fillText('⚠️ WASTE '+r.wastage+'%  ('+(parseFloat(r.totalMeters)*wPct).toFixed(3)+'m)',marginL+usedW2+wasteW2/2,bY+11);
+
+  // STATS ROW
+  const stY=bY+24;
+  const totalM=parseFloat(r.totalMeters);
+  const netM=(totalM*(1-wPct)).toFixed(3);
+  const wastM=(totalM*wPct).toFixed(3);
+  const stats=[
+    {l:'Total Ordered',v:totalM.toFixed(3)+' m',c:'#1a1410'},
+    {l:'Net Used',v:netM+' m',c:COLORS.front},
+    {l:'Wastage',v:wastM+' m',c:COLORS.waste},
+    {l:'Pcs/Row',v:layout.ppr+' pcs',c:'#4a3f35'},
+    {l:'Cut Size',v:(isHF?r.cutL+'×'+r.cutW:r.cutBodyL+'×'+r.cutBodyW)+' '+r.unit,c:'#4a3f35'},
+  ];
+  const cw=fabricDisplayW/stats.length;
+  stats.forEach((s,i)=>{
+    const sx=marginL+i*cw;
+    ctx.fillStyle='#f5f0e8';ctx.fillRect(sx+1,stY,cw-2,42);
+    ctx.strokeStyle='#ddd5c5';ctx.lineWidth=1;ctx.strokeRect(sx+1,stY,cw-2,42);
+    ctx.fillStyle='#8a7968';ctx.font='8px DM Sans,sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.l,sx+cw/2,stY+11);
+    ctx.fillStyle=s.c;ctx.font='bold 10px DM Mono,monospace';ctx.fillText(s.v,sx+cw/2,stY+28);
+  });
+
+  // LEGEND
+  const lgY=stY+52;
+  const lgItems=isHF?[
+    {c:COLORS.front,l:'Front Fabric'},{c:COLORS.back,l:'Back Fabric'},
+    {c:COLORS.seam,l:'Seam Line'},{c:COLORS.waste,l:'Wastage Area'}
+  ]:[
+    {c:COLORS.front,l:'Front Body'},{c:COLORS.back,l:'Back Body'},
+    {c:COLORS.sleeve,l:'Sleeve'},{c:COLORS.seam,l:'Seam Line'},{c:COLORS.waste,l:'Wastage'}
+  ];
+  const lgW=fabricDisplayW/lgItems.length;
+  lgItems.forEach((lg,i)=>{
+    const lx=marginL+i*lgW;
+    ctx.fillStyle=lg.c;ctx.fillRect(lx,lgY,11,11);
+    ctx.strokeStyle='#ccc';ctx.lineWidth=0.5;ctx.strokeRect(lx,lgY,11,11);
+    ctx.fillStyle='#4a3f35';ctx.font='8px DM Sans,sans-serif';ctx.textAlign='left';
+    ctx.fillText(lg.l,lx+15,lgY+9);
+  });
+  // Watermark
+  ctx.fillStyle='#c8bfaf';ctx.font='8px DM Sans,sans-serif';ctx.textAlign='right';
+  ctx.fillText(settings.company+' | '+new Date().toLocaleDateString('en-IN'),marginL+fabricDisplayW,lgY+22);
+
+  document.getElementById('diagramLegend').innerHTML=lgItems.map(lg=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${lg.c}"></div>${lg.l}</div>`
+  ).join('')+`<div style="margin-left:auto;font-size:11px;color:var(--ink3)">🔴 Striped = Wastage Area</div>`;
+}
+
+
+function downloadDiagram(){
+  drawDiagram();
+  const canvas=document.getElementById('diagramCanvas');
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='Cutting_Diagram_'+(lastResult?.productName||'diagram')+'.png';
+  a.click();showToast('💾 Diagram download ho raha hai!');
+}
+
+// ═══════════════════════════════════════
+// WASTAGE REPORT
+// ═══════════════════════════════════════
+function renderWastage(){
+  if(!lastResult||!lastFabrics.length){return;}
+  const r=lastResult;
+  const wPct=r.wastage;
+
+  const cards=lastFabrics.map((f,i)=>`
+    <div class="wcard">
+      <div class="wcard-name">${f.icon} ${f.name}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">Required: <strong style="color:var(--ink)">${f.meters.toFixed(3)} m</strong></div>
+      <div class="wcard-bar"><div class="wcard-fill" style="width:${wPct}%"></div></div>
+      <div class="wcard-stats">
+        <span class="used">✅ Used: ${f.netM.toFixed(3)} m</span>
+        <span class="wasted">⚠️ Waste: ${f.wastageM.toFixed(3)} m</span>
+      </div>
+      ${f.rate>0?`<div style="font-size:11px;margin-top:6px;color:var(--red)">💸 Wastage Cost: ₹ ${(f.wastageM*f.rate).toFixed(2)}</div>`:''}
+    </div>`).join('');
+
+  const totalWasteM=lastFabrics.reduce((s,f)=>s+f.wastageM,0);
+  const totalWasteCost=lastFabrics.reduce((s,f)=>s+(f.wastageM*f.rate),0);
+  const totalM=parseFloat(r.totalMeters);
+
+  document.getElementById('wastageContent').innerHTML=`
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-family:'Playfair Display',serif;font-size:20px;color:var(--amber)">♻️ Wastage Report</span>
+      <span class="badge ${r.mode==='hf'?'badge-hf':'badge-gm'}">${r.productName||'—'}</span>
+      <span style="font-size:11px;color:var(--ink3)">Wastage: ${wPct}%</span>
+    </div>
+
+    <!-- Summary stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:18px">
+      <div class="res-card rc-orange"><div class="res-icon">📦</div><div class="res-val">${totalM.toFixed(3)} m</div><div class="res-lbl">Total Ordered</div></div>
+      <div class="res-card rc-green"><div class="res-icon">✅</div><div class="res-val">${(totalM-totalWasteM).toFixed(3)} m</div><div class="res-lbl">Net Used</div></div>
+      <div class="res-card rc-red"><div class="res-icon">⚠️</div><div class="res-val">${totalWasteM.toFixed(3)} m</div><div class="res-lbl">Total Wastage</div></div>
+      <div class="res-card rc-amber"><div class="res-icon">💸</div><div class="res-val" style="font-size:18px">${totalWasteCost>0?'₹'+totalWasteCost.toFixed(2):'—'}</div><div class="res-lbl">Wastage Cost</div></div>
+    </div>
+
+    <!-- Per fabric cards -->
+    <div class="wastage-grid">${cards}</div>
+
+    <!-- Wastage detail table -->
+    <div class="card">
+      <div class="card-head" style="border-left:4px solid var(--red)"><span>📊</span><span class="card-title">Fabric-wise Wastage Detail</span></div>
+      <div class="card-body">
+        <!-- Wastage Bulk Bar -->
+        <div class="bulk-bar hidden" id="wastageBulkBar">
+          <span class="bulk-count" id="wastageBulkCount">0 selected</span>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="bulkExportWastage()">📊 Export Selected</button>
+          <button class="btn btn-ghost" style="font-size:11px" onclick="document.querySelectorAll('.wastage-cb').forEach(c=>{c.checked=false});selectedWastageIds.clear();updateWastageBulkBar()">✕ Clear</button>
+        </div>
+        <div class="tbl-wrap">
+        <table class="wt">
+          <thead><tr>
+            <th class="no-print cb-wrap"><input type="checkbox" onchange="toggleWastageSelectAll(this)"></th>
+            <th>Fabric</th><th>Total Req (m)</th><th>Net Used (m)</th><th>Wastage (m)</th><th>Wastage %</th><th>Wastage Cost ₹</th>
+          </tr></thead>
+          <tbody>${lastFabrics.map(f=>`
+            <tr>
+              <td class="no-print cb-wrap"><input type="checkbox" class="wastage-cb" data-name="${f.name}" onchange="toggleWastageSelect('${f.name}',this)"></td>
+              <td>${f.icon} <strong>${f.name}</strong></td>
+              <td>${f.meters.toFixed(3)}</td>
+              <td style="color:var(--green)">${f.netM.toFixed(3)}</td>
+              <td style="color:var(--red)">${f.wastageM.toFixed(3)}</td>
+              <td>${wPct}%</td>
+              <td>${f.rate>0?'₹'+(f.wastageM*f.rate).toFixed(2):'—'}</td>
+            </tr>`).join('')}
+            <tr>
+              <td class="no-print"></td>
+              <td><strong>TOTAL</strong></td>
+              <td><strong>${totalM.toFixed(3)}</strong></td>
+              <td style="color:var(--green)"><strong>${(totalM-totalWasteM).toFixed(3)}</strong></td>
+              <td style="color:var(--red)"><strong>${totalWasteM.toFixed(3)}</strong></td>
+              <td>—</td>
+              <td><strong>${totalWasteCost>0?'₹'+totalWasteCost.toFixed(2):'—'}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--cream2);border-color:var(--amber3)">
+      <div class="card-body" style="font-size:12px;color:var(--ink2)">
+        💡 <strong>Wastage Kaise Reduce Karein:</strong><br>
+        ✅ Nesting better karein — pieces ek doosre ke saath fit karein<br>
+        ✅ Fabric width badh jaye to wastage kam hogi<br>
+        ✅ Same fabric ke multiple items ek saath cut karein<br>
+        ✅ Cutting master se layout approve karayen pehle
+      </div>
+    </div>`;
+  document.getElementById('wastageBtns').style.display='flex';
+}
+
+function exportWastageCSV(){
+  if(!lastResult||!lastFabrics.length)return;
+  const rows=[['Fabric','Total Req (m)','Net Used (m)','Wastage (m)','Wastage %','Wastage Cost ₹']];
+  lastFabrics.forEach(f=>rows.push([f.name,f.meters.toFixed(3),f.netM.toFixed(3),f.wastageM.toFixed(3),lastResult.wastage+'%',f.rate>0?(f.wastageM*f.rate).toFixed(2):'—']));
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Wastage_Report_'+(lastResult.productName||'report')+'.csv';a.click();
+  showToast('📊 Wastage report download ho raha hai!');
+}
+
+// ═══════════════════════════════════════
+// SAVE / DATA
+// ═══════════════════════════════════════
+function saveToData(){
+  if(!lastResult){showToast('⚠️ Pehle calculate karo!');return;}
+  records.unshift({...lastResult,id:Date.now(),fabrics:lastFabrics.map(f=>({...f}))});
+  saveLocal();renderData();showToast('✅ Data sheet mein save ho gaya!');showTab('data');
+}
+function deleteRecord(id){records=records.filter(r=>r.id!==id);saveLocal();renderData();showToast('🗑️ Deleted');}
+function loadToInput(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  setMode(r.mode);setVal('fProductName',r.productName);setVal('fQty',r.qty);setVal('fRate',0);
+  showTab('input');calculate();showToast('📝 Input mein load ho gaya!');
+}
+function clearAllData(){if(!confirm('Sab records delete kar dein?'))return;records=[];saveLocal();renderData();showToast('🗑️ Cleared');}
+function sortData(key){if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=-1;}renderData();}
+
+function renderData(){
+  const q=(document.getElementById('dataSearch')?.value||'').toLowerCase();
+  const mf=document.getElementById('dataFilterMode')?.value||'';
+  let filtered=records.filter(r=>{
+    const mq=!q||(r.productName||'').toLowerCase().includes(q)||(r.productType||'').toLowerCase().includes(q);
+    return mq&&(!mf||r.mode===mf);
+  });
+  filtered.sort((a,b)=>{
+    if(sortKey==='date')return(b.id-a.id)*sortDir;
+    if(sortKey==='qty')return(a.qty-b.qty)*sortDir;
+    if(sortKey==='fabric')return(parseFloat(a.totalMeters)-parseFloat(b.totalMeters))*sortDir;
+    if(sortKey==='name')return(a.productName||'').localeCompare(b.productName||'')*sortDir;
+    return 0;
+  });
+  setText('totalRecords',records.length+' records');
+  setText('dataCount',records.length);
+  const tbody=document.getElementById('dataBody');
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--ink3)">📭 Koi record nahi</td></tr>`;return;}
+  tbody.innerHTML=filtered.map(r=>`
+    <tr class="${selectedDataIds.has(r.id)?'sel-row':''}">
+      <td class="no-print cb-wrap"><input type="checkbox" class="data-cb" data-id="${r.id}" ${selectedDataIds.has(r.id)?'checked':''} onchange="toggleDataSelect(${r.id},this)"></td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${r.date}</td>
+      <td style="font-weight:700">${r.productName||'—'}</td>
+      <td><span class="badge ${r.mode==='hf'?'badge-hf':'badge-gm'}">${r.mode==='hf'?'🏠 HF':'👕 GM'}</span></td>
+      <td style="font-size:11px;color:var(--ink3)">${r.productType||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700">${r.qty}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--amber)">${r.totalMeters} m</td>
+      <td style="font-family:'DM Mono',monospace">${parseFloat(r.totalCost)>0?'₹'+r.totalCost:'—'}</td>
+      <td style="font-size:10px;color:var(--ink3)">${r.unit}</td>
+      <td class="no-print"><div style="display:flex;gap:5px">
+        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="loadToInput(${r.id})">📝</button>
+        <button style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer" onclick="deleteRecord(${r.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════
+function exportResultCSV(){
+  if(!lastResult)return;const r=lastResult;
+  const rows=[['Field','Value'],['Product',r.productName],['Type',r.productType],['Mode',r.mode==='hf'?'Home Furnishing':'Garments'],['Qty',r.qty],['Total Fabric (m)',r.totalMeters],['Total Cost',r.totalCost],['Wastage %',r.wastage],'',['Fabric','Meters','Rate','Cost'],...(r.fabrics||[]).map(f=>[f.name,f.meters.toFixed(3),f.rate,f.cost.toFixed(2)])];
+  const csv=rows.map(r=>Array.isArray(r)?r.join(','):r).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Cutting_Result_'+(r.productName||'export')+'.csv';a.click();
+  showToast('📊 Excel download ho raha hai!');
+}
+function exportAllCSV(){
+  if(!records.length){showToast('⚠️ Koi records nahi');return;}
+  const rows=[['Date','Product','Mode','Type','Qty','Total Fabric (m)','Total Cost','Unit'],...records.map(r=>[r.date,r.productName,r.mode,r.productType,r.qty,r.totalMeters,r.totalCost,r.unit])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='All_Cutting_Records.csv';a.click();
+  showToast('📊 All records export ho rahe hain!');
+}
+function shareWhatsApp(){
+  if(!lastResult)return;const r=lastResult;
+  const fabricLines=(r.fabrics||[]).map(f=>`  ${f.icon} ${f.name}: *${f.meters.toFixed(3)} m*${f.rate>0?' (₹'+f.cost.toFixed(2)+')':''}`).join('\n');
+  const txt=`✂️ *CUTTING CALCULATION*\n📦 ${r.productName||'—'} | ${r.productType||'—'}\n🏷️ ${r.mode==='hf'?'🏠 Home Furnishing':'👕 Garments'}\n📊 Qty: ${r.qty} pcs\n\n🧵 *FABRIC REQUIRED:*\n${fabricLines}\n\n📦 *Total: ${r.totalMeters} meters*\n${parseFloat(r.totalCost)>0?'💰 Total Cost: ₹'+r.totalCost:''}\n♻️ Wastage: ${r.wastage}%\n\n📅 ${new Date().toLocaleDateString('en-IN')}\n_${settings.company}_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+const TABS=['input','result','diagram','wastage','data','design'];
+function showTab(id){
+  TABS.forEach(t=>{
+    document.getElementById('section-'+t).classList.toggle('active',t===id);
+    document.getElementById('tab-'+t).classList.toggle('active',t===id);
+  });
+  if(id==='result'){calculate();renderResult();}
+  if(id==='diagram'){calculate();drawDiagram();}
+  if(id==='wastage'){calculate();renderWastage();}
+  if(id==='data')renderData();
+  if(id==='design'){
+    setTimeout(()=>{
+      dsInitCanvases();
+      dsBuildPalettes();
+      dsSetCat(dsCat);
+      dsLoadSaved();
+    },50);
+  }
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function setVal(id,v){const el=document.getElementById(id);if(el)el.value=v;}
+function saveLocal(){localStorage.setItem('ucc2_records',JSON.stringify(records));}
+function loadLocal(){const d=localStorage.getItem('ucc2_records');if(d)records=JSON.parse(d);}
+function resetForm(){
+  if(!confirm('Reset?'))return;
+  ['fProductName','fQty','fRemarks','hfL','hfW','hfFrontName','hfFrontColor','hfBackName','hfPipeName','hfLineName','gmLength','gmChest','gmSleeve','gmFrontName','gmBackName','gmSleeveName'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.defaultValue||'';});
+  ['hfFrontRate','hfBackRate','hfPipeRate','hfLineRate','hfFrillRate','hfPipeLen','gmInterQty','gmInterRate','gmSleeveRate','gmFrontRate','gmBackRate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='0';});
+  hfExtras=[];gmExtras=[];
+  document.getElementById('hfExtraList').innerHTML='';
+  document.getElementById('gmExtraList').innerHTML='';
+  calculate();showToast('🔄 Reset ho gaya!');
+}
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+(function init(){
+  loadSettings();loadLocal();loadCustomTypes();
+  populateProductType();buildSizeTable();
+  calculate();renderData();initFbStatus();
+})();
+
+
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// DESIGN STUDIO — v2 Complete
+// ═══════════════════════════════════════
+
+/* ── Products ── */
+const DS_PRODS = {
+  gm:[
+    {id:'kurta',   label:'Kurta / Kameez', fields:[{id:'length',l:'Length'},{id:'chest',l:'Chest'},{id:'waist',l:'Waist'},{id:'hip',l:'Hip'},{id:'shoulder',l:'Shoulder'},{id:'sleeveL',l:'Sleeve Length'},{id:'sleeveW',l:'Sleeve Width'},{id:'neck',l:'Neck'}]},
+    {id:'anarkali',label:'Anarkali Suit',  fields:[{id:'length',l:'Total Length'},{id:'chest',l:'Chest'},{id:'waist',l:'Waist'},{id:'flare',l:'Hem Flare'},{id:'shoulder',l:'Shoulder'},{id:'sleeveL',l:'Sleeve Length'}]},
+    {id:'shirt',   label:'Shirt',          fields:[{id:'length',l:'Length'},{id:'chest',l:'Chest'},{id:'waist',l:'Waist'},{id:'shoulder',l:'Shoulder'},{id:'sleeveL',l:'Sleeve Length'},{id:'sleeveW',l:'Sleeve Width'},{id:'neck',l:'Neck'}]},
+    {id:'pant',    label:'Trouser / Pant', fields:[{id:'length',l:'Total Length'},{id:'waist',l:'Waist'},{id:'hip',l:'Hip'},{id:'thigh',l:'Thigh'},{id:'knee',l:'Knee'},{id:'bottom',l:'Bottom'},{id:'rise',l:'Rise'}]},
+    {id:'blouse',  label:'Blouse / Choli', fields:[{id:'length',l:'Length'},{id:'chest',l:'Chest'},{id:'waist',l:'Waist'},{id:'shoulder',l:'Shoulder'},{id:'sleeveL',l:'Sleeve Length'},{id:'back',l:'Back Neck Depth'}]},
+    {id:'saree',   label:'Saree Blouse+Skirt',fields:[{id:'blouseL',l:'Blouse Length'},{id:'chest',l:'Chest'},{id:'waist',l:'Waist'},{id:'shoulder',l:'Shoulder'},{id:'sleeveL',l:'Sleeve Length'},{id:'skirtL',l:'Skirt Length'},{id:'skirtW',l:'Skirt Width'}]},
+    {id:'lehenga', label:'Lehenga',        fields:[{id:'length',l:'Skirt Length'},{id:'waist',l:'Waist'},{id:'hip',l:'Hip'},{id:'flare',l:'Hem Flare'},{id:'blouseL',l:'Blouse Length'},{id:'chest',l:'Chest'}]},
+    {id:'custom',  label:'Custom / Apna Design',fields:[]}
+  ],
+  hf:[
+    {id:'curtain', label:'Curtain / Parda', fields:[{id:'width',l:'Width'},{id:'height',l:'Height / Drop'},{id:'topHem',l:'Top Hem'},{id:'botHem',l:'Bottom Hem'},{id:'sideHem',l:'Side Hem'}]},
+    {id:'bedsheet',label:'Bedsheet',        fields:[{id:'length',l:'Length'},{id:'width',l:'Width'},{id:'border',l:'Border Width'},{id:'pillow',l:'Pillow Size'}]},
+    {id:'sofa',    label:'Sofa Cover',      fields:[{id:'seatW',l:'Seat Width'},{id:'seatD',l:'Seat Depth'},{id:'armH',l:'Arm Height'},{id:'backH',l:'Back Height'},{id:'armW',l:'Arm Width'}]},
+    {id:'cushion', label:'Cushion / Pillow',fields:[{id:'length',l:'Length'},{id:'width',l:'Width'},{id:'seam',l:'Seam Allowance'}]},
+    {id:'tablecloth',label:'Table Cloth',   fields:[{id:'length',l:'Table Length'},{id:'width',l:'Table Width'},{id:'drop',l:'Drop / Overhang'},{id:'seam',l:'Hem Allowance'}]},
+    {id:'diwan',   label:'Diwan / Runner',  fields:[{id:'length',l:'Length'},{id:'width',l:'Width'},{id:'border',l:'Border Width'},{id:'seam',l:'Seam Allowance'}]},
+    {id:'custom',  label:'Custom / Apna Design',fields:[]}
+  ]
+};
+
+const DS_COLORS_2D = ['#1a1410','#c17f3a','#e53e3e','#2563eb','#16a34a','#9333ea','#f59e0b','#64748b','#ec4899','#ffffff'];
+const DS_COLORS_3D = ['#d4a843','#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#1abc9c','#2c3e50','#f8f4ee','#e91e8c'];
+
+/* ── State ── */
+let dsCat='gm', dsView='2d', dsMeasObj={};
+let dsCurrentTool='select', ds2dColor='#1a1410', dsLineW=2;
+let ds3dColor='#d4a843', dsImgData=null, dsImgObj=null;
+let dsElements=[], dsHistory=[], dsRedoStack=[], dsSelected=null;
+let dsDrawing=false, dsStartX=0, dsStartY=0, dsCurrEl=null;
+let dsDragOffX=0, dsDragOffY=0;
+let ds3dRenderer=null, ds3dAnimId=null;
+
+/* ── Canvas refs (initialised lazily) ── */
+let dsIC=null, dsDC=null, dsMC=null;
+let dsICx=null, dsDCx=null, dsMCx=null;
+
+function dsInitCanvases(){
+  const wrap=document.getElementById('ds2dWrap');
+  const w=wrap.clientWidth||600, h=500;
+  ['dsImgCanvas','dsDrawCanvas','dsMeasCanvas'].forEach(id=>{
+    const c=document.getElementById(id);
+    c.width=w; c.height=h;
+    c.style.width=w+'px'; c.style.height=h+'px';
+  });
+  dsIC=document.getElementById('dsImgCanvas');  dsICx=dsIC.getContext('2d');
+  dsDC=document.getElementById('dsDrawCanvas'); dsDCx=dsDC.getContext('2d');
+  dsMC=document.getElementById('dsMeasCanvas'); dsMCx=dsMC.getContext('2d');
+}
+
+/* ── Category / Product ── */
+function dsSetCat(cat){
+  dsCat=cat;
+  document.getElementById('dsCatGM').classList.toggle('active',cat==='gm');
+  document.getElementById('dsCatHF').classList.toggle('active',cat==='hf');
+  const sel=document.getElementById('dsProductType');
+  sel.innerHTML='<option value="">-- Product Type --</option>';
+  DS_PRODS[cat].forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.label; sel.appendChild(o); });
+  document.getElementById('dsMeasFields').innerHTML='<p style="color:var(--ink3);font-size:11px;text-align:center;padding:12px 0">Product select karein</p>';
+}
+function dsProductChanged(){
+  const pid=document.getElementById('dsProductType').value;
+  if(!pid){document.getElementById('dsMeasFields').innerHTML='<p style="color:var(--ink3);font-size:11px;text-align:center;padding:12px 0">Product select karein</p>';return;}
+  const prod=DS_PRODS[dsCat].find(p=>p.id===pid);
+  const uEl=document.getElementById('uInch');
+  const unit=uEl&&uEl.classList.contains('active')?'in':'cm';
+  document.getElementById('dsUnitLbl').textContent=unit==='in'?'Inch':'CM';
+  if(!prod||!prod.fields.length){
+    document.getElementById('dsMeasFields').innerHTML='<p style="color:var(--ink3);font-size:11px;text-align:center;padding:12px 0">Custom design — Canvas par seedha draw karein ✏️</p>';
+    return;
+  }
+  let h='';
+  prod.fields.forEach(f=>{
+    h+=`<div class="ds-mrow"><label>${f.l}</label><input type="number" id="dsM_${f.id}" placeholder="0" min="0" step="0.5" oninput="dsMeasObj['${f.id}']=parseFloat(this.value)||0"><span class="ds-unit">${unit==='in'?'in':'cm'}</span></div>`;
+  });
+  document.getElementById('dsMeasFields').innerHTML=h;
+  dsMeasObj={};
+}
+
+/* ── Palettes ── */
+function dsBuildPalettes(){
+  const p2=document.getElementById('ds2dPalette');
+  if(p2) p2.innerHTML=DS_COLORS_2D.map((c,i)=>`<div class="ds-swatch${i===0?' active':''}" style="background:${c}" onclick="dsSet2dColor('${c}',this)" title="${c}"></div>`).join('');
+  const p3=document.getElementById('ds3dPalette');
+  if(p3) p3.innerHTML=DS_COLORS_3D.map((c,i)=>`<div class="ds-swatch${i===0?' active':''}" style="background:${c}" onclick="dsSet3dColor('${c}',this)" title="${c}"></div>`).join('');
+}
+function dsSet2dColor(c,el){
+  ds2dColor=c;
+  document.getElementById('ds2dColorPick').value=c;
+  document.querySelectorAll('#ds2dPalette .ds-swatch').forEach(s=>s.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(dsSelected) { dsElements.find(e=>e.id===dsSelected) && (dsElements.find(e=>e.id===dsSelected).color=c); dsRedrawAll(); }
+}
+function dsSet3dColor(c,el){
+  ds3dColor=c;
+  document.getElementById('ds3dColorPick').value=c;
+  document.querySelectorAll('#ds3dPalette .ds-swatch').forEach(s=>s.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(dsView==='3d') dsRender3D();
+}
+
+/* ── Tool selection ── */
+function dsTool(t){
+  dsCurrentTool=t;
+  ['select','pencil','line','rect','circle','text','eraser'].forEach(n=>{
+    const b=document.getElementById('dst'+n.charAt(0).toUpperCase()+n.slice(1));
+    if(b) b.classList.toggle('active',n===t);
+  });
+  if(dsDC) dsDC.style.cursor = t==='eraser'?'cell':t==='select'?'default':'crosshair';
+}
+
+/* ── Mouse / Touch helpers ── */
+function dsPos(e,canvas){
+  const r=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/r.width, scaleY=canvas.height/r.height;
+  const src=e.touches?e.touches[0]:e;
+  return {x:(src.clientX-r.left)*scaleX, y:(src.clientY-r.top)*scaleY};
+}
+
+/* ── Mouse events ── */
+function dsMD(e){
+  if(!dsDC) return;
+  e.preventDefault();
+  const {x,y}=dsPos(e,dsDC);
+  if(dsCurrentTool==='select'){
+    // Find topmost element under cursor
+    const hit=dsHitTest(x,y);
+    dsSelected=hit?hit.id:null;
+    if(hit){ dsDragOffX=x-hit.x; dsDragOffY=y-hit.y; }
+    dsDrawing=!!hit;
+    dsRedrawAll(); return;
+  }
+  dsDrawing=true; dsStartX=x; dsStartY=y;
+  if(dsCurrentTool==='pencil'||dsCurrentTool==='eraser'){
+    dsCurrEl={id:'e'+Date.now(), type:dsCurrentTool==='eraser'?'eraser':'path', color:ds2dColor, lineW:dsCurrentTool==='eraser'?20:dsLineW, points:[{x,y}]};
+  } else if(dsCurrentTool==='text'){
+    dsDrawing=false;
+    const txt=prompt('Text likhein:');
+    if(txt){ dsSaveHistory(); dsElements.push({id:'e'+Date.now(),type:'text',x,y,text:txt,color:ds2dColor,fontSize:18}); dsRedrawAll(); }
+  } else {
+    dsCurrEl={id:'e'+Date.now(), type:dsCurrentTool, x:x,y:y,x2:x,y2:y, color:ds2dColor, lineW:dsLineW};
+  }
+}
+function dsMM(e){
+  if(!dsDrawing||!dsDC) return;
+  e.preventDefault();
+  const {x,y}=dsPos(e,dsDC);
+  if(dsCurrentTool==='select'&&dsSelected){
+    const el=dsElements.find(e=>e.id===dsSelected);
+    if(el){ el.x=x-dsDragOffX; el.y=y-dsDragOffY; if(el.x2!==undefined) { const dx=(x-dsDragOffX)-dsStartX; const dy=(y-dsDragOffY)-dsStartY; el.x2+=dx; el.y2+=dy; } dsStartX=x-dsDragOffX; dsStartY=y-dsDragOffY; dsRedrawAll(); }
+    return;
+  }
+  if(dsCurrEl){
+    if(dsCurrEl.type==='path'||dsCurrEl.type==='eraser') dsCurrEl.points.push({x,y});
+    else { dsCurrEl.x2=x; dsCurrEl.y2=y; }
+    dsRedrawAll();
+    dsDrawElement(dsDCx, dsCurrEl, true);
+  }
+}
+function dsMU(e){
+  if(!dsDrawing) return;
+  dsDrawing=false;
+  if(dsCurrEl&&dsCurrentTool!=='select'){ dsSaveHistory(); dsElements.push(dsCurrEl); dsCurrEl=null; dsRedrawAll(); }
+}
+/* Touch wrappers */
+function dsTD(e){e.preventDefault();dsMD(e);}
+function dsTMv(e){e.preventDefault();dsMM(e);}
+function dsTU(e){dsMU(e);}
+
+/* ── Drawing ── */
+function dsDrawElement(ctx, el, preview){
+  ctx.save();
+  ctx.strokeStyle=el.color||'#1a1410';
+  ctx.fillStyle=el.color||'#1a1410';
+  ctx.lineWidth=el.lineW||2;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  if(el.type==='eraser'){ctx.globalCompositeOperation='destination-out'; ctx.lineWidth=el.lineW||20;}
+  switch(el.type){
+    case 'path': case 'eraser':
+      if(!el.points||el.points.length<2) break;
+      ctx.beginPath(); ctx.moveTo(el.points[0].x,el.points[0].y);
+      el.points.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.stroke(); break;
+    case 'line':
+      ctx.beginPath(); ctx.moveTo(el.x,el.y); ctx.lineTo(el.x2,el.y2); ctx.stroke(); break;
+    case 'rect':
+      ctx.beginPath(); ctx.strokeRect(el.x,el.y,el.x2-el.x,el.y2-el.y); break;
+    case 'circle':
+      ctx.beginPath(); const rx=Math.abs(el.x2-el.x)/2, ry=Math.abs(el.y2-el.y)/2;
+      ctx.ellipse(el.x+rx*(el.x2>el.x?1:-1)*((el.x2>el.x?1:-1)>0?0.5:-0.5)*2/1,el.y+ry*(el.y2>el.y?1:-1)*0,rx||1,ry||1,0,0,Math.PI*2);
+      ctx.ellipse((el.x+el.x2)/2,(el.y+el.y2)/2,Math.max(1,rx),Math.max(1,ry),0,0,Math.PI*2); ctx.stroke(); break;
+    case 'text':
+      ctx.font=`${el.fontSize||18}px DM Sans, sans-serif`; ctx.fillText(el.text,el.x,el.y); break;
+  }
+  // Selection highlight
+  if(!preview && el.id===dsSelected){
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+    const b=dsGetBounds(el);
+    ctx.strokeRect(b.x-4,b.y-4,b.w+8,b.h+8); ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+function dsGetBounds(el){
+  if(el.type==='text') return {x:el.x,y:el.y-20,w:el.text.length*10,h:24};
+  if(el.type==='path'||el.type==='eraser'){
+    const xs=el.points.map(p=>p.x),ys=el.points.map(p=>p.y);
+    return {x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)};
+  }
+  return {x:Math.min(el.x,el.x2),y:Math.min(el.y,el.y2),w:Math.abs(el.x2-el.x),h:Math.abs(el.y2-el.y)};
+}
+function dsHitTest(x,y){
+  for(let i=dsElements.length-1;i>=0;i--){
+    const el=dsElements[i];
+    const b=dsGetBounds(el);
+    if(x>=b.x-8&&x<=b.x+b.w+8&&y>=b.y-8&&y<=b.y+b.h+8) return el;
+  }
+  return null;
+}
+function dsRedrawAll(){
+  if(!dsDCx) return;
+  dsDCx.clearRect(0,0,dsDC.width,dsDC.height);
+  dsElements.forEach(el=>dsDrawElement(dsDCx,el,false));
+  if(dsCurrEl) dsDrawElement(dsDCx,dsCurrEl,true);
+}
+
+/* ── Image layer ── */
+function dsRedrawImg(){
+  if(!dsICx) return;
+  dsICx.clearRect(0,0,dsIC.width,dsIC.height);
+  if(dsImgObj){
+    const op=parseFloat(document.getElementById('dsImgOpacity').value)/100;
+    dsICx.globalAlpha=op;
+    dsICx.drawImage(dsImgObj,0,0,dsIC.width,dsIC.height);
+    dsICx.globalAlpha=1;
+  }
+}
+function dsSetImgOpacity(v){
+  document.querySelector('#dsImgThumbWrap .ds-unit') && (document.querySelector('#dsImgThumbWrap .ds-unit').textContent=v+'%');
+  dsRedrawImg();
+}
+function dsLoadImg(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    dsImgData=e.target.result;
+    const img=new Image();
+    img.onload=()=>{
+      dsImgObj=img;
+      document.getElementById('dsImgThumb').src=dsImgData;
+      document.getElementById('dsImgThumbWrap').style.display='block';
+      document.getElementById('dsImgZone').style.display='none';
+      if(!dsICx) dsInitCanvases();
+      dsRedrawImg();
+      showToast('✅ Image load! Opacity adjust karo ya 3D dekho.');
+    };
+    img.src=dsImgData;
+  };
+  reader.readAsDataURL(file);
+}
+function dsDropImg(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f){const dt=new DataTransfer();dt.items.add(f);document.getElementById('dsFileIn').files=dt.files;dsLoadImg({target:{files:[f]}});}}
+function dsClearImg(){
+  dsImgData=null; dsImgObj=null;
+  document.getElementById('dsFileIn').value='';
+  document.getElementById('dsImgThumbWrap').style.display='none';
+  document.getElementById('dsImgZone').style.display='block';
+  if(dsICx) dsICx.clearRect(0,0,dsIC.width,dsIC.height);
+  if(dsView==='3d') dsRender3D();
+}
+
+/* ── Measurement Overlay ── */
+function dsToggleMeas(on){
+  if(!dsMCx){dsInitCanvases();}
+  dsMCx.clearRect(0,0,dsMC.width,dsMC.height);
+  if(on) dsGenOverlay();
+}
+function dsGenOverlay(){
+  if(!dsMCx){dsInitCanvases();}
+  document.getElementById('dsMeasVisible').checked=true;
+  const pid=document.getElementById('dsProductType').value;
+  if(!pid){showToast('⚠️ Pehle product type select karein');return;}
+  // Read measurements
+  const m={};
+  document.querySelectorAll('#dsMeasFields input').forEach(inp=>{
+    m[inp.id.replace('dsM_','')]=parseFloat(inp.value)||0;
+  });
+  dsMeasObj=m;
+  dsMCx.clearRect(0,0,dsMC.width,dsMC.height);
+  dsDrawMeasOverlay(pid,m,dsMCx,dsMC.width,dsMC.height);
+  showToast('📐 Measurement overlay add ho gayi!');
+}
+
+function dsDrawMeasLine(ctx,x1,y1,x2,y2,lbl,side){
+  ctx.save();
+  ctx.strokeStyle='#c17f3a'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  // Arrows
+  ctx.setLineDash([]);
+  const angle=Math.atan2(y2-y1,x2-x1);
+  [[x1,y1,angle+Math.PI],[x2,y2,angle]].forEach(([ax,ay,a])=>{
+    ctx.beginPath(); ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-8*Math.cos(a-0.3),ay-8*Math.sin(a-0.3));
+    ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-8*Math.cos(a+0.3),ay-8*Math.sin(a+0.3));
+    ctx.stroke();
+  });
+  // Label
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  ctx.fillStyle='rgba(255,248,235,0.85)';
+  const tw=ctx.measureText(lbl).width;
+  ctx.fillRect(mx-tw/2-3,my-9,tw+6,16);
+  ctx.fillStyle='#7a4a10'; ctx.font='bold 10px DM Mono, monospace';
+  ctx.textAlign='center'; ctx.fillText(lbl,mx,my+3);
+  ctx.restore();
+}
+
+function dsDrawMeasOverlay(pid,m,ctx,W,H){
+  const unit=document.getElementById('dsUnitLbl').textContent;
+  const lbl=(key,def)=>( (m[key]||def)+ ' '+unit );
+  const cx=W/2;
+  if(pid==='kurta'||pid==='shirt'){
+    const L=m.length||42,C=m.chest||40,S=m.shoulder||16,SL=m.sleeveL||24;
+    const sc=Math.min(H/((L+SL)*1.3),W/(C*1.6));
+    const ty=40, sy=ty+L*sc, hw=C/2*sc, sh=S/2*sc;
+    dsDrawMeasLine(ctx,cx+hw+30,ty,cx+hw+30,sy,lbl('length',42));
+    dsDrawMeasLine(ctx,cx-hw,ty+L*sc*0.25,cx+hw,ty+L*sc*0.25,lbl('chest',40));
+    dsDrawMeasLine(ctx,cx-sh,ty-20,cx+sh,ty-20,lbl('shoulder',16));
+    dsDrawMeasLine(ctx,cx+sh+10,ty,cx+sh+10,ty+SL*sc,lbl('sleeveL',24));
+  } else if(pid==='anarkali'){
+    const L=m.length||54,C=m.chest||36,F=m.flare||120,S=m.shoulder||14,SL=m.sleeveL||14;
+    const sc=Math.min(H/(L*1.2),W/(F*1.2));
+    const ty=30, sy=ty+L*sc, hw=C/2*sc, fh=F/2*sc;
+    dsDrawMeasLine(ctx,cx+fh+30,ty,cx+fh+30,sy,lbl('length',54));
+    dsDrawMeasLine(ctx,cx-hw,ty+L*sc*0.15,cx+hw,ty+L*sc*0.15,lbl('chest',36));
+    dsDrawMeasLine(ctx,cx-fh,sy+16,cx+fh,sy+16,lbl('flare',120));
+    dsDrawMeasLine(ctx,cx-S/2*sc,ty-20,cx+S/2*sc,ty-20,lbl('shoulder',14));
+  } else if(pid==='pant'){
+    const L=m.length||40,W2=m.waist||32,H2=m.hip||38,B=m.bottom||14,R=m.rise||12;
+    const sc=Math.min(H/(L*1.2),W/(H2*1.6));
+    const ty=30, sy=ty+L*sc, wh=W2/2*sc, hh=H2/2*sc;
+    dsDrawMeasLine(ctx,cx+hh+30,ty,cx+hh+30,sy,lbl('length',40));
+    dsDrawMeasLine(ctx,cx-wh,ty+8,cx+wh,ty+8,lbl('waist',32));
+    dsDrawMeasLine(ctx,cx-hh,ty+R*sc,cx+hh,ty+R*sc,lbl('hip',38));
+    dsDrawMeasLine(ctx,cx+hh+50,ty,cx+hh+50,ty+R*sc,lbl('rise',12));
+  } else if(pid==='curtain'){
+    const Wc=m.width||60,Hc=m.height||96,TH=m.topHem||4,BH=m.botHem||4;
+    const sc=Math.min(H/(Hc*1.2),W/(Wc*1.4));
+    const tx=40, ty=30;
+    dsDrawMeasLine(ctx,tx,ty-20,tx+Wc*sc,ty-20,lbl('width',60));
+    dsDrawMeasLine(ctx,tx+Wc*sc+20,ty,tx+Wc*sc+20,ty+Hc*sc,lbl('height',96));
+    dsDrawMeasLine(ctx,tx+5,ty,tx+5,ty+TH*sc,lbl('topHem',4));
+  } else if(pid==='bedsheet'){
+    const Lb=m.length||108,Wb=m.width||90,Bw=m.border||4;
+    const sc=Math.min(H/(Lb*1.1),W/(Wb*1.3));
+    const tx=30, ty=20;
+    dsDrawMeasLine(ctx,tx,ty-18,tx+Wb*sc,ty-18,lbl('width',90));
+    dsDrawMeasLine(ctx,tx+Wb*sc+18,ty,tx+Wb*sc+18,ty+Lb*sc,lbl('length',108));
+    dsDrawMeasLine(ctx,tx,ty,tx,ty+Bw*sc,lbl('border',4));
+  } else if(pid==='cushion'||pid==='diwan'){
+    const Lc=m.length||20,Wc=m.width||20,sm=m.seam||0.5;
+    const sc=Math.min((H-80)/(Wc*1.2),(W-80)/(Lc*1.2));
+    const tx=60, ty=60;
+    dsDrawMeasLine(ctx,tx,ty-18,tx+Lc*sc,ty-18,lbl('length',20));
+    dsDrawMeasLine(ctx,tx+Lc*sc+18,ty,tx+Lc*sc+18,ty+Wc*sc,lbl('width',20));
+  } else if(pid==='sofa'){
+    const Sw=m.seatW||54,Sd=m.seatD||22,Bh=m.backH||30;
+    const sc=Math.min(H/((Bh+Sd)*1.4),W/(Sw*1.5));
+    const tx=cx-Sw/2*sc;
+    dsDrawMeasLine(ctx,tx,H-30,tx+Sw*sc,H-30,lbl('seatW',54));
+    dsDrawMeasLine(ctx,cx+Sw/2*sc+30,40,cx+Sw/2*sc+30,40+Bh*sc,lbl('backH',30));
+    dsDrawMeasLine(ctx,cx+Sw/2*sc+50,40+Bh*sc,cx+Sw/2*sc+50,40+Bh*sc+Sd*sc,lbl('seatD',22));
+  } else if(pid==='tablecloth'){
+    const Lt=m.length||60,Wt=m.width||36,Dr=m.drop||8;
+    const sc=Math.min(H/((Wt+Dr*2)*1.3),W/((Lt+Dr*2)*1.2));
+    const tx=cx-(Lt/2+Dr)*sc, ty=30;
+    dsDrawMeasLine(ctx,tx,ty-20,tx+Lt*sc,ty-20,lbl('length',60));
+    dsDrawMeasLine(ctx,tx+Lt*sc+Dr*sc+20,ty,tx+Lt*sc+Dr*sc+20,ty+(Wt+Dr*2)*sc,lbl('width',36));
+    dsDrawMeasLine(ctx,tx,ty,tx-Dr*sc,ty,lbl('drop',8));
+  }
+}
+
+/* ── History ── */
+function dsSaveHistory(){ dsHistory.push(JSON.stringify(dsElements)); if(dsHistory.length>40) dsHistory.shift(); dsRedoStack=[]; }
+function dsUndo(){ if(!dsHistory.length){showToast('Nothing to undo');return;} dsRedoStack.push(JSON.stringify(dsElements)); dsElements=JSON.parse(dsHistory.pop()); dsSelected=null; dsRedrawAll(); }
+function dsRedo(){ if(!dsRedoStack.length){showToast('Nothing to redo');return;} dsHistory.push(JSON.stringify(dsElements)); dsElements=JSON.parse(dsRedoStack.pop()); dsSelected=null; dsRedrawAll(); }
+function dsDeleteSelected(){ if(!dsSelected){showToast('Koi element select nahi');return;} dsSaveHistory(); dsElements=dsElements.filter(e=>e.id!==dsSelected); dsSelected=null; dsRedrawAll(); }
+function dsClearCanvas(){ if(!confirm('Canvas clear karein?')) return; dsSaveHistory(); dsElements=[]; dsSelected=null; dsRedrawAll(); }
+
+/* ── 3D View ── */
+function dsSetView(v){
+  dsView=v;
+  document.getElementById('dsvBtn2d').classList.toggle('active',v==='2d');
+  document.getElementById('dsvBtn3d').classList.toggle('active',v==='3d');
+  document.getElementById('ds2dWrap').style.display = v==='2d'?'block':'none';
+  document.getElementById('ds2dToolbar').style.display = v==='2d'?'flex':'none';
+  document.getElementById('ds2dActions').style.display = v==='2d'?'flex':'none';
+  document.getElementById('ds3dWrap').style.display = v==='3d'?'block':'none';
+  document.getElementById('ds3dColorPanel').style.display = v==='3d'?'block':'none';
+  if(v==='3d') setTimeout(dsRender3D,60);
+  else if(ds3dAnimId){ cancelAnimationFrame(ds3dAnimId); ds3dAnimId=null; }
+}
+
+function dsRender3D(){
+  if(typeof THREE==='undefined'){showToast('⚠️ 3D library load ho rahi hai...');return;}
+  const wrap=document.getElementById('ds3dWrap');
+  if(!wrap||wrap.style.display==='none') return;
+  const canvas=document.getElementById('ds3dCanvas');
+  const w=wrap.clientWidth||500, h=500;
+  if(ds3dAnimId){cancelAnimationFrame(ds3dAnimId);ds3dAnimId=null;}
+  if(ds3dRenderer){ds3dRenderer.dispose();}
+
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+  renderer.setSize(w,h); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x1a1008,1);
+  ds3dRenderer=renderer;
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,w/h,0.1,100);
+  camera.position.set(0,0.5,6);
+
+  scene.add(new THREE.AmbientLight(0xfff8e7,0.5));
+  const key=new THREE.DirectionalLight(0xffd280,1.8); key.position.set(3,5,4); scene.add(key);
+  scene.add(new THREE.DirectionalLight(0xffe0a0,0.6)).position.set(-3,-1,-3);
+
+  const useImg=document.getElementById('dsUseTexture').checked&&dsImgData;
+  let mat;
+  if(useImg){
+    const tex=new THREE.TextureLoader().load(dsImgData);
+    mat=new THREE.MeshLambertMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:0.92});
+  } else {
+    const col=parseInt(ds3dColor.replace('#',''),16);
+    mat=new THREE.MeshPhongMaterial({color:col,emissive:new THREE.Color(col).multiplyScalar(0.15),shininess:70,transparent:true,opacity:0.88,side:THREE.DoubleSide});
+  }
+  const wMat=new THREE.MeshBasicMaterial({color:0xc17f3a,wireframe:true,transparent:true,opacity:0.2});
+
+  const group=new THREE.Group();
+  const pid=document.getElementById('dsProductType').value;
+  const m=dsMeasObj;
+  const addM=(geo)=>{group.add(new THREE.Mesh(geo,mat)); group.add(new THREE.Mesh(geo,wMat));};
+
+  if(pid==='kurta'||pid==='shirt'){
+    const L=m.length||42,C=m.chest||40,W=m.waist||38,SL=m.sleeveL||24;
+    const pts=[];
+    for(let i=0;i<=14;i++){const t=i/14;pts.push(new THREE.Vector2((C/2+(W/2-C/2)*t)/22,2.0-t*L/10));}
+    addM(new THREE.LatheGeometry(pts,36));
+    const slG=new THREE.CylinderGeometry(0.38,0.32,SL/14,14);
+    const ls=new THREE.Mesh(slG,mat);ls.rotation.z=Math.PI/3.2;ls.position.set(-1.35,0.55,0);group.add(ls);
+    const rs=new THREE.Mesh(slG,mat);rs.rotation.z=-Math.PI/3.2;rs.position.set(1.35,0.55,0);group.add(rs);
+  } else if(pid==='anarkali'||pid==='lehenga'){
+    const L=m.length||54,C=m.chest||36,F=m.flare||120;
+    const pts=[];
+    for(let i=0;i<=6;i++){const t=i/6;pts.push(new THREE.Vector2(C/2/20+t*0.06,2.0-t*(L*0.3)/9));}
+    for(let i=0;i<=14;i++){const t=i/14;const y=(2.0-(L*0.3)/9)-t*(L*0.7)/9;pts.push(new THREE.Vector2(C/2/20+0.06+t*t*F/2/30,y));}
+    addM(new THREE.LatheGeometry(pts,48));
+  } else if(pid==='shirt'){
+    const L=m.length||28,C=m.chest||40;
+    const pts=[];
+    for(let i=0;i<=12;i++){const t=i/12;pts.push(new THREE.Vector2((C/2)/22,2.0-t*L/9));}
+    addM(new THREE.LatheGeometry(pts,32));
+  } else if(pid==='pant'){
+    const L=m.length||40,W2=m.waist||32,H=m.hip||38,B=m.bottom||14;
+    const pts=[];
+    for(let i=0;i<=16;i++){const t=i/16;const r=W2/2/20+(H/2-W2/2)/20*Math.sin(t*Math.PI*0.6)+(B/2-H/2)/20*t;pts.push(new THREE.Vector2(Math.max(0.18,r),2.2-t*L/9));}
+    addM(new THREE.LatheGeometry(pts,24));
+  } else if(pid==='blouse'){
+    const L=m.length||15,C=m.chest||34;
+    const pts=[];
+    for(let i=0;i<=8;i++){const t=i/8;pts.push(new THREE.Vector2(C/2/20,1.2-t*L/9));}
+    addM(new THREE.LatheGeometry(pts,28));
+    const slG=new THREE.CylinderGeometry(0.3,0.26,0.6,12);
+    const ls=new THREE.Mesh(slG,mat);ls.rotation.z=Math.PI/3;ls.position.set(-1.1,0.65,0);group.add(ls);
+    const rs=new THREE.Mesh(slG,mat);rs.rotation.z=-Math.PI/3;rs.position.set(1.1,0.65,0);group.add(rs);
+  } else if(pid==='saree'){
+    const C=m.chest||34,SktL=m.skirtL||42;
+    const pts=[];
+    for(let i=0;i<=8;i++){const t=i/8;pts.push(new THREE.Vector2(C/2/20,1.8-t*0.8));}
+    for(let i=0;i<=14;i++){const t=i/14;pts.push(new THREE.Vector2(C/2/20+t*0.16,1.0-t*SktL/20));}
+    addM(new THREE.LatheGeometry(pts,40));
+    const pc=new THREE.CatmullRomCurve3([new THREE.Vector3(-0.45,1.5,0.25),new THREE.Vector3(-0.9,0.6,0.45),new THREE.Vector3(-1.1,-0.6,0.2)]);
+    addM(new THREE.TubeGeometry(pc,16,0.06,8,false));
+  } else if(pid==='curtain'){
+    const Wc=m.width||60,Hc=m.height||96;
+    const geo=new THREE.PlaneGeometry(Wc/24,Hc/24,4,14);
+    const pos=geo.attributes.position.array;
+    for(let i=0;i<pos.length;i+=3){pos[i]+=Math.sin(pos[i+1]*1.2)*0.15;}
+    geo.attributes.position.needsUpdate=true; geo.computeVertexNormals(); addM(geo);
+  } else if(pid==='bedsheet'||pid==='tablecloth'||pid==='diwan'){
+    addM(new THREE.PlaneGeometry((m.length||90)/28,(m.width||60)/28,4,4));
+  } else if(pid==='sofa'){
+    const Sw=m.seatW||54,Sd=m.seatD||22,Bh=m.backH||30;
+    addM(new THREE.BoxGeometry(Sw/16,0.45,Sd/16));
+    const bk=new THREE.Mesh(new THREE.BoxGeometry(Sw/16,Bh/16,0.3),mat);bk.position.set(0,Bh/32,-Sd/32);group.add(bk);
+    const ag=new THREE.BoxGeometry(0.4,0.85,Sd/16);
+    const la=new THREE.Mesh(ag,mat);la.position.set(-Sw/32-0.2,0.2,0);group.add(la);
+    const ra=new THREE.Mesh(ag,mat);ra.position.set(Sw/32+0.2,0.2,0);group.add(ra);
+  } else if(pid==='cushion'){
+    const Lc=m.length||20,Wc=m.width||20;
+    const geo=new THREE.BoxGeometry(Lc/12,0.38,Wc/12,2,1,2);
+    const pArr=geo.attributes.position.array;
+    for(let i=0;i<pArr.length;i+=3){if(Math.abs(pArr[i+1])>0.1){pArr[i]+=Math.sin(pArr[i]*2)*0.06;pArr[i+2]+=Math.sin(pArr[i+2]*2)*0.06;}}
+    geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();addM(geo);
+  } else if(pid==='custom'||!pid){
+    // Show uploaded image as billboard if available
+    if(dsImgData){
+      const tex=new THREE.TextureLoader().load(dsImgData);
+      const bm=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true});
+      group.add(new THREE.Mesh(new THREE.PlaneGeometry(3.5,4.5),bm));
+      document.getElementById('ds3dMsg').style.display='none';
+    } else {
+      document.getElementById('ds3dMsg').style.display='block';
+      document.getElementById('ds3dMsg').textContent='Image upload karo ya product select karo 3D ke liye';
+    }
+  }
+
+  if(pid&&pid!=='custom') document.getElementById('ds3dMsg').style.display='none';
+
+  // Orientation helper
+  const grid=new THREE.GridHelper(6,12,0x3a2a10,0x2a1a00);
+  grid.position.y=-3.5; scene.add(grid);
+
+  scene.add(group);
+  const animate=()=>{
+    ds3dAnimId=requestAnimationFrame(animate);
+    group.rotation.y+=0.008;
+    group.rotation.x=Math.sin(Date.now()*0.0005)*0.06;
+    renderer.render(scene,camera);
+  };
+  animate();
+}
+
+/* ── Export ── */
+function dsExportPNG(){
+  if(!dsDC){showToast('Pehle kuch draw karein');return;}
+  const merged=document.createElement('canvas');
+  merged.width=dsDC.width; merged.height=dsDC.height;
+  const mx=merged.getContext('2d');
+  if(dsImgObj){mx.globalAlpha=parseFloat(document.getElementById('dsImgOpacity').value)/100;mx.drawImage(dsImgObj,0,0,merged.width,merged.height);mx.globalAlpha=1;}
+  mx.drawImage(dsDC,0,0);
+  mx.drawImage(dsMC,0,0);
+  const a=document.createElement('a');
+  a.download=(document.getElementById('dsDesignName').value||'design')+'.png';
+  a.href=merged.toDataURL('image/png'); a.click();
+  showToast('⬇️ PNG download ho rahi hai!');
+}
+function dsExportSVG(){showToast('SVG ke liye PNG export use karein — canvas drawing SVG compatible nahi hoti.');}
+
+/* ── Firebase Save/Load ── */
+function dsSave(){
+  const pid=document.getElementById('dsProductType').value;
+  const name=document.getElementById('dsDesignName').value||('Design_'+Date.now());
+  const canvasData=dsDC?dsDC.toDataURL('image/png',0.7):'';
+  const record={id:'ds_'+Date.now(),name,pid,category:dsCat,measurements:dsMeasObj,elements:dsElements,canvasThumb:canvasData.substring(0,200),savedAt:new Date().toLocaleString('en-IN')};
+  let saved=JSON.parse(localStorage.getItem('ds_designs')||'[]');
+  saved.unshift(record); localStorage.setItem('ds_designs',JSON.stringify(saved.slice(0,40)));
+  if(fbDB){
+    const dot=document.getElementById('fbDot');
+    const saveRec={...record,canvasThumb:''};
+    dot.className='fb-dot sync';
+    fbDB.ref('designs/'+record.id).set(saveRec)
+      .then(()=>{dot.className='fb-dot ok';showToast('☁️ Design Firebase me save!');dsLoadSaved();})
+      .catch(()=>{dot.className='fb-dot err';showToast('💾 Local save ho gaya');dsLoadSaved();});
+  } else {showToast('💾 Design locally save ho gayi!');dsLoadSaved();}
+}
+function dsLoadSaved(){
+  const el=document.getElementById('dsSavedList'); if(!el) return;
+  let saved=JSON.parse(localStorage.getItem('ds_designs')||'[]');
+  const render=items=>{
+    if(!items.length){el.innerHTML='<p style="color:var(--ink3);font-size:11px;text-align:center;padding:8px">Koi saved design nahi</p>';return;}
+    el.innerHTML=items.map(r=>`<div class="ds-saved-item" onclick="dsLoadRec('${r.id}')">
+      <div><div style="font-weight:700;color:var(--ink)">${r.name||r.pid||'Design'}</div>
+      <div style="color:var(--ink3);font-size:10px">${r.category==='gm'?'👕':'🏠'} ${r.pid||''} · ${r.savedAt||''}</div></div>
+      <button class="topbtn" style="font-size:10px;padding:3px 7px" onclick="event.stopPropagation();dsDelRec('${r.id}')">🗑️</button>
+    </div>`).join('');
+  };
+  if(fbDB){
+    fbDB.ref('designs').orderByChild('savedAt').limitToLast(20).once('value',snap=>{
+      const fb=[];snap.forEach(c=>fb.unshift(c.val()));
+      saved.forEach(s=>{if(!fb.find(x=>x.id===s.id))fb.push(s);});
+      render(fb.slice(0,25));
+    });
+  } else render(saved);
+}
+function dsLoadRec(id){
+  let saved=JSON.parse(localStorage.getItem('ds_designs')||'[]');
+  const apply=r=>{
+    if(!r)return;
+    dsSetCat(r.category||'gm');
+    setTimeout(()=>{
+      document.getElementById('dsProductType').value=r.pid||'';
+      document.getElementById('dsDesignName').value=r.name||'';
+      dsProductChanged();
+      setTimeout(()=>{
+        Object.entries(r.measurements||{}).forEach(([k,v])=>{const i=document.getElementById('dsM_'+k);if(i){i.value=v;dsMeasObj[k]=v;}});
+        if(r.elements){dsElements=r.elements;if(dsDCx)dsRedrawAll();}
+        showToast('✅ Design load ho gayi!');
+      },120);
+    },80);
+  };
+  const local=saved.find(x=>x.id===id);
+  if(fbDB){fbDB.ref('designs/'+id).once('value',s=>apply(s.val()||local));}
+  else apply(local);
+}
+function dsDelRec(id){
+  let saved=JSON.parse(localStorage.getItem('ds_designs')||'[]');
+  saved=saved.filter(x=>x.id!==id);localStorage.setItem('ds_designs',JSON.stringify(saved));
+  if(fbDB)fbDB.ref('designs/'+id).remove();
+  dsLoadSaved();showToast('🗑️ Design delete ho gayi');
+}
+
+/* ── Tab hook (already in showTab) ── */
+// Design Studio tab handled in main showTab
+</script>
+</body>
+</html>

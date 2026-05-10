@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Textile Compliance Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --navy:#0d2137; --navy2:#1a3a5c; --gold:#c8a84b; --gold2:#f0d080;
+  --teal:#0e7490; --green:#15803d; --red:#dc2626; --amber:#b45309;
+  --cream:#faf8f3; --white:#fff; --gray:#64748b; --light:#f1f5f9;
+  --border:#e2e8f0; --text:#1e293b;
+  --sidebar:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:#eef2f7;color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ===== TOPBAR ===== */
+.topbar{background:var(--navy);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.4);}
+.topbar-brand{display:flex;align-items:center;gap:12px;}
+.topbar-logo{width:34px;height:34px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1rem;color:var(--navy);cursor:pointer;}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--gold2);letter-spacing:.3px;}
+.topbar-sub{font-size:.65rem;color:#94a3b8;margin-top:1px;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+.tbtn{padding:6px 13px;border:none;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;transition:.2s;white-space:nowrap;}
+.tbtn-print{background:var(--gold);color:var(--navy);}
+.tbtn-pdf{background:#dc2626;color:#fff;}
+.tbtn-wa{background:#25D366;color:#fff;}
+.tbtn-backup{background:#7c3aed;color:#fff;}
+.tbtn-restore{background:#0e7490;color:#fff;}
+.tbtn:hover{opacity:.85;transform:translateY(-1px);}
+.company-mini{font-size:.7rem;color:#94a3b8;text-align:right;line-height:1.4;display:none;}
+
+/* ===== LAYOUT ===== */
+.app-body{display:flex;flex:1;min-height:0;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar);background:var(--navy);flex-shrink:0;overflow-y:auto;padding:12px 0;position:sticky;top:54px;height:calc(100vh - 54px);}
+.nav-section-label{font-size:.6rem;font-weight:700;color:#4a6080;text-transform:uppercase;letter-spacing:1px;padding:14px 18px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;transition:.2s;border-left:3px solid transparent;color:#94a3b8;font-size:.82rem;font-weight:500;}
+.nav-item:hover,.nav-item.active{background:rgba(255,255,255,.07);color:#fff;border-left-color:var(--gold);}
+.nav-item.active{color:var(--gold2);}
+.nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+
+/* ===== MAIN CONTENT ===== */
+.main-content{flex:1;overflow-y:auto;padding:24px;}
+
+/* ===== PAGES ===== */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ===== COMPANY HEADER (letterhead) ===== */
+.letterhead{background:var(--navy);border-radius:14px;overflow:hidden;margin-bottom:20px;box-shadow:0 6px 24px rgba(13,33,55,.25);}
+.lh-top{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);padding:20px 24px;display:flex;align-items:center;gap:18px;border-bottom:3px solid var(--gold);}
+.lh-logo{width:58px;height:58px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.5rem;color:var(--navy);flex-shrink:0;}
+.lh-info h1{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#fff;font-weight:700;}
+.lh-info .lh-tag{color:var(--gold2);font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;}
+.lh-meta{padding:10px 24px;display:flex;flex-wrap:wrap;gap:20px;}
+.lh-meta-item{font-size:.75rem;color:#94a3b8;display:flex;align-items:center;gap:6px;}
+.lh-meta-item b{color:#cbd5e1;}
+.lh-edit-btn{margin-left:auto;background:rgba(200,168,75,.15);border:1px solid var(--gold);color:var(--gold2);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.72rem;font-family:'Outfit',sans-serif;}
+
+/* ===== CARDS & SECTIONS ===== */
+.card{background:#fff;border-radius:12px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--navy);font-weight:700;}
+.card-subtitle{font-size:.75rem;color:var(--gray);margin-top:2px;}
+
+/* ===== STATS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.06);border-top:3px solid var(--navy);}
+.stat.g{border-top-color:var(--green);}
+.stat.a{border-top-color:var(--gold);}
+.stat.r{border-top-color:var(--red);}
+.stat.t{border-top-color:var(--teal);}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--navy);}
+.stat.g .stat-n{color:var(--green);}.stat.a .stat-n{color:var(--amber);}.stat.r .stat-n{color:var(--red);}.stat.t .stat-n{color:var(--teal);}
+.stat-l{font-size:.72rem;color:var(--gray);font-weight:600;margin-top:2px;}
+
+/* ===== TABLE ===== */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);}
+.tbl td{padding:11px 12px;border-bottom:1px solid #f8fafc;font-size:.83rem;vertical-align:middle;}
+.tbl tr:hover td{background:#fafbff;}
+.tbl-scroll{overflow-x:auto;}
+
+/* ===== BADGES ===== */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;}
+.b-green{background:#dcfce7;color:#15803d;}.b-yellow{background:#fef9c3;color:#854d0e;}
+.b-red{background:#fee2e2;color:#b91c1c;}.b-blue{background:#dbeafe;color:#1d4ed8;}
+.b-teal{background:#ccfbf1;color:#0f766e;}.b-purple{background:#ede9fe;color:#6d28d9;}
+.b-gray{background:#f1f5f9;color:#475569;}
+
+/* ===== BUTTONS ===== */
+.btn{padding:8px 18px;border:none;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--navy);color:#fff;}.btn-primary:hover{background:var(--navy2);}
+.btn-gold{background:var(--gold);color:var(--navy);}.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:5px 11px;font-size:.75rem;border-radius:6px;}
+.btn-edit2{background:#eff6ff;color:#1d4ed8;border:none;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;transition:.2s;}
+.btn-del2{background:#fef2f2;color:#dc2626;border:none;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;transition:.2s;}
+.btn-view2{background:#f0fdf4;color:#16a34a;border:none;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;transition:.2s;}
+.btn-edit2:hover{background:#dbeafe;}.btn-del2:hover{background:#fee2e2;}.btn-view2:hover{background:#dcfce7;}
+.actions{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* ===== FORM ===== */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;}
+.fg input,.fg select,.fg textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:.87rem;outline:none;transition:.2s;color:var(--text);}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--navy);}
+.fg textarea{resize:vertical;min-height:72px;}
+
+/* ===== MODAL ===== */
+.overlay{display:none;position:fixed;inset:0;background:rgba(13,33,55,.65);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:28px;width:94%;max-width:640px;max-height:90vh;overflow-y:auto;animation:su .25s ease;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.modal-lg{max-width:860px;}
+@keyframes su{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--navy);margin-bottom:20px;font-weight:700;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.btn-cancel{background:var(--light);color:var(--gray);border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;}
+
+/* ===== CHECKLIST ===== */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.check-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:.2s;}
+.check-item.done{border-color:#86efac;background:#f0fdf4;}
+.check-box{width:18px;height:18px;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s;}
+.check-item.done .check-box{background:var(--green);border-color:var(--green);}
+.check-mark{display:none;color:#fff;font-size:.7rem;font-weight:700;}
+.check-item.done .check-mark{display:block;}
+.check-text{font-size:.8rem;color:#374151;}
+.check-item.done .check-text{color:var(--green);text-decoration:line-through;}
+.progress-bar{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin:8px 0 16px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));border-radius:3px;transition:width .5s;}
+
+/* ===== FORMS FOLDER ===== */
+.folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.folder-card{background:#fff;border-radius:12px;border:1.5px solid var(--border);padding:18px;cursor:pointer;transition:.2s;text-align:center;}
+.folder-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(13,33,55,.12);transform:translateY(-2px);}
+.folder-icon{font-size:2.2rem;margin-bottom:10px;}
+.folder-name{font-weight:700;color:var(--navy);font-size:.88rem;margin-bottom:4px;}
+.folder-count{font-size:.72rem;color:var(--gray);}
+
+/* ===== FORM VIEWER ===== */
+.form-viewer{background:#fff;border:1px solid var(--border);border-radius:10px;padding:24px;margin-top:12px;}
+.form-section-title{font-weight:700;color:var(--navy);margin:16px 0 8px;font-size:.9rem;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-row.g3{grid-template-columns:1fr 1fr 1fr;}
+.form-field{border-bottom:1px solid #cbd5e1;padding:6px 4px;min-height:28px;font-size:.83rem;color:var(--text);}
+.form-label{font-size:.7rem;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.form-field-wrap{margin-bottom:8px;}
+
+/* ===== MATERIAL MOVEMENT ===== */
+.move-type-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.move-tab{padding:7px 16px;border-radius:7px;border:1.5px solid var(--border);cursor:pointer;font-size:.8rem;font-weight:600;background:#fff;color:var(--gray);transition:.2s;}
+.move-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+/* ===== PRINT ===== */
+@media print{
+  .sidebar,.topbar,.no-print,.actions,.btn,.tbtn,.lh-edit-btn,button{display:none!important;}
+  body{background:#fff;}
+  .app-body{display:block;}
+  .main-content{padding:0;}
+  .page{display:block!important;}
+  .card,.letterhead{box-shadow:none;border:1px solid #e2e8f0;break-inside:avoid;margin-bottom:12px;}
+  .letterhead{border:2px solid var(--navy);}
+  .print-letterhead{display:block!important;}
+}
+.print-letterhead{display:none;}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  :root{--sidebar:0px;}
+  .sidebar{position:fixed;left:-240px;top:54px;width:240px;height:calc(100vh - 54px);z-index:150;transition:left .3s ease;box-shadow:4px 0 20px rgba(0,0,0,.3);}
+  .sidebar.open{left:0;}
+  .sidebar-overlay{display:none;position:fixed;inset:0;top:54px;background:#00000060;z-index:140;}
+  .sidebar-overlay.open{display:block;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .folder-grid{grid-template-columns:repeat(2,1fr);}
+  .form-grid{grid-template-columns:1fr;}
+  .check-grid{grid-template-columns:1fr;}
+  .topbar-actions{gap:4px;}
+  .tbtn{padding:6px 8px;font-size:.72rem;}
+  .topbar-title{font-size:.85rem;}
+  .menu-btn{display:flex!important;}
+  .main-content{padding:14px 12px;}
+}
+@media(min-width:769px){
+  .menu-btn{display:none!important;}
+  .sidebar-overlay{display:none!important;}
+}
+
+/* EXPIRY ALERTS */
+.expiry-banner{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:none}
+.expiry-banner.show{display:block}
+.expiry-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.15);font-size:.82rem}
+.expiry-item:last-child{border-bottom:none}
+.exp-badge{background:rgba(255,255,255,.2);border-radius:4px;padding:2px 8px;font-size:.7rem;font-weight:700}
+.exp-warn{background:#fff3cd;color:#856404}
+.exp-danger{background:#f8d7da;color:#721c24}
+
+@keyframes fb-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+#fb-dot.online { animation: fb-pulse 1.8s infinite; }
+
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;font-weight:700;margin:2px;}
+.info-box{background:#eff6ff;border-left:4px solid var(--teal);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.82rem;color:#1e40af;margin-bottom:14px;}
+.empty-msg{text-align:center;padding:32px;color:var(--gray);font-size:.87rem;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.law-row-warn td{background:#fffbeb!important;}
+.law-row-old td{background:#fef2f2!important;}
+.verify-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;}
+.verify-ok{background:#dcfce7;color:#15803d;}
+.verify-warn{background:#fef9c3;color:#854d0e;}
+.verify-old{background:#fee2e2;color:#b91c1c;}
+.dot-g{background:var(--green);}.dot-r{background:var(--red);}.dot-a{background:var(--amber);}
+
+/* ══ DASHBOARD V3 ENHANCEMENTS ══ */
+.dash-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.dash-kpi{background:#fff;border-radius:14px;padding:18px 16px;box-shadow:0 2px 12px rgba(13,33,55,.08);position:relative;overflow:hidden;transition:.2s;cursor:default;}
+.dash-kpi:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(13,33,55,.14);}
+.dash-kpi::after{content:'';position:absolute;top:-18px;right:-18px;width:70px;height:70px;border-radius:50%;opacity:.07;}
+.dash-kpi-icon{font-size:1.6rem;margin-bottom:8px;}
+.dash-kpi-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;line-height:1;margin-bottom:4px;}
+.dash-kpi-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);}
+.dash-kpi-sub{font-size:.68rem;color:#94a3b8;margin-top:4px;}
+.dash-kpi-bar{height:3px;border-radius:2px;margin-top:10px;background:#e2e8f0;overflow:hidden;}
+.dash-kpi-bar-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+
+.dash-chart-row{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px;}
+.dash-chart-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(13,33,55,.07);}
+.chart-card-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--navy);font-weight:700;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;}
+.chart-card-sub{font-size:.7rem;color:var(--gray);margin-bottom:16px;}
+.chart-controls{display:flex;gap:6px;}
+.chart-btn{padding:3px 10px;border-radius:5px;border:1.5px solid var(--border);background:#fff;font-size:.68rem;font-weight:700;color:var(--gray);cursor:pointer;transition:.15s;}
+.chart-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:20px;}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:8px;}
+.donut-legend-item{display:flex;align-items:center;justify-content:space-between;font-size:.76rem;}
+.donut-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;margin-right:7px;}
+
+/* Activity feed */
+.activity-feed{display:flex;flex-direction:column;gap:0;}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9;}
+.activity-item:last-child{border-bottom:none;}
+.activity-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.activity-text{flex:1;min-width:0;}
+.activity-title{font-size:.82rem;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.activity-meta{font-size:.7rem;color:var(--gray);margin-top:1px;}
+
+/* Compliance score ring */
+.score-ring-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;}
+.score-ring-label{font-size:.75rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-top:10px;}
+
+/* Bar chart */
+.bar-chart{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.bar-row{display:flex;align-items:center;gap:10px;}
+.bar-label{font-size:.73rem;color:var(--gray);font-weight:600;width:90px;flex-shrink:0;text-align:right;}
+.bar-track{flex:1;background:#f1f5f9;border-radius:4px;height:20px;overflow:hidden;position:relative;}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:.68rem;font-weight:700;color:#fff;transition:width .8s ease;}
+.bar-val{font-size:.73rem;font-weight:700;width:30px;text-align:right;flex-shrink:0;}
+
+/* Trend line (canvas) */
+.trend-canvas-wrap{position:relative;}
+
+/* Alert summary */
+.alert-summary{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.alert-pill{display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;font-size:.75rem;font-weight:700;}
+.ap-danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+.ap-warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
+.ap-ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+
+@media(max-width:900px){
+  .dash-kpi-row{grid-template-columns:repeat(3,1fr);}
+  .dash-chart-row,.dash-chart-row2{grid-template-columns:1fr;}
+}
+@media(max-width:600px){
+  .dash-kpi-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+<!-- ══ FIREBASE REALTIME DATABASE ══ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAINGnBokW0slG7XhR6D3m05Ymi2GJoJQg",
+  authDomain: "textile-compliance-master.firebaseapp.com",
+  databaseURL: "https://textile-compliance-master-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "textile-compliance-master",
+  storageBucket: "textile-compliance-master.firebasestorage.app",
+  messagingSenderId: "349290396645",
+  appId: "1:349290396645:web:63fdc79053a4b7a9aacd0c",
+  measurementId: "G-FY8BTSZ0J4"
+};
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const fbDB = firebase.database();
+function fbSave(path, data) {
+  return fbDB.ref(path).set({ data: JSON.stringify(data), updatedAt: new Date().toISOString() });
+}
+function fbLoad(path, callback) {
+  fbDB.ref(path).once('value').then(snap => {
+    if (snap.exists()) { try { callback(JSON.parse(snap.val().data)); } catch(e) { callback(null); } }
+    else { callback(null); }
+  }).catch(() => callback(null));
+}
+function fbToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a2a1a;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+  t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+</script>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="topbar">
+  <div class="topbar-brand">
+    <button class="menu-btn" onclick="toggleSidebar()" style="background:none;border:1px solid #f0d08040;border-radius:6px;color:var(--gold2);font-size:1.2rem;cursor:pointer;padding:5px 10px;display:none">☰</button>
+    <div class="topbar-logo" onclick="showPage('dashboard')" id="topLogo">AR</div>
+    <div>
+      <div class="topbar-title" id="topCompName">Al-Rehman Garments Pvt. Ltd.</div>
+      <div class="topbar-sub" id="topCompAddr">Plot No. 14, Sector 8, GIDC Industrial Area, Surat, Gujarat, India</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <!-- 🔥 Firebase Connectivity Indicator -->
+    <div id="fb-status-btn" onclick="checkFirebaseStatus()" title="Firebase Connection Status" style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;cursor:pointer;border:1.5px solid #f0d08030;background:rgba(255,255,255,0.06);transition:.3s;user-select:none;">
+      <span style="font-size:1rem;">🔥</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;">
+        <span style="font-size:.62rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Firebase</span>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div id="fb-dot" style="width:9px;height:9px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 0 #94a3b8;transition:background .4s,box-shadow .4s;flex-shrink:0;"></div>
+          <span id="fb-label" style="font-size:.7rem;font-weight:700;color:#94a3b8;">Connecting...</span>
+        </div>
+      </div>
+    </div>
+    <button class="tbtn" onclick="goHome()" style="background:#1a3a5c;color:#f0d080;border:1px solid #f0d08040" title="Back to Launcher">🏠 Home</button>
+    <button class="tbtn" onclick="exportExcelAll()" style="background:#1a6a3a;color:#fff" title="Excel Export">📊 Excel</button>
+    <button class="tbtn tbtn-backup" onclick="backupData()">💾 Backup</button>
+    <button class="tbtn tbtn-restore" onclick="document.getElementById('restoreInput').click()">📂 Restore</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(event)">
+    <button class="tbtn tbtn-print" onclick="window.print()">🖨️ Print</button>
+    <button class="tbtn tbtn-pdf" onclick="generatePDF()">📄 PDF</button>
+    <button class="tbtn tbtn-wa" onclick="shareWhatsApp()">📱 WhatsApp</button>
+  </div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section-label">Main</div>
+  <div class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">🏠</span>Dashboard</div>
+  <div class="nav-item" onclick="showPage('company')"><span class="nav-icon">🏭</span>Company Info</div>
+
+  <div class="nav-section-label">Compliance</div>
+  <div class="nav-item" onclick="showPage('audits')"><span class="nav-icon">🔍</span>Audit Records</div>
+  <div class="nav-item" onclick="showPage('textile')"><span class="nav-icon">🧵</span>Textile Compliance</div>
+  <div class="nav-item" onclick="showPage('checklist')"><span class="nav-icon">✅</span>Checklist</div>
+  <div class="nav-item" onclick="showPage('documents')"><span class="nav-icon">📁</span>Documents</div>
+
+  <div class="nav-section-label">Operations</div>
+  <div class="nav-item" onclick="showPage('material')"><span class="nav-icon">🚚</span>Material Movement</div>
+  <div class="nav-item" onclick="showPage('workers')"><span class="nav-icon">👷</span>Worker Records</div>
+
+  <div class="nav-section-label">Forms Folder</div>
+  <div class="nav-item" onclick="showPage('forms')"><span class="nav-icon">📋</span>All Forms</div>
+
+  <div class="nav-section-label">Gov. Regulations</div>
+  <div class="nav-item" onclick="showPage('laws')"><span class="nav-icon">⚖️</span>Laws & Regulations<span id="laws-alert-dot" style="display:none;margin-left:auto;width:8px;height:8px;background:#dc2626;border-radius:50%;flex-shrink:0;"></span></div>
+  <div class="nav-item" onclick="showPage('ai_advisor')"><span class="nav-icon">🤖</span>AI Compliance Advisor</div>
+
+  <div class="nav-section-label">System</div>
+  <div class="nav-item" onclick="showPage('backup_page')"><span class="nav-icon">💾</span>Backup & Restore</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
+
+<!-- ============ DASHBOARD ============ -->
+<div class="page active" id="page-dashboard">
+  <div id="lh-dashboard"></div>
+
+  <!-- Expiry Alerts Banner -->
+  <div class="expiry-banner" id="expiry-banner">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:8px">⚠️ Certificate / Audit Expiry Alerts</div>
+    <div id="expiry-items"></div>
+  </div>
+
+  <!-- Alert Pills -->
+  <div class="alert-summary" id="dash-alert-pills"></div>
+
+  <!-- KPI Cards -->
+  <div class="dash-kpi-row" id="dash-kpi-row"></div>
+
+  <!-- Row 1: Main Bar Chart + Donut -->
+  <div class="dash-chart-row">
+    <!-- Audit Status Bar Chart -->
+    <div class="chart-card">
+      <div class="chart-card-title">
+        📊 Compliance Overview
+        <div class="chart-controls">
+          <button class="chart-btn active" onclick="switchMainChart('bar',this)">Bar</button>
+          <button class="chart-btn" onclick="switchMainChart('line',this)">Trend</button>
+        </div>
+      </div>
+      <div class="chart-card-sub">Audits, Certificates, Documents aur Workers ka overview</div>
+      <canvas id="chart-main" height="200" style="width:100%;display:block;"></canvas>
+    </div>
+
+    <!-- Donut: Audit Status -->
+    <div class="chart-card">
+      <div class="chart-card-title">🍩 Audit Status</div>
+      <div class="chart-card-sub">Current audit cycle ka breakdown</div>
+      <div class="donut-wrap" style="flex-direction:column;align-items:center;">
+        <canvas id="chart-donut-audit" width="160" height="160"></canvas>
+        <div class="donut-legend" id="donut-audit-legend" style="width:100%;margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Cert Status Bars + Material Movement + Worker Depts -->
+  <div class="dash-chart-row2">
+    <!-- Certificate Status -->
+    <div class="chart-card">
+      <div class="chart-card-title">📜 Certificate Health</div>
+      <div class="chart-card-sub">Textile certifications ki validity status</div>
+      <canvas id="chart-cert" height="180" style="width:100%;display:block;margin-top:4px;"></canvas>
+    </div>
+
+    <!-- Material Movement Trend -->
+    <div class="chart-card">
+      <div class="chart-card-title">🚚 Material Movement</div>
+      <div class="chart-card-sub">IN / OUT / TRANSFER / RETURN breakdown</div>
+      <canvas id="chart-material" height="180" style="width:100%;display:block;margin-top:4px;"></canvas>
+    </div>
+
+    <!-- Worker Department Pie -->
+    <div class="chart-card">
+      <div class="chart-card-title">👷 Workers by Dept</div>
+      <div class="chart-card-sub">Department-wise worker distribution</div>
+      <canvas id="chart-workers" height="180" style="width:100%;display:block;margin-top:4px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 3: Compliance Score Ring + Activity Feed + Checklist -->
+  <div style="display:grid;grid-template-columns:220px 1fr 280px;gap:16px;margin-bottom:16px;" id="dash-row3">
+
+    <!-- Compliance Score Ring -->
+    <div class="chart-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div class="chart-card-title" style="width:100%;">🎯 Compliance Score</div>
+      <div class="chart-card-sub" style="width:100%;">Overall health index</div>
+      <div class="score-ring-wrap">
+        <canvas id="chart-score-ring" width="150" height="150"></canvas>
+        <div class="score-ring-label" id="dash-score-label">Calculating...</div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Feed -->
+    <div class="chart-card">
+      <div class="chart-card-title">🕐 Recent Activity</div>
+      <div class="chart-card-sub">Latest entries across all modules</div>
+      <div class="activity-feed" id="dash-activity-feed"></div>
+    </div>
+
+    <!-- Checklist Progress -->
+    <div class="chart-card">
+      <div class="chart-card-title">✅ Compliance Checklist</div>
+      <div class="chart-card-sub" id="dash-check-prog">0/0 done</div>
+      <div class="progress-bar"><div class="progress-fill" id="dash-prog-fill" style="width:0%"></div></div>
+      <div id="dash-check-items" style="font-size:.82rem;color:var(--gray);">Loading...</div>
+    </div>
+  </div>
+
+</div><!-- /page-dashboard -->
+
+<!-- ============ COMPANY INFO ============ -->
+<div class="page" id="page-company">
+  <div id="lh-company"></div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">🏭 Company Information</div><div class="card-subtitle">Edit your factory details — appears on all pages & documents</div></div>
+      <button class="btn btn-primary" onclick="openModal('modal-company')">✏️ Edit</button>
+    </div>
+    <div class="form-grid">
+      <div class="fg"><label>Company Name</label><div class="form-field" id="view-compName">Al-Rehman Garments Pvt. Ltd.</div></div>
+      <div class="fg"><label>Tagline</label><div class="form-field" id="view-compTag">Excellence in Ethical Manufacturing Since 2005</div></div>
+      <div class="fg full"><label>Address</label><div class="form-field" id="view-compAddr">Plot No. 14, Sector 8, GIDC Industrial Area, Surat, Gujarat - 395010, India</div></div>
+      <div class="fg"><label>Phone</label><div class="form-field" id="view-compPhone">+91-261-3256-7890</div></div>
+      <div class="fg"><label>Email</label><div class="form-field" id="view-compEmail">compliance@alrehmangarments.in</div></div>
+      <div class="fg"><label>Factory Reg No.</label><div class="form-field" id="view-compReg">GJ-FAC-2005-3478</div></div>
+      <div class="fg"><label>NTN</label><div class="form-field" id="view-compNTN">—</div></div>
+      <div class="fg"><label>Workers Count</label><div class="form-field" id="view-compWorkers">—</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AUDITS ============ -->
+<div class="page" id="page-audits">
+  <div id="lh-audits"></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🔍 Audit Records</div>
+      <button class="btn btn-primary" onclick="openAuditModal()">+ Add Audit</button>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Type</th><th>Auditor</th><th>Date</th><th>Status</th><th>Score</th><th>Next Due</th><th>Notes</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="audit-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TEXTILE COMPLIANCE ============ -->
+<div class="page" id="page-textile">
+  <div id="lh-textile"></div>
+  <div class="info-box">🧵 Textile & Garment ke liye specific compliance certifications track karein — WRAP, GOTS, OEKO-TEX, BCI, ZDHC aur zyada.</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🏅 Textile Certifications & Standards</div>
+      <button class="btn btn-primary" onclick="openTextileModal()">+ Add Certification</button>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Standard</th><th>Cert No.</th><th>Issued By</th><th>Scope</th><th>Valid From</th><th>Valid To</th><th>Status</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="textile-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">📊 Textile Compliance Standards — Reference</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="background:#f0fdf4;border-radius:8px;padding:14px;border-left:4px solid var(--green);">
+        <div style="font-weight:700;color:var(--green);margin-bottom:6px;">🌿 GOTS</div>
+        <div style="font-size:.78rem;color:#374151;">Global Organic Textile Standard — organic fiber certification from farm to finished product</div>
+      </div>
+      <div style="background:#eff6ff;border-radius:8px;padding:14px;border-left:4px solid #2563eb;">
+        <div style="font-weight:700;color:#1d4ed8;margin-bottom:6px;">🔬 OEKO-TEX</div>
+        <div style="font-size:.78rem;color:#374151;">Harmful substance testing — STANDARD 100, STeP, DETOX TO ZERO</div>
+      </div>
+      <div style="background:#fef9c3;border-radius:8px;padding:14px;border-left:4px solid var(--amber);">
+        <div style="font-weight:700;color:var(--amber);margin-bottom:6px;">🌍 WRAP</div>
+        <div style="font-size:.78rem;color:#374151;">Worldwide Responsible Accredited Production — 12 principles of ethical manufacturing</div>
+      </div>
+      <div style="background:#fdf4ff;border-radius:8px;padding:14px;border-left:4px solid #7c3aed;">
+        <div style="font-weight:700;color:#6d28d9;margin-bottom:6px;">☁️ BCI Cotton</div>
+        <div style="font-size:.78rem;color:#374151;">Better Cotton Initiative — sustainable cotton sourcing program</div>
+      </div>
+      <div style="background:#f0fdfa;border-radius:8px;padding:14px;border-left:4px solid var(--teal);">
+        <div style="font-weight:700;color:var(--teal);margin-bottom:6px;">💧 ZDHC</div>
+        <div style="font-size:.78rem;color:#374151;">Zero Discharge of Hazardous Chemicals — chemical management in wet processing</div>
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:14px;border-left:4px solid #ea580c;">
+        <div style="font-weight:700;color:#c2410c;margin-bottom:6px;">🔒 SA8000</div>
+        <div style="font-size:.78rem;color:#374151;">Social Accountability International — workers rights, safety, child labor prevention</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CHECKLIST ============ -->
+<div class="page" id="page-checklist">
+  <div id="lh-checklist"></div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">✅ Compliance Checklist</div><div class="card-subtitle" id="check-prog-label">0 / 0 Completed</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="addCheckItem()">+ Add Item</button>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--gray)" onclick="resetChecklist()">Reset All</button>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="check-prog-fill" style="width:0%"></div></div>
+    <div class="check-grid" id="checklist-grid"></div>
+  </div>
+</div>
+
+<!-- ============ DOCUMENTS ============ -->
+<div class="page" id="page-documents">
+  <div id="lh-documents"></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📁 Document Tracker</div>
+      <button class="btn btn-primary" onclick="openDocModal()">+ Add Document</button>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Document</th><th>Issued By</th><th>Issue Date</th><th>Expiry</th><th>Status</th><th>Remarks</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="doc-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MATERIAL MOVEMENT ============ -->
+<div class="page" id="page-material">
+  <div id="lh-material"></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🚚 Material Movement Records</div>
+      <button class="btn btn-primary" onclick="openMoveModal()">+ Add Record</button>
+    </div>
+    <div class="move-type-tabs">
+      <div class="move-tab active" onclick="filterMoves('all',this)">All Movements</div>
+      <div class="move-tab" onclick="filterMoves('IN',this)">📥 Inward (GRN)</div>
+      <div class="move-tab" onclick="filterMoves('OUT',this)">📤 Outward (Delivery)</div>
+      <div class="move-tab" onclick="filterMoves('TRANSFER',this)">🔄 Internal Transfer</div>
+      <div class="move-tab" onclick="filterMoves('RETURN',this)">↩️ Return</div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Date</th><th>GRN/DN No.</th><th>Type</th><th>Material</th><th>Qty</th><th>Unit</th><th>From</th><th>To</th><th>Supplier/Party</th><th>Status</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="move-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ WORKERS ============ -->
+<div class="page" id="page-workers">
+  <div id="lh-workers"></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">👷 Worker Records</div>
+      <button class="btn btn-primary" onclick="openWorkerModal()">+ Add Worker</button>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Name</th><th>ID/CNIC</th><th>Dept</th><th>Designation</th><th>Join Date</th><th>Gender</th><th>Status</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="worker-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FORMS FOLDER ============ -->
+<div class="page" id="page-forms">
+  <div id="lh-forms"></div>
+  <div class="info-box">📋 Textile & Garment factory ke liye tamam zaruri forms yahan available hain. Kisi bhi form ko click karein, fill karein aur print/PDF karein.</div>
+
+  <div class="folder-grid">
+    <div class="folder-card" onclick="openFormView('hr')"><div class="folder-icon">👥</div><div class="folder-name">HR Forms</div><div class="folder-count">8 Forms</div></div>
+    <div class="folder-card" onclick="openFormView('ehs')"><div class="folder-icon">🦺</div><div class="folder-name">EHS / Safety Forms</div><div class="folder-count">7 Forms</div></div>
+    <div class="folder-card" onclick="openFormView('compliance')"><div class="folder-icon">📋</div><div class="folder-name">Compliance Forms</div><div class="folder-count">6 Forms</div></div>
+    <div class="folder-card" onclick="openFormView('production')"><div class="folder-icon">⚙️</div><div class="folder-name">Production Forms</div><div class="folder-count">6 Forms</div></div>
+    <div class="folder-card" onclick="openFormView('material')"><div class="folder-icon">🚚</div><div class="folder-name">Material / Store Forms</div><div class="folder-count">5 Forms</div></div>
+    <div class="folder-card" onclick="openFormView('audit')"><div class="folder-icon">🔍</div><div class="folder-name">Audit Forms</div><div class="folder-count">4 Forms</div></div>
+  </div>
+
+  <div id="form-viewer-area" style="margin-top:18px;display:none;"></div>
+</div>
+
+
+<!-- ============ LAWS & REGULATIONS ============ -->
+<div class="page" id="page-laws">
+  <div id="lh-laws"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;">
+    <div class="stat" style="border-top-color:#7c3aed;"><div class="stat-n" id="laws-total" style="color:#7c3aed;">0</div><div class="stat-l">&#9878;&#65039; Total Laws</div></div>
+    <div class="stat r"><div class="stat-n" id="laws-outdated">0</div><div class="stat-l">&#128308; Verify Needed</div></div>
+    <div class="stat g"><div class="stat-n" id="laws-current">0</div><div class="stat-l">&#9989; Up to Date</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">&#9878;&#65039; Government Laws &amp; Compliance Regulations</div><div class="card-subtitle">India Textile &amp; Garment Sector — Auto-alert jab 90 din se zyada purana ho</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" style="background:#7c3aed;color:#fff;" onclick="openLawModal()">+ Add Law</button>
+        <button class="btn btn-sm" style="background:#0e7490;color:#fff;" onclick="refreshLawsCheck()">&#128260; Check All</button>
+      </div>
+    </div>
+    <div class="move-type-tabs">
+      <div class="move-tab active" onclick="filterLaws('all',this)">All</div>
+      <div class="move-tab" onclick="filterLaws('Labor',this)">&#128119; Labor</div>
+      <div class="move-tab" onclick="filterLaws('Environment',this)">&#127807; Environment</div>
+      <div class="move-tab" onclick="filterLaws('Safety',this)">&#129510; Safety</div>
+      <div class="move-tab" onclick="filterLaws('Textile',this)">&#129525; Textile</div>
+      <div class="move-tab" onclick="filterLaws('Export',this)">&#128230; Export</div>
+      <div class="move-tab" onclick="filterLaws('Tax',this)">&#128176; Tax/Finance</div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="tbl"><thead><tr>
+        <th>#</th><th>Law / Regulation</th><th>Category</th><th>Current Requirement</th><th>Effective Date</th><th>Last Verified</th><th>Alert</th><th>Source Link</th><th class="no-print">Actions</th>
+      </tr></thead><tbody id="laws-tbody"></tbody></table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">&#128279; Official Government Sources — India</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="gov-links-grid"></div>
+  </div>
+</div>
+
+<!-- ============ AI ADVISOR ============ -->
+<div class="page" id="page-ai_advisor">
+  <div id="lh-ai_advisor"></div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">&#129302; AI Compliance Advisor</div><div class="card-subtitle">India Textile &amp; Garment Compliance ke baare mein kuch bhi poochein — Hindi ya English mein</div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span><span style="font-size:.75rem;color:var(--green);font-weight:600;">AI Online</span></div>
+    </div>
+    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:.75rem;color:var(--gray);font-weight:600;margin-bottom:8px;">&#128161; Quick Questions:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;" id="quick-qs"></div>
+    </div>
+    <div id="ai-chat-box" style="background:#fff;border:1.5px solid var(--border);border-radius:10px;height:400px;overflow-y:auto;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px;">
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:3rem;margin-bottom:12px;">&#129302;</div>
+        <div style="font-weight:700;color:var(--navy);font-size:1rem;margin-bottom:6px;">AI Compliance Advisor</div>
+        <div style="font-size:.82rem;color:var(--gray);">India Textile &amp; Garment industry ke compliance, labor laws, certifications aur regulations ke baare mein poochein.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <input id="ai-input" type="text" placeholder="Kuch bhi poochein... e.g. Minimum wage kya hai? GOTS kaise milti hai?" style="flex:1;padding:11px 16px;border:1.5px solid var(--border);border-radius:9px;font-family:Outfit,sans-serif;font-size:.88rem;outline:none;" onkeydown="if(event.key==='Enter')sendAI()" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
+      <button onclick="sendAI()" style="background:var(--navy);color:#fff;border:none;padding:11px 22px;border-radius:9px;cursor:pointer;font-weight:700;font-family:Outfit,sans-serif;">Send &#10148;</button>
+    </div>
+    <div style="font-size:.7rem;color:#94a3b8;margin-top:8px;">&#9889; Powered by Claude AI (Anthropic) — Compliance advice ke liye. Legal decisions mein apne lawyer se confirm karein.</div>
+  </div>
+</div>
+
+<!-- ============ BACKUP PAGE ============ -->
+<div class="page" id="page-backup_page">
+  <div id="lh-backup_page"></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">💾 Backup & Restore</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:#f0fdf4;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">💾</div>
+        <div style="font-weight:700;color:var(--green);font-size:1rem;margin-bottom:8px;">Backup Data</div>
+        <div style="font-size:.82rem;color:var(--gray);margin-bottom:16px;">Saara data JSON file mein export karein. Safe rakhein apne computer ya cloud mein.</div>
+        <button class="btn btn-primary" onclick="backupData()">📥 Download Backup</button>
+      </div>
+      <div style="background:#eff6ff;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">📂</div>
+        <div style="font-weight:700;color:#1d4ed8;font-size:1rem;margin-bottom:8px;">Restore Data</div>
+        <div style="font-size:.82rem;color:var(--gray);margin-bottom:16px;">Pehle ka backup restore karein. JSON file select karein aur upload karein.</div>
+        <button class="btn btn-primary" onclick="document.getElementById('restoreInput').click()">📤 Restore Backup</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:.8rem;color:var(--gray);">
+      <b>Backup mein shaamil hoga:</b> Company info, Audits, Textile certifications, Documents, Material movements, Worker records, Checklist state<br>
+      <b>Tip:</b> Har hafte backup lein aur alag jagah save karein (email, Google Drive, USB).
+    </div>
+    <div class="divider"></div>
+    <div id="backup-history" style="font-size:.82rem;color:var(--gray);">Last backup: Not yet taken</div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+</div><!-- /app-body -->
+
+<!-- ============================== MODALS ============================== -->
+
+<!-- COMPANY MODAL -->
+<div class="overlay" id="modal-company">
+  <div class="modal">
+    <div class="modal-title">🏭 Edit Company Info</div>
+    <div class="form-grid">
+      <div class="fg full"><label>Company Name</label><input id="c_name" type="text"></div>
+      <div class="fg full"><label>Tagline</label><input id="c_tag" type="text"></div>
+      <div class="fg full"><label>Address</label><textarea id="c_addr" rows="2"></textarea></div>
+      <div class="fg"><label>Phone</label><input id="c_phone" type="text"></div>
+      <div class="fg"><label>Email</label><input id="c_email" type="email"></div>
+      <div class="fg"><label>Factory Reg No.</label><input id="c_reg" type="text"></div>
+      <div class="fg"><label>NTN</label><input id="c_ntn" type="text"></div>
+      <div class="fg"><label>Logo Initials (2 chars)</label><input id="c_logo" type="text" maxlength="2"></div>
+      <div class="fg"><label>Workers Count</label><input id="c_workers" type="number"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-company')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompany()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT MODAL -->
+<div class="overlay" id="modal-audit">
+  <div class="modal">
+    <div class="modal-title" id="audit-modal-title">+ Add Audit</div>
+    <div class="form-grid">
+      <div class="fg"><label>Audit Type</label>
+        <select id="a_type"><option>BSCI</option><option>SEDEX/SMETA</option><option>SA8000</option><option>WRAP</option><option>ISO 9001</option><option>ISO 14001</option><option>Walmart</option><option>H&M</option><option>Primark</option><option>C&A</option><option>M&S</option><option>Internal Audit</option><option>Other</option></select></div>
+      <div class="fg"><label>Auditor / Agency</label><input id="a_auditor" type="text" placeholder="e.g. Bureau Veritas"></div>
+      <div class="fg"><label>Audit Date</label><input id="a_date" type="date"></div>
+      <div class="fg"><label>Next Due Date</label><input id="a_next" type="date"></div>
+      <div class="fg"><label>Score / Grade</label><input id="a_score" type="text" placeholder="e.g. 85% / A"></div>
+      <div class="fg"><label>Status</label>
+        <select id="a_status"><option>Approved</option><option>Conditional</option><option>Failed</option><option>Pending</option></select></div>
+      <div class="fg full"><label>Findings / Notes</label><textarea id="a_notes" placeholder="Key findings..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-audit')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAudit()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEXTILE MODAL -->
+<div class="overlay" id="modal-textile">
+  <div class="modal">
+    <div class="modal-title" id="textile-modal-title">+ Add Textile Certification</div>
+    <div class="form-grid">
+      <div class="fg"><label>Standard / Certification</label>
+        <select id="t_std"><option>GOTS</option><option>OEKO-TEX STANDARD 100</option><option>OEKO-TEX STeP</option><option>OEKO-TEX DETOX TO ZERO</option><option>WRAP</option><option>BCI Cotton</option><option>ZDHC</option><option>Bluesign</option><option>Fair Trade</option><option>Higg FEM</option><option>Higg FSLM</option><option>LEED</option><option>Cradle to Cradle</option><option>GRS (Global Recycled Standard)</option><option>RWS (Responsible Wool Standard)</option><option>Other</option></select></div>
+      <div class="fg"><label>Certificate Number</label><input id="t_cert" type="text" placeholder="e.g. GOTS-2024-PKK-001"></div>
+      <div class="fg"><label>Issued By</label><input id="t_issuer" type="text" placeholder="e.g. Control Union"></div>
+      <div class="fg"><label>Scope</label><input id="t_scope" type="text" placeholder="e.g. Wet Processing / Knitting"></div>
+      <div class="fg"><label>Valid From</label><input id="t_from" type="date"></div>
+      <div class="fg"><label>Valid To</label><input id="t_to" type="date"></div>
+      <div class="fg"><label>Status</label>
+        <select id="t_status"><option>Active</option><option>Expired</option><option>Pending Renewal</option><option>In Process</option></select></div>
+      <div class="fg"><label>License Fee / Cost</label><input id="t_cost" type="text" placeholder="Optional"></div>
+      <div class="fg full"><label>Notes</label><textarea id="t_notes" rows="2" placeholder="Remarks..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-textile')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTextile()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT MODAL -->
+<div class="overlay" id="modal-doc">
+  <div class="modal">
+    <div class="modal-title" id="doc-modal-title">+ Add Document</div>
+    <div class="form-grid">
+      <div class="fg full"><label>Document Name</label><input id="d_name" type="text" placeholder="e.g. Factory Registration Certificate"></div>
+      <div class="fg"><label>Category</label>
+        <select id="d_cat"><option>Legal / Registration</option><option>Safety / Fire NOC</option><option>Environment</option><option>Labor / HR</option><option>Quality</option><option>Textile Certification</option><option>Other</option></select></div>
+      <div class="fg"><label>Issued By</label><input id="d_issuer" type="text"></div>
+      <div class="fg"><label>Issue Date</label><input id="d_issue" type="date"></div>
+      <div class="fg"><label>Expiry Date</label><input id="d_expiry" type="date"></div>
+      <div class="fg full"><label>Remarks</label><input id="d_remarks" type="text"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-doc')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDoc()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIAL MOVEMENT MODAL -->
+<div class="overlay" id="modal-move">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="move-modal-title">+ Add Material Movement</div>
+    <div class="form-grid g3">
+      <div class="fg"><label>Date</label><input id="m_date" type="date"></div>
+      <div class="fg"><label>GRN / DN / Ref No.</label><input id="m_ref" type="text" placeholder="e.g. GRN-2024-001"></div>
+      <div class="fg"><label>Movement Type</label>
+        <select id="m_type"><option value="IN">📥 Inward (GRN)</option><option value="OUT">📤 Outward (Delivery)</option><option value="TRANSFER">🔄 Internal Transfer</option><option value="RETURN">↩️ Return</option></select></div>
+      <div class="fg full"><label>Material / Item Description</label><input id="m_item" type="text" placeholder="e.g. Cotton Fabric, Grey - 30s Combed"></div>
+      <div class="fg"><label>Quantity</label><input id="m_qty" type="number" placeholder="0"></div>
+      <div class="fg"><label>Unit</label>
+        <select id="m_unit"><option>Meters</option><option>Kg</option><option>Dozen</option><option>Pieces</option><option>Rolls</option><option>Cones</option><option>Cartons</option><option>Bags</option></select></div>
+      <div class="fg"><label>Rate / Price</label><input id="m_rate" type="text" placeholder="Optional"></div>
+      <div class="fg"><label>From (Location / Party)</label><input id="m_from" type="text" placeholder="e.g. Supplier / Store A"></div>
+      <div class="fg"><label>To (Location / Party)</label><input id="m_to" type="text" placeholder="e.g. Production / Buyer"></div>
+      <div class="fg"><label>Supplier / Party Name</label><input id="m_party" type="text"></div>
+      <div class="fg"><label>Vehicle / Courier</label><input id="m_vehicle" type="text" placeholder="Optional"></div>
+      <div class="fg"><label>Status</label>
+        <select id="m_status"><option>Received</option><option>Dispatched</option><option>In Transit</option><option>Pending</option><option>Returned</option></select></div>
+      <div class="fg full"><label>Remarks / Notes</label><textarea id="m_notes" rows="2" placeholder="Additional details..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-move')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMove()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORKER MODAL -->
+<div class="overlay" id="modal-worker">
+  <div class="modal">
+    <div class="modal-title" id="worker-modal-title">+ Add Worker</div>
+    <div class="form-grid">
+      <div class="fg"><label>Full Name</label><input id="w_name" type="text"></div>
+      <div class="fg"><label>CNIC / ID</label><input id="w_cnic" type="text"></div>
+      <div class="fg"><label>Department</label>
+        <select id="w_dept"><option>Cutting</option><option>Sewing</option><option>Finishing</option><option>Washing</option><option>Printing</option><option>Embroidery</option><option>Knitting</option><option>Weaving</option><option>Dyeing</option><option>Quality</option><option>Store / Material</option><option>Admin / HR</option><option>Security</option><option>Maintenance</option></select></div>
+      <div class="fg"><label>Designation</label><input id="w_desig" type="text" placeholder="e.g. Operator, Supervisor"></div>
+      <div class="fg"><label>Join Date</label><input id="w_join" type="date"></div>
+      <div class="fg"><label>Gender</label>
+        <select id="w_gender"><option>Male</option><option>Female</option><option>Other</option></select></div>
+      <div class="fg"><label>Status</label>
+        <select id="w_status"><option>Active</option><option>On Leave</option><option>Resigned</option><option>Terminated</option></select></div>
+      <div class="fg"><label>Wage / Salary</label><input id="w_wage" type="text" placeholder="Optional"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-worker')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWorker()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK ITEM ADD MODAL -->
+<div class="overlay" id="modal-check">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title">+ Add Checklist Item</div>
+    <div class="fg"><label>Item Description</label><input id="check-input" type="text" placeholder="e.g. EOBI Registration Certificate"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-check')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddCheck()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM VIEWER MODAL -->
+<div class="overlay" id="modal-form">
+  <div class="modal modal-lg">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title" id="form-modal-title" style="margin-bottom:0;">Form</div>
+      <div style="display:flex;gap:8px;">
+        <button class="tbtn tbtn-print" onclick="printForm()">🖨️ Print</button>
+        <button class="tbtn tbtn-pdf" onclick="pdfForm()">📄 PDF</button>
+        <button class="btn-cancel" onclick="closeModal('modal-form')">✕ Close</button>
+      </div>
+    </div>
+    <div id="form-modal-body"></div>
+  </div>
+</div>
+
+
+<!-- LAW MODAL -->
+<div class="overlay" id="modal-law">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="law-modal-title">+ Add Law / Regulation</div>
+    <div class="form-grid">
+      <div class="fg full"><label>Law / Regulation Name</label><input id="l_name" type="text" placeholder="e.g. Sindh Minimum Wages Act 2015 — Revised Notification 2024"></div>
+      <div class="fg"><label>Category</label>
+        <select id="l_cat">
+          <option>Labor</option><option>Environment</option><option>Safety</option>
+          <option>Textile</option><option>Export</option><option>Tax</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fg"><label>Governing Body</label><input id="l_body" type="text" placeholder="e.g. MOHR / SEPA / EOBI / FBR"></div>
+      <div class="fg full"><label>Current Requirement / Rate / Limit</label><textarea id="l_req" rows="2" placeholder="e.g. Minimum wage: PKR 37,000/month (effective July 2024). Applicable to all factory workers."></textarea></div>
+      <div class="fg"><label>Effective Date</label><input id="l_eff" type="date"></div>
+      <div class="fg"><label>Last Verified Date</label><input id="l_verified" type="date"></div>
+      <div class="fg full"><label>Source URL / Notification Reference</label><input id="l_url" type="text" placeholder="e.g. https://mohr.gov.pk/notification-2024 or SRO No. 441(I)/2024"></div>
+      <div class="fg full"><label>Notes / Factory Action Required</label><textarea id="l_notes" rows="2" placeholder="e.g. Update all wage slips to new minimum. Update payroll software by August 2024."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-law')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLaw()">&#128190; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== SCRIPT ============================== -->
+<script>
+// ===== STATE =====
+let DB = {
+  company:{name:'Al-Rehman Garments Pvt. Ltd.',tag:'Excellence in Ethical Manufacturing Since 2005',addr:'Plot 45-B, Sector 7, SITE Area, Karachi, India',phone:'+91-261-3256-7890',email:'compliance@alrehman.com',reg:'KHI-2005-3478',ntn:'',workers:'',logo:'AR'},
+  audits:[], textile:[], docs:[], moves:[], workers:[],
+  checklist:{items:['Factory Registration Certificate','Fire NOC Certificate','Pollution Control Certificate (NEQS)','Workers Attendance Records (Updated)','Wage Slips — Current Month','Age Proof (CNIC/B-Form) All Workers','HR Policy Document','Emergency Evacuation Plan','Machine Safety Inspection Record','First Aid Box & Trained Personnel','Grievance Committee Meeting Minutes','Worker Training Records','EPF & ESI Registration','Factory License (State)','Overtime Records & Payment Slips','Canteen / Rest Area Facility','Drinking Water Test Report','Medical Room & First Aider'],states:[]},
+  laws:[]
+};
+DB.checklist.states = new Array(DB.checklist.items.length).fill(false);
+
+let editIdx = {audit:null,textile:null,doc:null,move:null,worker:null};
+let moveFilter = 'all';
+
+// ===== DUMMY DATA =====
+const DUMMY = {
+  audits:[
+    {type:'BSCI',auditor:'Bureau Veritas',date:'2024-03-15',next:'2025-03-15',score:'88% / B+',status:'Approved',notes:'Minor issues in overtime documentation. CAPA submitted and closed within 30 days.'},
+    {type:'SEDEX/SMETA',auditor:'SGS India',date:'2024-06-20',next:'2025-06-20',score:'91% / A',status:'Approved',notes:'All 4 pillars passed. Excellent worker welfare facilities noted by auditor.'},
+    {type:'WRAP',auditor:'Intertek',date:'2024-09-10',next:'2025-09-10',score:'76% / C+',status:'Conditional',notes:'Fire exit on 2nd floor partially blocked. Corrective action taken within 15 days. Re-inspection passed.'},
+    {type:'Internal Audit',auditor:'Internal — Compliance Dept.',date:'2025-01-08',next:'2025-07-08',score:'82%',status:'Approved',notes:'Self-audit conducted across all departments. PPE usage improved vs last quarter.'},
+    {type:'ISO 9001',auditor:'DNV GL',date:'2023-11-05',next:'2026-11-05',score:'Certified',status:'Approved',notes:'ISO 9001:2015 Quality Management System certification renewed for 3 years.'},
+  ],
+  textile:[
+    {std:'GOTS',cert:'GOTS-2024-PKK-00892',issuer:'Control Union Certifications',scope:'Knitting, Dyeing & Finishing',from:'2024-04-01',to:'2025-03-31',status:'Active',cost:'PKR 185,000',notes:'Covers organic cotton yarn processing through finished fabric stage.'},
+    {std:'OEKO-TEX STANDARD 100',cert:'OT-100-2024-KHI-334',issuer:'Hohenstein Institute',scope:'All Fabric Categories — Class I & II',from:'2024-01-15',to:'2025-01-14',status:'Active',cost:'PKR 95,000',notes:'Passed all harmful substance limits. Certificate valid for 12 months.'},
+    {std:'WRAP',cert:'WRAP-PKK-2024-7821',issuer:'WRAP International',scope:'Entire Factory — All Departments',from:'2023-10-01',to:'2025-09-30',status:'Active',cost:'USD 1,200',notes:'Gold level certification. All 12 WRAP principles complied.'},
+    {std:'BCI Cotton',cert:'BCI-2024-SEED-PKK-441',issuer:'Better Cotton Initiative',scope:'Cotton Procurement & Sourcing',from:'2024-03-01',to:'2025-02-28',status:'Active',cost:'USD 800',notes:'Better Cotton sourcing license. 60% of cotton purchased under BCI program.'},
+    {std:'ZDHC',cert:'ZDHC-MRSL-2024-KHI-55',issuer:'ZDHC Foundation',scope:'Wet Processing — Dyeing & Printing Unit',from:'2024-02-10',to:'2025-02-09',status:'Pending Renewal',cost:'USD 650',notes:'MRSL v3.1 compliant. Renewal process started. New certificate expected in 30 days.'},
+  ],
+  docs:[
+    {name:'Factory Registration Certificate',cat:'Legal / Registration',issuer:'SITE Authority Karachi',issue:'2005-06-01',expiry:'2026-05-31',remarks:'Annual renewal required. Next renewal: June 2026'},
+    {name:'Fire NOC Certificate',cat:'Safety / Fire NOC',issuer:'Karachi Fire Brigade',issue:'2024-08-15',expiry:'2025-08-14',remarks:'Fire extinguishers & exit routes inspected. 24 fire points installed.'},
+    {name:'NEQS Pollution Control Certificate',cat:'Environment',issuer:'SEPA — Sindh Environmental Protection Agency',issue:'2024-01-20',expiry:'2025-01-19',remarks:'Effluent treatment plant operational. Water test results within NEQS limits.'},
+    {name:'EOBI Registration Certificate',cat:'Labor / HR',issuer:'Employees Old-Age Benefits Institution',issue:'2006-03-10',expiry:'',remarks:'Permanent registration. Monthly contributions current. Reg No: EOBI-KHI-004821'},
+    {name:'Factory License (State) (PESSI)',cat:'Labor / HR',issuer:'Provincial Employees Social Security Institution',issue:'2006-03-10',expiry:'',remarks:'All workers registered. Monthly contributions paid on time. No pending dues.'},
+  ],
+  moves:[
+    {date:'2025-04-10',ref:'GRN-2025-041',type:'IN',item:'Cotton Fabric — Grey 30s Combed (White)',qty:'2500',unit:'Meters',rate:'PKR 285/mtr',from:'M/s Gul Ahmed Textile Mills',to:'Main Store — Shelf A3',party:'Gul Ahmed Textile Mills Ltd.',vehicle:'TRK-KHI-4421',status:'Received',notes:'2 rolls short. Supplier intimated. Debit note raised for short delivery.'},
+    {date:'2025-04-12',ref:'MRS-2025-087',type:'TRANSFER',item:'Dyed Fabric — Navy Blue 30s (Cut-ready)',qty:'1800',unit:'Meters',rate:'—',from:'Dyeing Store',to:'Cutting Department',party:'Internal Transfer',vehicle:'',status:'Received',notes:'Fabric issued to cutting department for Style No. PO-H&M-2025-044'},
+    {date:'2025-04-15',ref:'DC-2025-029',type:'OUT',item:'Finished Garments — Men\'s T-Shirt (Style 044)',qty:'5400',unit:'Pieces',rate:'USD 3.80/pc',from:'Finished Goods Store',to:'Karachi Port — Exp. via COSCO',party:'H&M Hennes & Mauritz — Sweden',vehicle:'Container: TGHU-881234-5',status:'Dispatched',notes:'LC No: LC-2025-HM-00441. B/L copy received. Custom clearance done.'},
+    {date:'2025-04-18',ref:'GRN-2025-048',type:'IN',item:'Sewing Thread — Coats EPIC 120 (White/Black)',qty:'240',unit:'Cones',rate:'PKR 180/cone',from:'M/s Nadeem Thread House',to:'Store — Thread Section',party:'Nadeem Thread House',vehicle:'Van-KHI-1192',status:'Received',notes:'All cones checked for breaks and tension. Quality OK. Invoice attached.'},
+    {date:'2025-04-22',ref:'RTN-2025-011',type:'RETURN',item:'Defective Fabric — Pilling Defect (Lot C)',qty:'320',unit:'Meters',rate:'PKR 285/mtr',from:'Cutting Department',to:'M/s Gul Ahmed Textile Mills',party:'Gul Ahmed Textile Mills Ltd.',vehicle:'TRK-KHI-4421',status:'Returned',notes:'Fabric rejected by QC due to pilling defect in 3 rolls. Return challan issued. Credit note pending.'},
+  ],
+  workers:[
+    {name:'Muhammad Asif Khan',cnic:'42101-7654321-3',dept:'Sewing',desig:'Senior Operator',join:'2018-04-01',gender:'Male',status:'Active',wage:'PKR 32,000'},
+    {name:'Nasreen Bibi',cnic:'42201-8821445-6',dept:'Finishing',desig:'Quality Inspector',join:'2020-09-15',gender:'Female',status:'Active',wage:'PKR 28,500'},
+    {name:'Tariq Mehmood',cnic:'42301-5534122-1',dept:'Cutting',desig:'Cutting Master',join:'2015-02-10',gender:'Male',status:'Active',wage:'PKR 45,000'},
+    {name:'Sana Fatima',cnic:'42101-9923441-8',dept:'Quality',desig:'AQL Inspector',join:'2022-06-01',gender:'Female',status:'Active',wage:'PKR 30,000'},
+    {name:'Arif Hussain',cnic:'42501-3312987-5',dept:'Store / Material',desig:'Store Keeper',join:'2019-11-20',gender:'Male',status:'Active',wage:'PKR 27,000'},
+  ],
+  checklistStates:[true,true,true,true,true,true,false,true,false,true,true,true,true,true,false,false,true,false],
+  laws:[
+    {name:'Minimum Wages Act 1948 — Revised Schedule 2024-25 (Central)',cat:'Labor',body:'Ministry of Labour & Employment, Govt. of India',req:'Central sphere minimum wage (unskilled): INR 783/day (Zone A). Skilled: INR 892/day. Textile/Garment workers: State rates apply — Maharashtra INR 14,842/month, Gujarat INR 12,000/month, Tamil Nadu INR 10,500/month (2024 revised). Review every 5 years. Failure attracts imprisonment up to 6 months under Section 22.',eff:'2024-04-01',verified:'2025-01-10',url:'https://labour.gov.in',notes:'All wage slips updated to new rates. Payroll software configured. Next state revision expected March 2025.'},
+    {name:'EPF & MP Act 1952 — Provident Fund & ESI Contribution Rates',cat:'Labor',body:'EPFO — Employees Provident Fund Organisation',req:'PF: Employer 12% of basic+DA, Employee 12% of basic+DA. ESI: Employer 3.25% of gross wages, Employee 0.75% of gross wages. Applicable: PF — establishments with 20+ workers; ESI — wages up to INR 21,000/month. PF wage ceiling: INR 15,000 for mandatory contribution.',eff:'2020-07-01',verified:'2025-02-05',url:'https://www.epfindia.gov.in',notes:'ECR filing done monthly. All 312 workers PF registered. ESI cards issued. No arrears. UAN generated for all workers.'},
+    {name:'Factories Act 1948 — Working Hours, Safety & Welfare (India)',cat:'Safety',body:'Chief Inspector of Factories — State Labour Department',req:'Adult workers: Max 9 hours/day, 48 hours/week. OT: Max 50 hours/quarter; OT wages at 2x normal rate. Rest interval: 30 min after 5 continuous hours. Weekly rest: 1 day. Safety officer mandatory for 1000+ workers. First aid box: 1 per 150 workers. Canteen: mandatory for 250+ workers.',eff:'1948-01-01',verified:'2025-01-20',url:'https://labour.gov.in',notes:'OT register (Form 25) maintained. Safety officer appointed. Canteen operational. Annual factory return (Form 21/22) filed.'},
+    {name:'Environment Protection Act 1986 + CPCB Textile Effluent Standards',cat:'Environment',body:'CPCB — Central Pollution Control Board / State PCB',req:'Textile effluent: pH 5.5-9.0, BOD max 30 mg/L (after treatment), COD max 250 mg/L, TSS max 100 mg/L, TDS max 2100 mg/L, Colour: 400 Pt-Co units. ETP mandatory for wet processing units. Consent to Operate (CTO) required annually from State PCB. Green category factories: self-monitoring quarterly.',eff:'2017-03-22',verified:'2024-12-15',url:'https://cpcb.nic.in',notes:'ETP operational. CTO renewed Jan 2025 valid till Dec 2025. Monthly effluent tests done by NABL-accredited lab. Last results within CPCB limits.'},
+    {name:'ZDHC MRSL v3.1 — Restricted Substances for Textile Processing',cat:'Textile',body:'ZDHC Foundation (International)',req:'Manufacturing Restricted Substances List v3.1: Banned AZO dyes (carcinogenic amines), Formaldehyde >75ppm, Phthalates (DEHP, BBP, DBP), Heavy metals (Pb<1ppm, Cd<50ppm, Cr VI banned), Halogenated solvents, APEOs, PFCs. All chemical suppliers must provide SDS (Safety Data Sheet). Wastewater testing per ZDHC MRSL required for buyer compliance.',eff:'2023-01-01',verified:'2024-11-28',url:'https://zdhc-foundation.org',notes:'Chemical register updated per MRSL v3.1. SDS collected for all 28 chemicals. Next NABL lab test scheduled April 2025. No banned chemicals in use.'},
+  ]
+};
+
+// ===== INIT =====
+function init(){
+  loadFromStorage();
+  renderAll();
+  setToday();
+}
+
+function loadFromStorage(){
+  const saved = localStorage.getItem('tcms_db');
+  if(saved){ try{ DB = JSON.parse(saved); }catch(e){} }
+  else {
+    DB.audits=DUMMY.audits; DB.textile=DUMMY.textile; DB.docs=DUMMY.docs;
+    DB.moves=DUMMY.moves; DB.workers=DUMMY.workers;
+    DB.checklist.states=DUMMY.checklistStates; DB.laws=DUMMY.laws;
+    saveToStorage();
+  }
+  fbLoad('compliance/db', data => {
+    if(data){ DB=data; localStorage.setItem('tcms_db',JSON.stringify(DB)); renderAll(); fbToast('☁️ Firebase se data load hua!'); }
+  });
+}
+function saveToStorage(){
+  localStorage.setItem('tcms_db', JSON.stringify(DB));
+  fbSave('compliance/db', DB);
+}
+
+function renderAll(){
+  renderLetterheads();
+  updateCompanyViews();
+  renderAudits(); renderTextile(); renderDocs(); renderMoves(); renderWorkers();
+  renderChecklist(); renderLaws(); updateStats(); renderDashboard();
+  renderQuickQs(); renderGovLinks();
+}
+
+function setToday(){
+  const t = new Date().toISOString().split('T')[0];
+  ['a_date','d_issue','m_date','w_join'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=t; });
+}
+
+// ===== LETTERHEAD =====
+function getLetterheadHTML(){
+  const c = DB.company;
+  return `<div class="letterhead" style="margin-bottom:18px;">
+    <div class="lh-top">
+      <div class="lh-logo">${c.logo||'CO'}</div>
+      <div class="lh-info">
+        <h1>${c.name}</h1>
+        <div class="lh-tag">${c.tag}</div>
+      </div>
+    </div>
+    <div class="lh-meta">
+      <div class="lh-meta-item">📍 <b>${c.addr}</b></div>
+      <div class="lh-meta-item">📞 <b>${c.phone}</b></div>
+      <div class="lh-meta-item">✉️ <b>${c.email}</b></div>
+      <div class="lh-meta-item">🏭 <b>${c.reg}</b></div>
+      ${c.ntn?`<div class="lh-meta-item">NTN: <b>${c.ntn}</b></div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderLetterheads(){
+  const pages=['dashboard','company','audits','textile','checklist','documents','material','workers','forms','laws','ai_advisor','backup_page'];
+  pages.forEach(p=>{
+    const el=document.getElementById('lh-'+p);
+    if(el) el.innerHTML=getLetterheadHTML();
+  });
+}
+
+// ===== NAVIGATION =====
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.textContent.toLowerCase().includes(id.toLowerCase().replace('_',' ').replace('backup page','backup'))) n.classList.add('active'); });
+  renderLetterheads();
+}
+
+// ===== COMPANY =====
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function openCompanyModal(){
+  const c=DB.company;
+  document.getElementById('c_name').value=c.name;
+  document.getElementById('c_tag').value=c.tag;
+  document.getElementById('c_addr').value=c.addr;
+  document.getElementById('c_phone').value=c.phone;
+  document.getElementById('c_email').value=c.email;
+  document.getElementById('c_reg').value=c.reg;
+  document.getElementById('c_ntn').value=c.ntn||'';
+  document.getElementById('c_logo').value=c.logo||'';
+  document.getElementById('c_workers').value=c.workers||'';
+  openModal('modal-company');
+}
+
+function saveCompany(){
+  DB.company={
+    name:document.getElementById('c_name').value||DB.company.name,
+    tag:document.getElementById('c_tag').value,
+    addr:document.getElementById('c_addr').value,
+    phone:document.getElementById('c_phone').value,
+    email:document.getElementById('c_email').value,
+    reg:document.getElementById('c_reg').value,
+    ntn:document.getElementById('c_ntn').value,
+    logo:(document.getElementById('c_logo').value||'CO').toUpperCase().substring(0,2),
+    workers:document.getElementById('c_workers').value
+  };
+  saveToStorage(); renderAll(); closeModal('modal-company');
+}
+
+function updateCompanyViews(){
+  const c=DB.company;
+  const fields={compName:c.name,compTag:c.tag,compAddr:c.addr,compPhone:c.phone,compEmail:c.email,compReg:c.reg,compNTN:c.ntn||'—',compWorkers:c.workers||'—'};
+  Object.entries(fields).forEach(([k,v])=>{ const el=document.getElementById('view-'+k); if(el) el.textContent=v; });
+  document.getElementById('topCompName').textContent=c.name;
+  document.getElementById('topCompAddr').textContent=c.addr;
+  document.getElementById('topLogo').textContent=c.logo||'CO';
+}
+
+// ===== AUDITS =====
+function openAuditModal(idx=null){
+  editIdx.audit=idx;
+  document.getElementById('audit-modal-title').textContent=idx!==null?'✏️ Edit Audit':'+ Add Audit';
+  if(idx!==null){ const a=DB.audits[idx]; document.getElementById('a_type').value=a.type; document.getElementById('a_auditor').value=a.auditor; document.getElementById('a_date').value=a.date; document.getElementById('a_next').value=a.next; document.getElementById('a_score').value=a.score; document.getElementById('a_status').value=a.status; document.getElementById('a_notes').value=a.notes; }
+  else { ['a_auditor','a_score','a_notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('a_type').value='BSCI'; document.getElementById('a_status').value='Approved'; document.getElementById('a_date').value=new Date().toISOString().split('T')[0]; document.getElementById('a_next').value=''; }
+  openModal('modal-audit');
+}
+
+function saveAudit(){
+  const a={type:document.getElementById('a_type').value,auditor:document.getElementById('a_auditor').value||'—',date:document.getElementById('a_date').value,next:document.getElementById('a_next').value,score:document.getElementById('a_score').value||'—',status:document.getElementById('a_status').value,notes:document.getElementById('a_notes').value};
+  if(editIdx.audit!==null) DB.audits[editIdx.audit]=a; else DB.audits.push(a);
+  saveToStorage(); renderAudits(); updateStats(); renderDashboard(); closeModal('modal-audit');
+}
+
+function deleteAudit(i){ if(confirm('Delete this audit?')){ DB.audits.splice(i,1); saveToStorage(); renderAudits(); updateStats(); renderDashboard(); } }
+
+function renderAudits(){
+  const tb=document.getElementById('audit-tbody');
+  if(!DB.audits.length){ tb.innerHTML='<tr><td colspan="9" class="empty-msg">No audits yet. Click "+ Add Audit"</td></tr>'; return; }
+  tb.innerHTML=DB.audits.map((a,i)=>`<tr>
+    <td style="color:var(--gray);font-weight:700">${i+1}</td>
+    <td><b>${a.type}</b></td><td>${a.auditor}</td>
+    <td>${fmtDate(a.date)}</td>
+    <td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+    <td><b>${a.score}</b></td><td>${fmtDate(a.next)}</td>
+    <td style="max-width:120px;font-size:.75rem;color:var(--gray);">${a.notes?a.notes.substring(0,50)+(a.notes.length>50?'...':''):''}</td>
+    <td class="no-print"><div class="actions"><button class="btn-edit2" onclick="openAuditModal(${i})">✏️</button><button class="btn-del2" onclick="deleteAudit(${i})">🗑️</button></div></td>
+  </tr>`).join('');
+}
+
+// ===== TEXTILE =====
+function openTextileModal(idx=null){
+  editIdx.textile=idx;
+  document.getElementById('textile-modal-title').textContent=idx!==null?'✏️ Edit Certification':'+ Add Textile Certification';
+  if(idx!==null){ const t=DB.textile[idx]; document.getElementById('t_std').value=t.std; document.getElementById('t_cert').value=t.cert; document.getElementById('t_issuer').value=t.issuer; document.getElementById('t_scope').value=t.scope; document.getElementById('t_from').value=t.from; document.getElementById('t_to').value=t.to; document.getElementById('t_status').value=t.status; document.getElementById('t_cost').value=t.cost||''; document.getElementById('t_notes').value=t.notes||''; }
+  else { ['t_cert','t_issuer','t_scope','t_from','t_to','t_cost','t_notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('t_std').value='GOTS'; document.getElementById('t_status').value='Active'; }
+  openModal('modal-textile');
+}
+
+function saveTextile(){
+  const t={std:document.getElementById('t_std').value,cert:document.getElementById('t_cert').value,issuer:document.getElementById('t_issuer').value,scope:document.getElementById('t_scope').value,from:document.getElementById('t_from').value,to:document.getElementById('t_to').value,status:document.getElementById('t_status').value,cost:document.getElementById('t_cost').value,notes:document.getElementById('t_notes').value};
+  if(editIdx.textile!==null) DB.textile[editIdx.textile]=t; else DB.textile.push(t);
+  saveToStorage(); renderTextile(); closeModal('modal-textile');
+}
+
+function deleteTextile(i){ if(confirm('Delete?')){ DB.textile.splice(i,1); saveToStorage(); renderTextile(); } }
+
+function renderTextile(){
+  const tb=document.getElementById('textile-tbody');
+  if(!DB.textile.length){ tb.innerHTML='<tr><td colspan="9" class="empty-msg">No certifications yet. Click "+ Add Certification"</td></tr>'; return; }
+  tb.innerHTML=DB.textile.map((t,i)=>`<tr>
+    <td style="color:var(--gray);font-weight:700">${i+1}</td>
+    <td><b>${t.std}</b></td><td>${t.cert||'—'}</td><td>${t.issuer||'—'}</td><td>${t.scope||'—'}</td>
+    <td>${fmtDate(t.from)}</td><td>${fmtDate(t.to)}</td>
+    <td><span class="badge ${t.status==='Active'?'b-green':t.status==='Expired'?'b-red':'b-yellow'}">${t.status}</span></td>
+    <td class="no-print"><div class="actions"><button class="btn-edit2" onclick="openTextileModal(${i})">✏️</button><button class="btn-del2" onclick="deleteTextile(${i})">🗑️</button></div></td>
+  </tr>`).join('');
+}
+
+// ===== DOCUMENTS =====
+function openDocModal(idx=null){
+  editIdx.doc=idx;
+  document.getElementById('doc-modal-title').textContent=idx!==null?'✏️ Edit Document':'+ Add Document';
+  if(idx!==null){ const d=DB.docs[idx]; document.getElementById('d_name').value=d.name; document.getElementById('d_cat').value=d.cat; document.getElementById('d_issuer').value=d.issuer; document.getElementById('d_issue').value=d.issue; document.getElementById('d_expiry').value=d.expiry; document.getElementById('d_remarks').value=d.remarks||''; }
+  else { ['d_name','d_issuer','d_issue','d_expiry','d_remarks'].forEach(id=>document.getElementById(id).value=''); document.getElementById('d_cat').value='Legal / Registration'; document.getElementById('d_issue').value=new Date().toISOString().split('T')[0]; }
+  openModal('modal-doc');
+}
+
+function saveDoc(){
+  const d={name:document.getElementById('d_name').value||'Untitled',cat:document.getElementById('d_cat').value,issuer:document.getElementById('d_issuer').value||'—',issue:document.getElementById('d_issue').value,expiry:document.getElementById('d_expiry').value,remarks:document.getElementById('d_remarks').value};
+  if(editIdx.doc!==null) DB.docs[editIdx.doc]=d; else DB.docs.push(d);
+  saveToStorage(); renderDocs(); closeModal('modal-doc');
+}
+
+function deleteDoc(i){ if(confirm('Delete?')){ DB.docs.splice(i,1); saveToStorage(); renderDocs(); } }
+
+function renderDocs(){
+  const tb=document.getElementById('doc-tbody');
+  if(!DB.docs.length){ tb.innerHTML='<tr><td colspan="8" class="empty-msg">No documents yet.</td></tr>'; return; }
+  tb.innerHTML=DB.docs.map((d,i)=>{
+    const st=docStatus(d.expiry);
+    return `<tr>
+      <td style="color:var(--gray);font-weight:700">${i+1}</td>
+      <td><b>${d.name}</b><br><span style="font-size:.7rem;color:var(--gray);">${d.cat}</span></td>
+      <td>${d.issuer}</td><td>${fmtDate(d.issue)}</td><td>${fmtDate(d.expiry)}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td style="font-size:.78rem;color:var(--gray);">${d.remarks||''}</td>
+      <td class="no-print"><div class="actions"><button class="btn-edit2" onclick="openDocModal(${i})">✏️</button><button class="btn-del2" onclick="deleteDoc(${i})">🗑️</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== MATERIAL MOVEMENT =====
+function openMoveModal(idx=null){
+  editIdx.move=idx;
+  document.getElementById('move-modal-title').textContent=idx!==null?'✏️ Edit Record':'+ Add Material Movement';
+  if(idx!==null){ const m=DB.moves[idx]; ['date','ref','type','item','qty','unit','rate','from','to','party','vehicle','status','notes'].forEach(f=>{ const el=document.getElementById('m_'+f); if(el) el.value=m[f]||''; }); }
+  else { ['m_ref','m_item','m_qty','m_rate','m_from','m_to','m_party','m_vehicle','m_notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m_type').value='IN'; document.getElementById('m_unit').value='Meters'; document.getElementById('m_status').value='Received'; document.getElementById('m_date').value=new Date().toISOString().split('T')[0]; }
+  openModal('modal-move');
+}
+
+function saveMove(){
+  const m={};
+  ['date','ref','type','item','qty','unit','rate','from','to','party','vehicle','status','notes'].forEach(f=>{ m[f]=document.getElementById('m_'+f).value; });
+  if(editIdx.move!==null) DB.moves[editIdx.move]=m; else DB.moves.push(m);
+  saveToStorage(); renderMoves(); updateStats(); renderDashboard(); closeModal('modal-move');
+}
+
+function deleteMove(i){ if(confirm('Delete?')){ DB.moves.splice(i,1); saveToStorage(); renderMoves(); updateStats(); } }
+
+function filterMoves(type,el){
+  moveFilter=type;
+  document.querySelectorAll('.move-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMoves();
+}
+
+function renderMoves(){
+  const tb=document.getElementById('move-tbody');
+  const data=moveFilter==='all'?DB.moves:DB.moves.filter(m=>m.type===moveFilter);
+  if(!data.length){ tb.innerHTML='<tr><td colspan="12" class="empty-msg">No records.</td></tr>'; return; }
+  const typeMap={'IN':'📥 GRN','OUT':'📤 Delivery','TRANSFER':'🔄 Transfer','RETURN':'↩️ Return'};
+  tb.innerHTML=data.map((m,i)=>{ const ri=DB.moves.indexOf(m); return `<tr>
+    <td style="color:var(--gray);font-weight:700">${i+1}</td>
+    <td>${fmtDate(m.date)}</td><td><b>${m.ref||'—'}</b></td>
+    <td><span class="badge ${m.type==='IN'?'b-green':m.type==='OUT'?'b-blue':m.type==='RETURN'?'b-yellow':'b-teal'}">${typeMap[m.type]||m.type}</span></td>
+    <td><b>${m.item}</b></td><td>${m.qty}</td><td>${m.unit}</td>
+    <td>${m.from||'—'}</td><td>${m.to||'—'}</td><td>${m.party||'—'}</td>
+    <td><span class="badge ${m.status==='Received'?'b-green':m.status==='Dispatched'?'b-blue':'b-gray'}">${m.status}</span></td>
+    <td class="no-print"><div class="actions"><button class="btn-edit2" onclick="openMoveModal(${ri})">✏️</button><button class="btn-del2" onclick="deleteMove(${ri})">🗑️</button></div></td>
+  </tr>`; }).join('');
+}
+
+// ===== WORKERS =====
+function openWorkerModal(idx=null){
+  editIdx.worker=idx;
+  document.getElementById('worker-modal-title').textContent=idx!==null?'✏️ Edit Worker':'+ Add Worker';
+  if(idx!==null){ const w=DB.workers[idx]; document.getElementById('w_name').value=w.name; document.getElementById('w_cnic').value=w.cnic; document.getElementById('w_dept').value=w.dept; document.getElementById('w_desig').value=w.desig; document.getElementById('w_join').value=w.join; document.getElementById('w_gender').value=w.gender; document.getElementById('w_status').value=w.status; document.getElementById('w_wage').value=w.wage||''; }
+  else { ['w_name','w_cnic','w_desig','w_wage'].forEach(id=>document.getElementById(id).value=''); document.getElementById('w_dept').value='Cutting'; document.getElementById('w_gender').value='Male'; document.getElementById('w_status').value='Active'; document.getElementById('w_join').value=new Date().toISOString().split('T')[0]; }
+  openModal('modal-worker');
+}
+
+function saveWorker(){
+  const w={name:document.getElementById('w_name').value||'—',cnic:document.getElementById('w_cnic').value,dept:document.getElementById('w_dept').value,desig:document.getElementById('w_desig').value,join:document.getElementById('w_join').value,gender:document.getElementById('w_gender').value,status:document.getElementById('w_status').value,wage:document.getElementById('w_wage').value};
+  if(editIdx.worker!==null) DB.workers[editIdx.worker]=w; else DB.workers.push(w);
+  saveToStorage(); renderWorkers(); updateStats(); closeModal('modal-worker');
+}
+
+function deleteWorker(i){ if(confirm('Delete?')){ DB.workers.splice(i,1); saveToStorage(); renderWorkers(); updateStats(); } }
+
+function renderWorkers(){
+  const tb=document.getElementById('worker-tbody');
+  if(!DB.workers.length){ tb.innerHTML='<tr><td colspan="9" class="empty-msg">No workers added yet.</td></tr>'; return; }
+  tb.innerHTML=DB.workers.map((w,i)=>`<tr>
+    <td style="color:var(--gray);font-weight:700">${i+1}</td>
+    <td><b>${w.name}</b></td><td>${w.cnic||'—'}</td><td>${w.dept}</td><td>${w.desig||'—'}</td>
+    <td>${fmtDate(w.join)}</td><td>${w.gender}</td>
+    <td><span class="badge ${w.status==='Active'?'b-green':w.status==='On Leave'?'b-yellow':w.status==='Resigned'?'b-gray':'b-red'}">${w.status}</span></td>
+    <td class="no-print"><div class="actions"><button class="btn-edit2" onclick="openWorkerModal(${i})">✏️</button><button class="btn-del2" onclick="deleteWorker(${i})">🗑️</button></div></td>
+  </tr>`).join('');
+}
+
+// ===== CHECKLIST =====
+function renderChecklist(){
+  const {items,states}=DB.checklist;
+  const done=states.filter(Boolean).length;
+  const total=items.length;
+  document.getElementById('check-prog-label').textContent=`${done} / ${total} Completed`;
+  document.getElementById('check-prog-fill').style.width=`${total?done/total*100:0}%`;
+  const grid=document.getElementById('checklist-grid');
+  grid.innerHTML=items.map((item,i)=>`
+    <div class="check-item ${states[i]?'done':''}" onclick="toggleCheck(${i})">
+      <div class="check-box"><span class="check-mark">✓</span></div>
+      <span class="check-text">${item}</span>
+    </div>`).join('');
+}
+
+function toggleCheck(i){ DB.checklist.states[i]=!DB.checklist.states[i]; saveToStorage(); renderChecklist(); renderDashboard(); }
+function addCheckItem(){ openModal('modal-check'); document.getElementById('check-input').value=''; }
+function confirmAddCheck(){
+  const v=document.getElementById('check-input').value.trim();
+  if(v){ DB.checklist.items.push(v); DB.checklist.states.push(false); saveToStorage(); renderChecklist(); closeModal('modal-check'); }
+}
+function resetChecklist(){ if(confirm('Reset all checklist items?')){ DB.checklist.states=new Array(DB.checklist.items.length).fill(false); saveToStorage(); renderChecklist(); } }
+
+
+// ===== LAWS & REGULATIONS =====
+let lawFilter = 'all';
+let editLawIdx = null;
+let aiChatHistory = [];
+
+const GOV_LINKS = [
+  {name:'Ministry of Overseas HR',url:'https://mohr.gov.pk',desc:'Labor laws & policies',icon:'🏛️',bg:'#f0fdf4',border:'#86efac'},
+  {name:'ILO India',url:'https://www.ilo.org/newdelhi',desc:'International labour standards',icon:'🌍',bg:'#eff6ff',border:'#93c5fd'},
+  {name:'SEPA — Sindh EPA',url:'https://sepa.gov.pk',desc:'Environmental regulations & NEQS',icon:'🌿',bg:'#f0fdfa',border:'#5eead4'},
+  {name:'TDAP',url:'https://tdap.gov.pk',desc:'Trade & export compliance',icon:'📦',bg:'#fef9c3',border:'#fde047'},
+  {name:'APTMA',url:'https://aptma.org.pk',desc:'Textile industry circulars',icon:'🧵',bg:'#fdf4ff',border:'#e879f9'},
+  {name:'CBIC — GST & Customs',url:'https://cbic.gov.in',desc:'GST rates, customs duty, textile sector',icon:'💰',bg:'#fff7ed',border:'#fdba74'},
+  {name:'EOBI',url:'https://eobi.gov.pk',desc:'Employees old-age benefits',icon:'👴',bg:'#f0fdf4',border:'#86efac'},
+  {name:'Punjab Labor Dept.',url:'https://punjablabour.punjab.gov.pk',desc:'Punjab labor law updates',icon:'⚖️',bg:'#eff6ff',border:'#93c5fd'},
+  {name:'Ministry of Textiles India',url:'https://texmin.nic.in',desc:'Textile policy, schemes & export compliance',icon:'🏦',bg:'#fff7ed',border:'#fdba74'},
+];
+
+const QUICK_QS = [
+  'India mein minimum wage 2024-25 kya hai?',
+  'GOTS certification ke liye kya requirements hain?',
+  'WRAP ke 12 principles kya hain?',
+  'BSCI audit mein fail hone ke kya consequences hain?',
+  'Child labour laws India mein kya hain?',
+  'EPF aur ESI contribution rate India mein kya hai?',
+  'ZDHC MRSL v3.1 mein kya chemicals ban hain?',
+  'Factories Act 1948 India mein fire safety ke liye kya kehta hai?',
+  'Overtime payment ka India labour law kya kehta hai?',
+  'SEDEX SMETA audit ki kya categories hain?',
+];
+
+function renderGovLinks(){
+  const grid = document.getElementById('gov-links-grid');
+  if(!grid) return;
+  grid.innerHTML = GOV_LINKS.map(l => `
+    <a href="${l.url}" target="_blank" style="text-decoration:none;">
+      <div style="background:${l.bg};border:1.5px solid ${l.border};border-radius:10px;padding:14px;transition:.2s;cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.5rem;margin-bottom:6px;">${l.icon}</div>
+        <div style="font-weight:700;color:var(--navy);font-size:.85rem;margin-bottom:3px;">${l.name}</div>
+        <div style="font-size:.72rem;color:var(--gray);">${l.desc}</div>
+      </div>
+    </a>`).join('');
+}
+
+function renderQuickQs(){
+  const el = document.getElementById('quick-qs');
+  if(!el) return;
+  el.innerHTML = QUICK_QS.map(q => `<button onclick="askAI('${q.replace(/'/g,"\'")}')" style="background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:5px 13px;font-size:.75rem;cursor:pointer;font-family:Outfit,sans-serif;transition:.2s;color:#374151;" onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='#374151'">${q}</button>`).join('');
+}
+
+function getLawStatus(verifiedDate){
+  if(!verifiedDate) return {cls:'verify-warn', label:'Not Verified', days: 999};
+  const d = new Date(verifiedDate), now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if(diff < 60) return {cls:'verify-ok', label:'✓ Verified', days: diff};
+  if(diff < 90) return {cls:'verify-warn', label:'⚠ Check Soon', days: diff};
+  return {cls:'verify-old', label:'🔴 Verify Now!', days: diff};
+}
+
+function openLawModal(idx=null){
+  editLawIdx = idx;
+  document.getElementById('law-modal-title').textContent = idx!==null ? '✏️ Edit Law/Regulation' : '+ Add Law / Regulation';
+  if(idx!==null){
+    const l = DB.laws[idx];
+    document.getElementById('l_name').value = l.name||'';
+    document.getElementById('l_cat').value = l.cat||'Labor';
+    document.getElementById('l_body').value = l.body||'';
+    document.getElementById('l_req').value = l.req||'';
+    document.getElementById('l_eff').value = l.eff||'';
+    document.getElementById('l_verified').value = l.verified||'';
+    document.getElementById('l_url').value = l.url||'';
+    document.getElementById('l_notes').value = l.notes||'';
+  } else {
+    ['l_name','l_body','l_req','l_eff','l_url','l_notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('l_cat').value='Labor';
+    document.getElementById('l_verified').value = new Date().toISOString().split('T')[0];
+  }
+  openModal('modal-law');
+}
+
+function saveLaw(){
+  if(!DB.laws) DB.laws=[];
+  const l = {
+    name: document.getElementById('l_name').value||'Untitled Law',
+    cat: document.getElementById('l_cat').value,
+    body: document.getElementById('l_body').value,
+    req: document.getElementById('l_req').value,
+    eff: document.getElementById('l_eff').value,
+    verified: document.getElementById('l_verified').value,
+    url: document.getElementById('l_url').value,
+    notes: document.getElementById('l_notes').value
+  };
+  if(editLawIdx!==null) DB.laws[editLawIdx]=l; else DB.laws.push(l);
+  saveToStorage(); renderLaws(); updateStats(); closeModal('modal-law');
+}
+
+function deleteLaw(i){ if(confirm('Delete this law/regulation?')){ DB.laws.splice(i,1); saveToStorage(); renderLaws(); updateStats(); } }
+
+function markVerified(i){
+  DB.laws[i].verified = new Date().toISOString().split('T')[0];
+  saveToStorage(); renderLaws();
+}
+
+function filterLaws(cat, el){
+  lawFilter = cat;
+  document.querySelectorAll('#page-laws .move-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderLaws();
+}
+
+function refreshLawsCheck(){
+  renderLaws();
+  const outdated = (DB.laws||[]).filter(l=>getLawStatus(l.verified).days>=90).length;
+  if(outdated>0) alert('⚠️ ' + outdated + ' laws/regulations ko verify karna zaroori hai! Unhe check karein.');
+  else alert('✅ Tamam laws up-to-date hain!');
+}
+
+function renderLaws(){
+  if(!DB.laws) DB.laws=[];
+  const data = lawFilter==='all' ? DB.laws : DB.laws.filter(l=>l.cat===lawFilter);
+  const tb = document.getElementById('laws-tbody');
+  if(!tb) return;
+
+  const outdated = DB.laws.filter(l=>getLawStatus(l.verified).days>=90).length;
+  const current = DB.laws.filter(l=>getLawStatus(l.verified).days<60).length;
+  const tot = document.getElementById('laws-total'); if(tot) tot.textContent=DB.laws.length;
+  const out = document.getElementById('laws-outdated'); if(out) out.textContent=outdated;
+  const cur = document.getElementById('laws-current'); if(cur) cur.textContent=current;
+
+  // Alert dot in sidebar
+  const dot = document.getElementById('laws-alert-dot');
+  if(dot) dot.style.display = outdated>0 ? 'inline' : 'none';
+
+  if(!data.length){ tb.innerHTML='<tr><td colspan="9" class="empty-msg">No laws added. Click "+ Add Law" to begin.</td></tr>'; return; }
+
+  const catColors = {Labor:'b-blue',Environment:'b-green',Safety:'b-yellow',Textile:'b-teal',Export:'b-purple',Tax:'b-gray',Other:'b-gray'};
+
+  tb.innerHTML = data.map((l,i)=>{
+    const ri = DB.laws.indexOf(l);
+    const st = getLawStatus(l.verified);
+    const rowClass = st.days>=90 ? 'law-row-old' : st.days>=60 ? 'law-row-warn' : '';
+    return `<tr class="${rowClass}">
+      <td style="color:var(--gray);font-weight:700">${i+1}</td>
+      <td><b style="font-size:.85rem;">${l.name}</b><br><span style="font-size:.7rem;color:var(--gray);">${l.body||''}</span></td>
+      <td><span class="badge ${catColors[l.cat]||'b-gray'}">${l.cat}</span></td>
+      <td style="max-width:180px;font-size:.78rem;color:#374151;">${(l.req||'').substring(0,100)}${l.req&&l.req.length>100?'...':''}</td>
+      <td style="font-size:.8rem;">${fmtDate(l.eff)}</td>
+      <td style="font-size:.8rem;">${fmtDate(l.verified)}<br><span style="font-size:.68rem;color:var(--gray);">${st.days<999?st.days+' days ago':''}</span></td>
+      <td><span class="verify-badge ${st.cls}">${st.label}</span></td>
+      <td>${l.url?'<a href="'+l.url+'" target="_blank" style="color:var(--teal);font-size:.75rem;font-weight:600;">🔗 Open</a>':'—'}</td>
+      <td class="no-print">
+        <div class="actions">
+          <button class="btn-edit2" onclick="openLawModal(${ri})">✏️</button>
+          <button class="btn-view2" onclick="markVerified(${ri})" title="Mark as verified today">✓ Verify</button>
+          <button class="btn-del2" onclick="deleteLaw(${ri})">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== AI COMPLIANCE ADVISOR =====
+async function sendAI(){
+  const input = document.getElementById('ai-input');
+  const q = input.value.trim();
+  if(!q) return;
+  input.value='';
+  askAI(q);
+}
+
+async function askAI(question){
+  const box = document.getElementById('ai-chat-box');
+  if(!box) return;
+
+  // Clear welcome if first message
+  if(aiChatHistory.length===0) box.innerHTML='';
+
+  // Show user bubble
+  box.innerHTML += `<div style="display:flex;justify-content:flex-end;"><div style="background:var(--navy);color:#fff;padding:10px 14px;border-radius:14px 14px 2px 14px;max-width:75%;font-size:.85rem;line-height:1.5;">${question}</div></div>`;
+  box.scrollTop = box.scrollHeight;
+
+  // Thinking bubble
+  const thinkId = 'think-'+Date.now();
+  box.innerHTML += `<div id="${thinkId}" style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">🤖</div><div style="background:#f1f5f9;padding:10px 14px;border-radius:2px 14px 14px 14px;font-size:.83rem;color:var(--gray);">Soch raha hoon... ⏳</div></div>`;
+  box.scrollTop = box.scrollHeight;
+
+  const c = DB.company;
+  const systemPrompt = `You are an expert Compliance Advisor specializing in India's Textile & Garment industry. You have deep knowledge of:
+- India Labour Laws: Factories Act 1948, Minimum Wages Act, Payment of Wages Act, EPF & ESI Act, Maternity Benefit Act, POSH Act, Contract Labour Act, Child Labour Act, Industrial Disputes Act, Payment of Gratuity Act
+- Four New Labour Codes: Code on Wages 2019, Industrial Relations Code 2020, Social Security Code 2020, OSH Code 2020
+- Environmental laws: Water Act, Air Act, Environment Protection Act 1986, CPCB standards for textile effluent treatment
+- International certifications: GOTS, OEKO-TEX, WRAP, BCI Cotton, ZDHC, SA8000, BSCI, SEDEX/SMETA, ISO 9001, ISO 14001, Higg Index, GRS, Bluesign
+- EHS standards for Indian garment and textile factories
+- Export compliance: DGFT Foreign Trade Policy, AEPC, RoDTEP, ROSCTL, customs & GST on textiles
+- State-specific labour laws: Maharashtra, Gujarat, Tamil Nadu, Karnataka, Delhi, UP, Haryana, Rajasthan
+
+The factory is: ${c.name}, located at ${c.addr}.
+
+Respond in Hindi/English mix (Hinglish is perfectly fine). Keep answers practical, concise and actionable with bullet points. Always advise consulting a legal expert for final decisions.`;
+
+  aiChatHistory.push({role:'user', content: question});
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: aiChatHistory
+      })
+    });
+    const data = await response.json();
+    const reply = data.content && data.content[0] ? data.content[0].text : 'Maafi chahta hoon, jawab nahi mil saka. Dobara try karein.';
+
+    aiChatHistory.push({role:'assistant', content: reply});
+
+    // Remove thinking bubble
+    const thinkEl = document.getElementById(thinkId);
+    if(thinkEl) thinkEl.remove();
+
+    // Format the reply
+    const formatted = reply
+      .replace(/\n\n/g,'</p><p style="margin-top:8px;">')
+      .replace(/\n/g,'<br>')
+      .replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
+      .replace(/\*(.*?)\*/g,'<i>$1</i>');
+
+    box.innerHTML += `<div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="width:34px;height:34px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">🤖</div>
+      <div style="background:#f1f5f9;padding:12px 16px;border-radius:2px 14px 14px 14px;max-width:80%;font-size:.85rem;line-height:1.6;color:var(--text);">${formatted}</div>
+    </div>`;
+    box.scrollTop = box.scrollHeight;
+
+  } catch(err) {
+    const thinkEl = document.getElementById(thinkId);
+    if(thinkEl) thinkEl.remove();
+    box.innerHTML += `<div style="display:flex;gap:10px;"><div style="width:34px;height:34px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;">❌</div><div style="background:#fee2e2;padding:10px 14px;border-radius:14px;font-size:.83rem;color:#991b1b;">Connection error. Internet check karein ya dobara try karein.</div></div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+// ===== DASHBOARD V3 =====
+let _mainChartMode = 'bar';
+
+function switchMainChart(mode, btn){
+  _mainChartMode = mode;
+  document.querySelectorAll('.chart-controls .chart-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  drawMainChart();
+}
+
+function renderDashboard(){
+  renderDashKPIs();
+  renderDashAlertPills();
+  drawMainChart();
+  drawDonutAudit();
+  drawCertChart();
+  drawMaterialChart();
+  drawWorkersChart();
+  drawScoreRing();
+  renderActivityFeed();
+  renderChecklistSection();
+  checkExpiryAlerts();
+}
+
+// ── KPI Cards ──
+function renderDashKPIs(){
+  const approved = DB.audits.filter(a=>a.status==='Approved').length;
+  const activeCerts = DB.textile.filter(t=>t.status==='Active').length;
+  const expiredCerts = DB.textile.filter(t=>t.status==='Expired').length;
+  const done = DB.checklist.states.filter(Boolean).length;
+  const total = DB.checklist.items.length;
+
+  const kpis = [
+    {icon:'🔍', val:DB.audits.length, lbl:'Total Audits', sub:`${approved} approved`, color:'#0d2137', pct: DB.audits.length ? approved/DB.audits.length*100:0, barColor:'#15803d'},
+    {icon:'✅', val:activeCerts, lbl:'Active Certs', sub:`${expiredCerts} expired`, color:'#15803d', pct: DB.textile.length ? activeCerts/DB.textile.length*100:0, barColor:'#15803d'},
+    {icon:'📁', val:DB.docs.length, lbl:'Documents', sub:'All categories', color:'#b45309', pct:Math.min(DB.docs.length*10,100), barColor:'#c8a84b'},
+    {icon:'🚚', val:DB.moves.length, lbl:'Material Moves', sub:'IN / OUT / Transfer', color:'#0e7490', pct:Math.min(DB.moves.length*5,100), barColor:'#0e7490'},
+    {icon:'👷', val:DB.workers.length, lbl:'Workers', sub:'Registered records', color:'#7c3aed', pct:Math.min(DB.workers.length*2,100), barColor:'#7c3aed'},
+  ];
+
+  document.getElementById('dash-kpi-row').innerHTML = kpis.map(k=>`
+    <div class="dash-kpi" style="border-top:3px solid ${k.color}20;border-left:none;border-right:none;border-bottom:none;border:1px solid #e2e8f0;border-top:3px solid ${k.color};">
+      <div class="dash-kpi-icon">${k.icon}</div>
+      <div class="dash-kpi-val" style="color:${k.color}">${k.val}</div>
+      <div class="dash-kpi-lbl">${k.lbl}</div>
+      <div class="dash-kpi-sub">${k.sub}</div>
+      <div class="dash-kpi-bar"><div class="dash-kpi-bar-fill" style="width:${k.pct}%;background:${k.barColor};"></div></div>
+    </div>`).join('');
+
+  // Legacy stats update
+  ['s-audits','s-approved','s-docs','s-material','s-workers'].forEach(id=>{
+    const el=document.getElementById(id); if(el){
+      if(id==='s-audits') el.textContent=DB.audits.length;
+      if(id==='s-approved') el.textContent=approved;
+      if(id==='s-docs') el.textContent=DB.docs.length;
+      if(id==='s-material') el.textContent=DB.moves.length;
+      if(id==='s-workers') el.textContent=DB.workers.length;
+    }
+  });
+}
+
+// ── Alert Pills ──
+function renderDashAlertPills(){
+  const today = new Date();
+  let expired=0, warning=0, ok=0;
+  const check = (dateStr)=>{
+    if(!dateStr) return;
+    const d=new Date(dateStr), days=Math.floor((d-today)/86400000);
+    if(days<0) expired++;
+    else if(days<=60) warning++;
+    else ok++;
+  };
+  DB.audits.forEach(a=>check(a.next));
+  DB.textile.forEach(t=>check(t.to));
+  DB.docs.forEach(d=>check(d.exp));
+
+  const el=document.getElementById('dash-alert-pills');
+  if(!el) return;
+  el.innerHTML = `
+    ${expired?`<div class="alert-pill ap-danger">⛔ ${expired} Expired</div>`:''}
+    ${warning?`<div class="alert-pill ap-warn">⚠️ ${warning} Expiring Soon</div>`:''}
+    ${ok?`<div class="alert-pill ap-ok">✅ ${ok} Valid</div>`:''}
+    ${(!expired&&!warning)?`<div class="alert-pill ap-ok">✅ Sab kuch theek hai!</div>`:''}
+  `;
+}
+
+// ── Canvas helpers ──
+function getCtx(id){
+  const c=document.getElementById(id); if(!c) return null;
+  const W=c.offsetWidth||c.width||400;
+  c.width=W; return {ctx:c.getContext('2d'),W,H:c.height,c};
+}
+
+function drawRoundRect(ctx,x,y,w,h,r,fill){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+}
+
+// ── Main Bar / Line Chart ──
+function drawMainChart(){
+  const r=getCtx('chart-main'); if(!r) return;
+  const {ctx,W,H}=r;
+  ctx.clearRect(0,0,W,H);
+
+  const labels=['Audits','Approved','Certs','Active Certs','Docs','Moves','Workers'];
+  const data=[
+    DB.audits.length,
+    DB.audits.filter(a=>a.status==='Approved').length,
+    DB.textile.length,
+    DB.textile.filter(t=>t.status==='Active').length,
+    DB.docs.length,
+    DB.moves.length,
+    DB.workers.length
+  ];
+  const colors=['#0d2137','#15803d','#0e7490','#22c55e','#c8a84b','#7c3aed','#ec4899'];
+
+  const pad={top:20,right:20,bottom:38,left:36};
+  const cW=W-pad.left-pad.right;
+  const cH=H-pad.top-pad.bottom;
+  const maxV=Math.max(...data,1);
+
+  // Grid
+  ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1;
+  [0,25,50,75,100].forEach(p=>{
+    const yg=pad.top+cH*(1-p/100);
+    ctx.beginPath(); ctx.moveTo(pad.left,yg); ctx.lineTo(W-pad.right,yg); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='9px Outfit'; ctx.textAlign='right';
+    const val=Math.round(maxV*p/100);
+    ctx.fillText(val,pad.left-4,yg+3);
+  });
+
+  if(_mainChartMode==='bar'){
+    const bW=cW/labels.length*0.65;
+    const gap=cW/labels.length;
+    data.forEach((v,i)=>{
+      const x=pad.left+i*gap+(gap-bW)/2;
+      const bH=cH*v/maxV;
+      const y=pad.top+cH-bH;
+      const g=ctx.createLinearGradient(0,y,0,y+bH);
+      g.addColorStop(0,colors[i]); g.addColorStop(1,colors[i]+'66');
+      drawRoundRect(ctx,x,y,bW,bH,3,colors[i]);
+      ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font='bold 9px Outfit'; ctx.textAlign='center';
+      if(v>0) ctx.fillText(v,x+bW/2,y-5);
+      ctx.fillStyle='#64748b'; ctx.font='9px Outfit'; ctx.textAlign='center';
+      ctx.fillText(labels[i].substring(0,8),x+bW/2,H-pad.bottom+14);
+    });
+  } else {
+    const step=cW/(data.length-1);
+    const pts=data.map((v,i)=>({x:pad.left+i*step, y:pad.top+cH*(1-v/maxV)}));
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pad.top+cH);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x, pad.top+cH);
+    const ag=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
+    ag.addColorStop(0,'rgba(13,33,55,0.2)'); ag.addColorStop(1,'rgba(13,33,55,0.02)');
+    ctx.fillStyle=ag; ctx.closePath(); ctx.fill();
+    // Line
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle='#0d2137'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+    // Dots
+    pts.forEach((p,i)=>{
+      ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2);
+      ctx.fillStyle=colors[i]; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#1e293b'; ctx.font='bold 9px Outfit'; ctx.textAlign='center';
+      if(data[i]>0) ctx.fillText(data[i],p.x,p.y-10);
+      ctx.fillStyle='#64748b'; ctx.font='9px Outfit';
+      ctx.fillText(labels[i].substring(0,8),p.x,H-pad.bottom+14);
+    });
+  }
+}
+
+// ── Donut: Audit Status ──
+function drawDonutAudit(){
+  const c=document.getElementById('chart-donut-audit'); if(!c) return;
+  c.width=160; c.height=160;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,160,160);
+
+  const groups={Approved:0,Pending:0,'In Progress':0,Failed:0,Other:0};
+  DB.audits.forEach(a=>{
+    if(groups[a.status]!==undefined) groups[a.status]++;
+    else groups.Other++;
+  });
+  const entries=Object.entries(groups).filter(([,v])=>v>0);
+  const colors={'Approved':'#15803d','Pending':'#c8a84b','In Progress':'#0e7490','Failed':'#dc2626','Other':'#94a3b8'};
+  const total=entries.reduce((s,[,v])=>s+v,0)||1;
+
+  const cx=80,cy=80,R=68,r=44;
+  let ang=-Math.PI/2;
+  entries.forEach(([k,v])=>{
+    const sl=2*Math.PI*v/total;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,ang,ang+sl); ctx.closePath();
+    ctx.fillStyle=colors[k]||'#94a3b8'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    ang+=sl;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.fillStyle='#0d2137'; ctx.font='bold 18px Cormorant Garamond'; ctx.textAlign='center';
+  ctx.fillText(DB.audits.length,cx,cy+4);
+  ctx.fillStyle='#64748b'; ctx.font='9px Outfit';
+  ctx.fillText('Total',cx,cy+17);
+
+  const leg=document.getElementById('donut-audit-legend');
+  if(leg) leg.innerHTML=entries.map(([k,v])=>`
+    <div class="donut-legend-item">
+      <div style="display:flex;align-items:center;">
+        <div class="donut-dot" style="background:${colors[k]||'#94a3b8'}"></div>
+        <span style="color:#475569;font-weight:600;">${k}</span>
+      </div>
+      <span style="font-weight:700;color:#0d2137;">${v} <span style="color:#94a3b8;font-weight:400;font-size:.65rem;">(${Math.round(v/total*100)}%)</span></span>
+    </div>`).join('');
+}
+
+// ── Certificate Status Horizontal Bar ──
+function drawCertChart(){
+  const r=getCtx('chart-cert'); if(!r) return;
+  const {ctx,W,H,c}=r;
+  ctx.clearRect(0,0,W,H);
+
+  const groups={'Active':0,'Expired':0,'Pending':0,'Suspended':0};
+  DB.textile.forEach(t=>{ if(groups[t.status]!==undefined) groups[t.status]++; else groups['Pending']++; });
+  const entries=Object.entries(groups);
+  const max=Math.max(...entries.map(([,v])=>v),1);
+  const colors={'Active':'#15803d','Expired':'#dc2626','Pending':'#c8a84b','Suspended':'#7c3aed'};
+
+  const pad={top:10,left:72,right:20,bottom:10};
+  const rowH=(H-pad.top-pad.bottom)/entries.length;
+  const trackW=W-pad.left-pad.right;
+
+  entries.forEach(([k,v],i)=>{
+    const y=pad.top+i*rowH+rowH*0.2;
+    const bH=rowH*0.55;
+    // Label
+    ctx.fillStyle='#64748b'; ctx.font='bold 10px Outfit'; ctx.textAlign='right';
+    ctx.fillText(k,pad.left-8,y+bH/2+4);
+    // Track
+    ctx.fillStyle='#f1f5f9';
+    ctx.beginPath(); ctx.roundRect(pad.left,y,trackW,bH,3); ctx.fill();
+    // Fill
+    const fw=v>0?Math.max(trackW*v/max,16):0;
+    if(fw>0){
+      const g=ctx.createLinearGradient(pad.left,0,pad.left+fw,0);
+      g.addColorStop(0,colors[k]||'#94a3b8'); g.addColorStop(1,(colors[k]||'#94a3b8')+'88');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.roundRect(pad.left,y,fw,bH,3); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 10px Outfit'; ctx.textAlign='center';
+      ctx.fillText(v,pad.left+fw/2,y+bH/2+4);
+    } else {
+      ctx.fillStyle='#94a3b8'; ctx.font='10px Outfit'; ctx.textAlign='left';
+      ctx.fillText('0',pad.left+4,y+bH/2+4);
+    }
+  });
+}
+
+// ── Material Movement Donut ──
+function drawMaterialChart(){
+  const r=getCtx('chart-material'); if(!r) return;
+  const {ctx,W,H}=r;
+  ctx.clearRect(0,0,W,H);
+
+  const types={IN:0,OUT:0,TRANSFER:0,RETURN:0};
+  DB.moves.forEach(m=>{ if(types[m.type]!==undefined) types[m.type]++; });
+  const entries=Object.entries(types).filter(([,v])=>v>0);
+  const colors={IN:'#15803d',OUT:'#dc2626',TRANSFER:'#0e7490',RETURN:'#c8a84b'};
+  const total=entries.reduce((s,[,v])=>s+v,0)||1;
+
+  if(!DB.moves.length){
+    ctx.fillStyle='#94a3b8'; ctx.font='11px Outfit'; ctx.textAlign='center';
+    ctx.fillText('No material movements yet',W/2,H/2); return;
+  }
+
+  const cx=W/2,cy=H/2,R=Math.min(cx,cy)-16,ri=R*0.5;
+  let ang=-Math.PI/2;
+  entries.forEach(([k,v])=>{
+    const sl=2*Math.PI*v/total;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,ang,ang+sl); ctx.closePath();
+    ctx.fillStyle=colors[k]; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    // Label
+    const midAng=ang+sl/2;
+    if(v/total>0.08){
+      const lx=cx+Math.cos(midAng)*(R*0.72), ly=cy+Math.sin(midAng)*(R*0.72);
+      ctx.fillStyle='#fff'; ctx.font='bold 8px Outfit'; ctx.textAlign='center';
+      ctx.fillText(k,lx,ly); ctx.fillText(v,lx,ly+10);
+    }
+    ang+=sl;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,ri,0,2*Math.PI);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.fillStyle='#0d2137'; ctx.font='bold 14px Cormorant Garamond'; ctx.textAlign='center';
+  ctx.fillText(DB.moves.length,cx,cy+4);
+  ctx.fillStyle='#64748b'; ctx.font='8px Outfit'; ctx.fillText('Moves',cx,cy+15);
+}
+
+// ── Workers by Department Donut ──
+function drawWorkersChart(){
+  const r=getCtx('chart-workers'); if(!r) return;
+  const {ctx,W,H}=r;
+  ctx.clearRect(0,0,W,H);
+
+  const depts={};
+  DB.workers.forEach(w=>{ const d=w.dept||'Other'; depts[d]=(depts[d]||0)+1; });
+  const entries=Object.entries(depts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const total=entries.reduce((s,[,v])=>s+v,0)||1;
+  const pal=['#0d2137','#15803d','#c8a84b','#0e7490','#7c3aed','#ec4899'];
+
+  if(!DB.workers.length){
+    ctx.fillStyle='#94a3b8'; ctx.font='11px Outfit'; ctx.textAlign='center';
+    ctx.fillText('No workers added yet',W/2,H/2); return;
+  }
+
+  const cx=W/2,cy=H/2,R=Math.min(cx,cy)-12,ri=R*0.42;
+  let ang=-Math.PI/2;
+  entries.forEach(([k,v],i)=>{
+    const sl=2*Math.PI*v/total;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,ang,ang+sl); ctx.closePath();
+    ctx.fillStyle=pal[i%pal.length]; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    if(v/total>0.07){
+      const midAng=ang+sl/2;
+      const lx=cx+Math.cos(midAng)*(R*0.7), ly=cy+Math.sin(midAng)*(R*0.7);
+      ctx.fillStyle='#fff'; ctx.font='bold 8px Outfit'; ctx.textAlign='center';
+      ctx.fillText(k.substring(0,6),lx,ly); ctx.fillText(v,lx,ly+10);
+    }
+    ang+=sl;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,ri,0,2*Math.PI); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.fillStyle='#0d2137'; ctx.font='bold 14px Cormorant Garamond'; ctx.textAlign='center';
+  ctx.fillText(DB.workers.length,cx,cy+4);
+  ctx.fillStyle='#64748b'; ctx.font='8px Outfit'; ctx.fillText('Workers',cx,cy+15);
+}
+
+// ── Compliance Score Ring ──
+function drawScoreRing(){
+  const c=document.getElementById('chart-score-ring'); if(!c) return;
+  c.width=150; c.height=150;
+  const ctx=c.getContext('2d');
+
+  const audScore = DB.audits.length ? DB.audits.filter(a=>a.status==='Approved').length/DB.audits.length : 0;
+  const certScore = DB.textile.length ? DB.textile.filter(t=>t.status==='Active').length/DB.textile.length : 0;
+  const checkScore = DB.checklist.items.length ? DB.checklist.states.filter(Boolean).length/DB.checklist.items.length : 0;
+  const docScore = Math.min(DB.docs.length/10,1);
+  const score = Math.round(((audScore+certScore+checkScore+docScore)/4)*100);
+
+  const cx=75,cy=75,R=60,lw=12;
+  // BG ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI);
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=lw; ctx.stroke();
+  // Score arc
+  const color=score>=80?'#15803d':score>=60?'#c8a84b':'#dc2626';
+  const ang=-Math.PI/2;
+  ctx.beginPath(); ctx.arc(cx,cy,R,ang,ang+(2*Math.PI*score/100));
+  ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.stroke();
+  // Text
+  ctx.fillStyle='#0d2137'; ctx.font='bold 26px Cormorant Garamond'; ctx.textAlign='center';
+  ctx.fillText(score+'%',cx,cy+8);
+  ctx.fillStyle='#64748b'; ctx.font='9px Outfit'; ctx.fillText('Compliance',cx,cy+22);
+
+  const lbl=document.getElementById('dash-score-label');
+  if(lbl) lbl.textContent = score>=80?'🟢 Excellent':score>=60?'🟡 Needs Attention':'🔴 Critical';
+}
+
+// ── Activity Feed ──
+function renderActivityFeed(){
+  const el=document.getElementById('dash-activity-feed'); if(!el) return;
+  const all=[];
+  DB.audits.slice(-4).forEach(a=>all.push({icon:'🔍',bg:'#eff6ff',title:a.type,meta:`${a.auditor||'—'} • ${fmtDate(a.date)}`,badge:a.status,bc:statusBadge(a.status)}));
+  DB.textile.slice(-3).forEach(t=>all.push({icon:'📜',bg:'#f0fdf4',title:t.std,meta:`${t.issuer||'—'} • Valid to ${fmtDate(t.to)}`,badge:t.status,bc:t.status==='Active'?'b-green':t.status==='Expired'?'b-red':'b-yellow'}));
+  DB.moves.slice(-3).forEach(m=>all.push({icon:'🚚',bg:'#faf5ff',title:`${m.type} — ${m.item}`,meta:`${m.qty} ${m.unit} • ${fmtDate(m.date)}`,badge:m.ref||'',bc:'b-gray'}));
+  DB.docs.slice(-2).forEach(d=>all.push({icon:'📁',bg:'#fffbeb',title:d.name,meta:`${d.cat||''} • Exp: ${fmtDate(d.exp)}`,badge:d.status||'',bc:'b-blue'}));
+
+  if(!all.length){ el.innerHTML='<div class="empty-msg">Koi data nahi. Modules mein data add karein.</div>'; return; }
+  el.innerHTML = all.slice(0,8).map(a=>`
+    <div class="activity-item">
+      <div class="activity-icon" style="background:${a.bg}">${a.icon}</div>
+      <div class="activity-text">
+        <div class="activity-title">${a.title}</div>
+        <div class="activity-meta">${a.meta}</div>
+      </div>
+      ${a.badge?`<span class="badge ${a.bc}" style="flex-shrink:0">${a.badge}</span>`:''}
+    </div>`).join('');
+}
+
+// ── Checklist Section ──
+function renderChecklistSection(){
+  const {items,states}=DB.checklist;
+  const done=states.filter(Boolean).length;
+  const total=items.length;
+  const prog=document.getElementById('dash-check-prog');
+  const fill=document.getElementById('dash-prog-fill');
+  const itemsEl=document.getElementById('dash-check-items');
+  if(prog) prog.textContent=`${done}/${total} done`;
+  if(fill) fill.style.width=`${total?done/total*100:0}%`;
+  if(itemsEl) itemsEl.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">`+
+    items.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${states[i]?'#dcfce7':'#f1f5f9'};color:${states[i]?'#15803d':'#64748b'};padding:3px 9px;border-radius:10px;font-size:.7rem;font-weight:600;">${states[i]?'✓':''} ${item.substring(0,26)}</span>`).join('')+`</div>`;
+}
+
+// Legacy renderDashboard alias kept for compatibility
+
+
+function updateStats(){
+  if(document.getElementById('page-dashboard')?.classList.contains('active')){
+    renderDashboard();
+  } else {
+    // fallback for legacy stat elements
+    const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+    el('s-audits',DB.audits.length);
+    el('s-approved',DB.audits.filter(a=>a.status==='Approved').length);
+    el('s-docs',DB.docs.length);
+    el('s-material',DB.moves.length);
+    el('s-workers',DB.workers.length);
+  }
+}
+
+// ===== FORMS FOLDER =====
+const FORMS = {
+  hr:[
+    {name:'Employee Joining Form',fields:[['Employee Name','Father Name','CNIC No.','Date of Birth'],['Department','Designation','Date of Joining','Basic Salary'],['Phone No.','Emergency Contact','Blood Group','Gender'],['Address','Previous Employer','Experience (Years)','Education']]},
+    {name:'Daily Attendance Register',fields:[['Date','Department','Supervisor Name','Shift'],['#','Name','In Time','Out Time','OT Hours','Remarks']]},
+    {name:'Leave Application Form',fields:[['Employee Name','CNIC','Department','Designation'],['Leave Type','From Date','To Date','Total Days'],['Reason for Leave (detail)'],['Approved By','HR Sign','Date']]},
+    {name:'Overtime Record Sheet',fields:[['Month','Department','Supervisor'],['#','Employee Name','Regular Hours','OT Hours','OT Rate','Amount','Sign']]},
+    {name:'Warning / Disciplinary Notice',fields:[['Employee Name','CNIC','Department','Designation'],['Date of Incident','Nature of Violation'],['Details of Incident'],['Previous Warnings','Action Taken'],['Employee Response'],['Issued By','HR Sign','Date']]},
+    {name:'Worker Exit Interview Form',fields:[['Employee Name','CNIC','Department','LWD'],['Reason for Leaving','Notice Period Given','Gratuity Due'],['Comments / Feedback'],['Interviewer','Date']]},
+    {name:'Wage Payment Slip',fields:[['Employee Name','ID','Month','Department'],['Basic Salary','OT Hours','OT Amount','Allowances'],['Deductions (EOBI)','Deductions (PESSI)','Other Deductions'],['Net Pay','Payment Date','Bank / Cash']]},
+    {name:'Grievance Complaint Form',fields:[['Complainant Name','CNIC','Department','Date'],['Nature of Complaint'],['Details of Grievance'],['Witnesses (if any)'],['Action Requested by Employee'],['Received By','Date','Committee Decision']]},
+  ],
+  ehs:[
+    {name:'Fire Drill Record',fields:[['Date','Time','Location','Duration'],['Total Participants','Department','Drill Coordinator'],['Evacuation Time (mins)','Issues Observed'],['Corrective Actions','Next Drill Date'],['Approved By','Sign','Date']]},
+    {name:'Accident / Incident Report',fields:[['Date','Time','Location','Department'],['Injured Person Name','CNIC','Designation'],['Nature of Injury','Body Part Affected'],['Cause of Accident'],['Immediate Action Taken'],['Witnesses','Supervisor Sign'],['CAPA / Prevention Measures']]},
+    {name:'Fire Extinguisher Inspection',fields:[['Month','Inspector Name','Department'],['#','Location','Type','Last Service Date','Pressure OK','Seal Intact','Label Readable','Action Required']]},
+    {name:'PPE Issue Record',fields:[['Date','Department','Issued By'],['#','Employee Name','PPE Type','Size/Qty','Condition','Sign','Remarks']]},
+    {name:'Machine Safety Inspection',fields:[['Date','Department','Inspector'],['#','Machine Name/ID','Safety Guard','Emergency Stop','Electrical OK','Housekeeping','Action Required']]},
+    {name:'First Aid Box Inspection',fields:[['Date','Location','Inspector'],['Item','Required Qty','Available Qty','Expiry Date','Action']]},
+    {name:'Chemical Hazard Register (ZDHC)',fields:[['Chemical Name','Supplier','SDS Available','Flash Point','ZDHC Level'],['Storage Location','Quantity','Disposal Method','Responsible Person']]},
+  ],
+  compliance:[
+    {name:'Internal Social Compliance Audit',fields:[['Factory Name','Audit Date','Auditor','Department'],['Area 1: Child Labor','Findings','Status','Action'],['Area 2: Forced Labor','Findings','Status','Action'],['Area 3: Working Hours','Findings','Status','Action'],['Area 4: Wages & Benefits','Findings','Status','Action'],['Area 5: Health & Safety','Findings','Status','Action'],['Area 6: Environment','Findings','Status','Action'],['Overall Score','Rating','Next Audit Date','Approved By']]},
+    {name:'CAPA (Corrective Action Plan)',fields:[['Audit Ref / Date','Factory','Department'],['#','Finding / Non-Conformity','Root Cause','Corrective Action','Responsible Person','Target Date','Status','Evidence']]},
+    {name:'Worker Awareness Training Record',fields:[['Training Topic','Date','Trainer Name','Duration'],['#','Worker Name','Department','Sign'],['Topics Covered'],['Assessment Result','Pass/Fail %'],['Trainer Sign','HR Sign','Date']]},
+    {name:'Supplier Social Compliance Declaration',fields:[['Supplier Name','Address','Contact Person','Date'],['We hereby declare compliance with:','Child Labor Laws','Forced Labor','Working Hours','Minimum Wage','Health & Safety'],['Authorized Signatory','Designation','Stamp','Date']]},
+    {name:'Buyer Compliance Questionnaire',fields:[['Factory Name','Country','Contact','Date'],['No. of Workers (M/F)','Working Hours/Week','Minimum Wage Paid','Overtime Rate'],['Union/Grievance Mechanism','Training Programs','Environmental Policy'],['Last Audit Date','Audit Type','Score'],['Authorized Sign','Date']]},
+    {name:'Annual Compliance Review Form',fields:[['Year','Factory','Compliance Officer'],['Area','Target','Achievement','Gap','Action Plan'],['Audits Conducted','Certifications Valid','Trainings Done','Accidents Reported'],['Overall Rating','Next Year Plan'],['MD Sign','Date']]},
+  ],
+  production:[
+    {name:'Production Order (Work Order)',fields:[['WO No.','Date','Style/Order No.','Buyer'],['Item Description','Color','Size Breakdown','Total Qty'],['Fabric','Trim','Accessories','Target Date'],['Cutting Date','Sewing Start','Sewing End','Finishing Date'],['QC Sign','Production Mgr','Date']]},
+    {name:'Quality Inspection Report (AQL)',fields:[['Date','Style','PO No.','Buyer'],['Lot Size','Sample Size','AQL Level','Inspection Type'],['#','Defect Type','Qty Found','% Defect'],['Pass / Fail','Inspector','QC Mgr','Date']]},
+    {name:'Cutting Report',fields:[['Date','Style','Marker No.','Layer Count'],['Fabric Roll No.','Width','Length Used','Wastage'],['Total Cut Pieces','Cutter Name','Supervisor','Remarks']]},
+    {name:'Sewing Line Efficiency Report',fields:[['Date','Line No.','Style','Target Qty'],['Hour','Target','Actual','Efficiency %','Downtime Reason'],['Cumulative Efficiency','Supervisor Sign','Date']]},
+    {name:'Finishing / Packing Report',fields:[['Date','Style','PO No.','Buyer'],['Total Pieces Received','Passed','Rejected','Rejection Reason'],['Packing Type','Carton No.','Total Cartons','Net Weight'],['Packer Name','QC Sign','Date']]},
+    {name:'Machine Maintenance Log',fields:[['Machine ID','Type','Location','Department'],['Date','Issue Reported','Action Taken','Parts Replaced','Tech Name','Next Service Date']]},
+  ],
+  material:[
+    {name:'Goods Received Note (GRN)',fields:[['GRN No.','Date','PO No.','Supplier'],['Material Description','Color/Shade','Qty Ordered','Qty Received','Unit'],['Roll Nos / Lot No.','Width','GSM / Count','Quality OK'],['Short/Excess','Damaged Qty','Remarks'],['Received By','Store Mgr','QC Sign','Date']]},
+    {name:'Material Requisition Slip (MRS)',fields:[['MRS No.','Date','Department','Requested By'],['#','Item Description','Required Qty','Unit','Purpose'],['Approved By','Issued By','Received By','Date']]},
+    {name:'Delivery Challan',fields:[['DC No.','Date','Buyer / Party','Address'],['PO / Order No.','Style','Description','Qty','Unit','Remarks'],['Total Qty','Vehicle No.','Driver Name','Sign'],['Dispatched By','Received By','Date']]},
+    {name:'Stock / Inventory Ledger',fields:[['Item Name','Category','Unit','Location'],['Date','GRN/DC Ref','In Qty','Out Qty','Balance','Remarks']]},
+    {name:'Material Return Note',fields:[['Return No.','Date','Returned By (Dept)','To (Store/Supplier)'],['#','Material Description','Original Qty','Return Qty','Reason'],['Quality Status','Approved By','Store Sign','Date']]},
+  ],
+  audit:[
+    {name:'Pre-Audit Preparation Checklist',fields:[['Factory','Audit Type','Expected Date','Compliance Officer'],['#','Document/Area','Ready?','Location','Remarks'],['Factory License','Fire NOC','Payroll Records','Age Proofs','HR Policies','EHS Records','Training Records','Grievance Minutes'],['Overall Readiness','Prepared By','Date']]},
+    {name:'Buyer / Third-Party Audit Tracker',fields:[['Buyer/Brand','Audit Type','Agency','Date','Score','Status','Findings','CAPA Due','Closed?']]},
+    {name:'Mock Audit Checklist',fields:[['Date','Auditor','Department'],['Category','Question','Finding','Status'],['Documents','Worker Interviews','EHS Walkthrough','Management Interview'],['Score','Weak Areas','Action Required'],['Completed By','Date']]},
+    {name:'Non-Conformance Report (NCR)',fields:[['NCR No.','Date','Audit Ref','Category'],['Non-Conformance Details'],['Root Cause Analysis'],['Corrective Action'],['Preventive Action'],['Responsible Person','Target Date','Verified By','Close Date']]},
+  ]
+};
+
+function openFormView(folder){
+  const forms=FORMS[folder];
+  const area=document.getElementById('form-viewer-area');
+  area.style.display='block';
+  area.innerHTML=`
+    <div class="card">
+      <div class="card-header"><div class="card-title">📂 ${folder.toUpperCase()} Forms</div><button class="btn btn-sm" style="background:var(--light);color:var(--gray)" onclick="document.getElementById('form-viewer-area').style.display='none'">✕ Close</button></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+        ${forms.map((f,i)=>`<div style="border:1.5px solid var(--border);border-radius:9px;padding:14px;cursor:pointer;transition:.2s;" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'" onclick="openFormModal('${folder}',${i})">
+          <div style="font-weight:700;color:var(--navy);font-size:.88rem;margin-bottom:4px;">📄 ${f.name}</div>
+          <div style="font-size:.72rem;color:var(--gray);">Click to open & print</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  area.scrollIntoView({behavior:'smooth'});
+}
+
+function openFormModal(folder,idx){
+  const f=FORMS[folder][idx];
+  document.getElementById('form-modal-title').textContent='📄 '+f.name;
+  const c=DB.company;
+  let html=`
+    <div id="printable-form">
+    <div style="background:var(--navy);padding:14px 18px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:var(--navy);">${c.logo}</div>
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#fff;font-weight:700;">${c.name}</div>
+        <div style="font-size:.7rem;color:#94a3b8;">📍 ${c.addr} | 📞 ${c.phone}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;"><div style="font-size:.8rem;color:var(--gold2);font-weight:600;">${f.name}</div><div style="font-size:.68rem;color:#94a3b8;">Date: _______________</div></div>
+    </div>`;
+  f.fields.forEach(row=>{
+    if(Array.isArray(row)){
+      html+=`<div style="display:grid;grid-template-columns:repeat(${Math.min(row.length,4)},1fr);gap:10px;margin-bottom:10px;">`;
+      row.forEach(field=>{ html+=`<div><div style="font-size:.65rem;color:var(--gray);font-weight:700;text-transform:uppercase;margin-bottom:3px;">${field}</div><div style="border-bottom:1.5px solid #cbd5e1;min-height:26px;"></div></div>`; });
+      html+=`</div>`;
+    }
+  });
+  html+=`<div style="margin-top:20px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:.72rem;color:var(--gray);"><span>${c.name} | Confidential</span><span>Form Ref: ${folder.toUpperCase()}-${idx+1}</span><span>Page 1 of 1</span></div>
+  </div>`;
+  document.getElementById('form-modal-body').innerHTML=html;
+  openModal('modal-form');
+}
+
+function printForm(){
+  const content=document.getElementById('printable-form').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Form</title><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:'Outfit',sans-serif;padding:20px;color:#1e293b;}*{box-sizing:border-box;}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),600);
+}
+
+function pdfForm(){
+  printForm(); // Simple approach using browser print-to-PDF
+}
+
+// ===== BACKUP & RESTORE =====
+function backupData(){
+  const data=JSON.stringify(DB,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`TCMS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  const el=document.getElementById('backup-history');
+  if(el) el.textContent=`Last backup: ${new Date().toLocaleString()}`;
+  localStorage.setItem('tcms_last_backup', new Date().toLocaleString());
+}
+
+function restoreData(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.company) throw new Error('Invalid backup file');
+      DB=data; saveToStorage(); renderAll();
+      alert('✅ Data restored successfully!');
+    }catch(err){ alert('❌ Invalid backup file. Please use a valid TCMS backup JSON.'); }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+// ===== HELPERS =====
+function fmtDate(d){ if(!d) return '—'; const dt=new Date(d); return isNaN(dt)?'—':dt.toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}); }
+function statusBadge(s){ if(s==='Approved') return 'b-green'; if(s==='Conditional'||s==='Pending') return 'b-yellow'; return 'b-red'; }
+function docStatus(dateStr){ if(!dateStr) return {cls:'b-blue',label:'No Expiry'}; const exp=new Date(dateStr),now=new Date(),diff=(exp-now)/86400000; if(diff<0) return {cls:'b-red',label:'Expired'}; if(diff<30) return {cls:'b-yellow',label:'Expiring Soon'}; return {cls:'b-green',label:'Valid'}; }
+
+// ===== PDF (Full Report) =====
+function generatePDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const c=DB.company; const W=210; const m=16;
+
+  function addLetterhead(y0=0){
+    doc.setFillColor(13,33,55); doc.rect(0,y0,W,34,'F');
+    doc.setFillColor(200,168,75); doc.rect(0,y0+34,W,2,'F');
+    doc.setFillColor(200,168,75); doc.roundedRect(m,y0+6,20,20,2,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(13,33,55);
+    doc.text(c.logo||'CO',m+10,y0+19,{align:'center'});
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(255,255,255);
+    doc.text(c.name,m+24,y0+14);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(180,200,220);
+    doc.text(`📍 ${c.addr}`,m+24,y0+21);
+    doc.text(`📞 ${c.phone}  ✉ ${c.email}  Reg: ${c.reg}`,m+24,y0+27);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(240,208,128);
+    doc.text('TEXTILE COMPLIANCE MANAGEMENT REPORT',W-m,y0+13,{align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(148,163,184);
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-PK',{day:'2-digit',month:'long',year:'numeric'})}`,W-m,y0+20,{align:'right'});
+    return y0+42;
+  }
+
+  function addFooter(pageNum,total){
+    doc.setFillColor(13,33,55); doc.rect(0,285,W,12,'F');
+    doc.setFillColor(200,168,75); doc.rect(0,285,W,1.5,'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(148,163,184);
+    doc.text(c.name+' | Confidential | Textile Compliance Management System',m,291);
+    doc.text(`Page ${pageNum} of ${total}`,W-m,291,{align:'right'});
+  }
+
+  function sectionTitle(doc,txt,y){ doc.setFillColor(13,33,55); doc.rect(m,y,W-m*2,7,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(255,255,255); doc.text(txt,m+3,y+5); return y+11; }
+
+  let y=addLetterhead();
+
+  // Stats
+  const stats=[['Audits',DB.audits.length,[13,33,55]],['Approved',DB.audits.filter(a=>a.status==='Approved').length,[21,128,61]],['Textile Certs',DB.textile.length,[14,116,144]],['Documents',DB.docs.length,[180,130,10]],['Workers',DB.workers.length,[100,50,180]]];
+  const bw=34; stats.forEach((s,i)=>{ const bx=m+i*(bw+2); doc.setFillColor(...s[2]); doc.roundedRect(bx,y,bw,14,1.5,1.5,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(255,255,255); doc.text(String(s[1]),bx+bw/2,y+8,{align:'center'}); doc.setFontSize(6); doc.text(s[0],bx+bw/2,y+13,{align:'center'}); }); y+=18;
+
+  // Audits
+  y=sectionTitle(doc,'🔍 AUDIT RECORDS',y);
+  const aCols=[['#',8],['Type',35],['Auditor',32],['Date',22],['Status',22],['Score',18],['Next Due',22]];
+  aCols.forEach(([h,w],ci)=>{ let cx2=m+2; aCols.slice(0,ci).forEach(([,cw])=>cx2+=cw); if(ci===0){ doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(80,100,120); doc.text(h,cx2,y); }});
+  doc.setFillColor(240,244,248); doc.rect(m,y-3,W-m*2,5,'F');
+  let cx=m+2; doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(60,80,100);
+  aCols.forEach(([h,w])=>{ doc.text(h,cx,y); cx+=w; }); y+=6;
+  DB.audits.forEach((a,i)=>{ if(y>272){doc.addPage();y=addLetterhead();} doc.setFillColor(i%2?255:248,i%2?255:250,i%2?255:252); doc.rect(m,y-3,W-m*2,6,'F'); cx=m+2; doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,50,65); [String(i+1),a.type,a.auditor,fmtDate(a.date),a.status,a.score,fmtDate(a.next)].forEach((v,ci)=>{ doc.text(String(v).substring(0,18),cx,y); cx+=aCols[ci][1]; }); y+=6; }); y+=6;
+
+  // Textile
+  if(y>240){doc.addPage();y=addLetterhead();}
+  y=sectionTitle(doc,'🧵 TEXTILE CERTIFICATIONS',y);
+  const tCols=[['#',8],['Standard',40],['Cert No.',35],['Issuer',35],['Valid To',22],['Status',22]];
+  cx=m+2; doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(60,80,100);
+  doc.setFillColor(240,244,248); doc.rect(m,y-3,W-m*2,5,'F');
+  tCols.forEach(([h,w])=>{ doc.text(h,cx,y); cx+=w; }); y+=6;
+  DB.textile.forEach((t,i)=>{ if(y>272){doc.addPage();y=addLetterhead();} doc.setFillColor(i%2?255:248,i%2?255:250,i%2?255:252); doc.rect(m,y-3,W-m*2,6,'F'); cx=m+2; doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,50,65); [String(i+1),t.std,t.cert||'—',t.issuer||'—',fmtDate(t.to),t.status].forEach((v,ci)=>{ doc.text(String(v).substring(0,22),cx,y); cx+=tCols[ci][1]; }); y+=6; }); y+=6;
+
+  // Material
+  if(DB.moves.length){ if(y>230){doc.addPage();y=addLetterhead();} y=sectionTitle(doc,'🚚 MATERIAL MOVEMENT RECORDS',y); const mCols=[['#',7],['Date',22],['Ref No.',25],['Type',20],['Material',42],['Qty',14],['Unit',16],['Status',22]]; cx=m+2; doc.setFillColor(240,244,248); doc.rect(m,y-3,W-m*2,5,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(60,80,100); mCols.forEach(([h,w])=>{ doc.text(h,cx,y); cx+=w; }); y+=6; DB.moves.forEach((mv,i)=>{ if(y>272){doc.addPage();y=addLetterhead();} doc.setFillColor(i%2?255:248,i%2?255:250,i%2?255:252); doc.rect(m,y-3,W-m*2,6,'F'); cx=m+2; doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(40,50,65); [String(i+1),fmtDate(mv.date),mv.ref||'—',mv.type,mv.item,mv.qty,mv.unit,mv.status].forEach((v,ci)=>{ doc.text(String(v).substring(0,20),cx,y); cx+=mCols[ci][1]; }); y+=6; }); }
+
+  // Footer
+  const pc=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pc;p++){ doc.setPage(p); addFooter(p,pc); }
+
+  doc.save(`${c.name.replace(/\s+/g,'_')}_Compliance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+// ===== WHATSAPP =====
+function shareWhatsApp(){
+  const c=DB.company;
+  const done=DB.checklist.states.filter(Boolean).length;
+  let msg=`🏭 *${c.name}*\n📍 ${c.addr}\n📞 ${c.phone}\n\n`;
+  msg+=`📋 *TEXTILE COMPLIANCE REPORT*\n${'─'.repeat(32)}\n\n`;
+  msg+=`✅ Checklist: ${done}/${DB.checklist.items.length} completed\n`;
+  msg+=`🔍 Audits: ${DB.audits.length} | Approved: ${DB.audits.filter(a=>a.status==='Approved').length}\n`;
+  msg+=`🧵 Textile Certs: ${DB.textile.length}\n`;
+  msg+=`📁 Documents: ${DB.docs.length}\n`;
+  msg+=`🚚 Material Moves: ${DB.moves.length}\n`;
+  msg+=`👷 Workers: ${DB.workers.length}\n\n`;
+  if(DB.textile.length){ msg+=`*Textile Certifications:*\n`; DB.textile.forEach(t=>{ msg+=`• ${t.std} | ${t.status} | ${fmtDate(t.to)}\n`; }); msg+='\n'; }
+  if(DB.audits.length){ msg+=`*Recent Audits:*\n`; DB.audits.slice(-3).forEach(a=>{ msg+=`• ${a.type} | ${a.auditor} | ${a.status}\n`; }); msg+='\n'; }
+  msg+=`📅 ${new Date().toLocaleDateString('en-PK',{day:'2-digit',month:'long',year:'numeric'})}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// MODAL backdrop
+document.querySelectorAll('.overlay').forEach(o=>{ o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }); });
+
+// KEYBOARD
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open')); });
+
+// ══════════════════════════════════════════
+//  🏠 HOME / LAUNCHER NAVIGATION
+// ══════════════════════════════════════════
+function goHome(){
+  // Try to go back, or go to launcher
+  if(document.referrer && document.referrer.includes('master_launcher')){
+    window.history.back();
+  } else {
+    // Same folder mein launcher dhundo
+    window.location.href = 'master_launcher.html';
+  }
+}
+
+// ══════════════════════════════════════════
+//  📱 MOBILE SIDEBAR
+// ══════════════════════════════════════════
+function toggleSidebar(){
+  const sb  = document.querySelector('.sidebar');
+  const ov  = document.getElementById('sidebarOverlay');
+  const isOpen = sb.classList.contains('open');
+  if(isOpen){ sb.classList.remove('open'); ov.classList.remove('open'); }
+  else { sb.classList.add('open'); ov.classList.add('open'); }
+}
+
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// Close sidebar when nav item clicked on mobile
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    if(window.innerWidth<=768) closeSidebar();
+  });
+});
+
+// ══════════════════════════════════════════
+//  ⚠️ EXPIRY ALERTS
+// ══════════════════════════════════════════
+function checkExpiryAlerts(){
+  const today  = new Date();
+  const warn30 = new Date(); warn30.setDate(today.getDate()+30);
+  const warn60 = new Date(); warn60.setDate(today.getDate()+60);
+  const alerts = [];
+
+  // Check Audit next dates
+  (DB.audits||[]).forEach(a=>{
+    if(!a.next) return;
+    const d = new Date(a.next);
+    const daysLeft = Math.floor((d-today)/(1000*60*60*24));
+    if(daysLeft<0)   alerts.push({type:'🔍 Audit',name:a.type,date:a.next,daysLeft,level:'danger'});
+    else if(daysLeft<=60) alerts.push({type:'🔍 Audit',name:a.type,date:a.next,daysLeft,level:daysLeft<=30?'danger':'warn'});
+  });
+
+  // Check Textile certificate expiry
+  (DB.textile||[]).forEach(t=>{
+    if(!t.to) return;
+    const d = new Date(t.to);
+    const daysLeft = Math.floor((d-today)/(1000*60*60*24));
+    if(daysLeft<0)   alerts.push({type:'📜 Certificate',name:t.std,date:t.to,daysLeft,level:'danger'});
+    else if(daysLeft<=60) alerts.push({type:'📜 Certificate',name:t.std,date:t.to,daysLeft,level:daysLeft<=30?'danger':'warn'});
+  });
+
+  // Check Documents expiry
+  (DB.docs||[]).forEach(d=>{
+    if(!d.exp) return;
+    const dt = new Date(d.exp);
+    const daysLeft = Math.floor((dt-today)/(1000*60*60*24));
+    if(daysLeft<0)   alerts.push({type:'📁 Document',name:d.name,date:d.exp,daysLeft,level:'danger'});
+    else if(daysLeft<=60) alerts.push({type:'📁 Document',name:d.name,date:d.exp,daysLeft,level:daysLeft<=30?'danger':'warn'});
+  });
+
+  const banner = document.getElementById('expiry-banner');
+  const itemsEl= document.getElementById('expiry-items');
+  const dotEl  = document.getElementById('laws-alert-dot');
+
+  if(!alerts.length){
+    if(banner) banner.classList.remove('show');
+    if(dotEl)  dotEl.style.display='none';
+    return;
+  }
+
+  if(dotEl) dotEl.style.display='';
+  if(banner) banner.classList.add('show');
+
+  if(itemsEl) itemsEl.innerHTML = alerts.sort((a,b)=>a.daysLeft-b.daysLeft).map(a=>`
+    <div class="expiry-item">
+      <div>
+        <span style="opacity:.7;font-size:.75rem">${a.type}</span>
+        <span style="font-weight:700;margin-left:6px">${a.name}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.75rem;opacity:.8">${fmtDate(a.date)}</span>
+        <span class="exp-badge ${a.level==='danger'?'exp-danger':'exp-warn'}">
+          ${a.daysLeft<0 ? '⛔ EXPIRED' : `⏰ ${a.daysLeft}d left`}
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  try{ return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return d; }
+}
+
+// ══════════════════════════════════════════
+//  📊 EXCEL EXPORT — POWER BI READY
+// ══════════════════════════════════════════
+function loadSheetJS(cb){
+  if(window.XLSX){ cb(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+  s.onload=cb;
+  s.onerror=()=>alert('❌ Excel library load nahi hui. Internet check karein.');
+  document.head.appendChild(s);
+}
+
+function exportExcelAll(){
+  loadSheetJS(()=>{
+    const wb   =XLSX.utils.book_new();
+    const today=new Date().toISOString().split('T')[0];
+    const co   =DB.company||{};
+
+    // 1. Audit Records
+    const auditRows=[['Audit Type','Auditor/Agency','Audit Date','Next Audit','Score/Grade','Status','Findings/Notes']];
+    (DB.audits||[]).forEach(a=>auditRows.push([a.type||'',a.auditor||'',a.date||'',a.next||'',a.score||'',a.status||'',a.notes||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(auditRows),'Audit Records');
+
+    // 2. Textile Compliance Certificates
+    const texRows=[['Standard','Certificate No.','Issued By','Scope','Valid From','Valid To','Status','Cost','Notes']];
+    (DB.textile||[]).forEach(t=>texRows.push([t.std||'',t.cert||'',t.issuer||'',t.scope||'',t.from||'',t.to||'',t.status||'',t.cost||'',t.notes||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(texRows),'Certificates');
+
+    // 3. Documents
+    const docRows=[['Document Name','Category','Issue Date','Expiry Date','Issuing Authority','Reference No.','Status','Notes']];
+    (DB.docs||[]).forEach(d=>docRows.push([d.name||'',d.cat||'',d.issued||'',d.exp||'',d.authority||'',d.ref||'',d.status||'',d.notes||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(docRows),'Documents');
+
+    // 4. Material Movement
+    const moveRows=[['Ref No.','Date','Type','Material/Item','Qty','Unit','From Location','To Location','Purpose','Remarks']];
+    (DB.moves||[]).forEach(m=>moveRows.push([m.ref||'',m.date||'',m.type||'',m.item||'',m.qty||'',m.unit||'',m.from||'',m.to||'',m.purpose||'',m.remarks||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(moveRows),'Material Movement');
+
+    // 5. Workers
+    const workRows=[['Worker ID','Name','Department','Designation','Join Date','DOB','Contact','Training','Status']];
+    (DB.workers||[]).forEach(w=>workRows.push([w.id||'',w.name||'',w.dept||'',w.desg||'',w.join||'',w.dob||'',w.contact||'',w.training||'',w.status||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(workRows),'Workers');
+
+    // 6. Checklist
+    const checkRows=[['Item','Completed']];
+    (DB.checklist.items||[]).forEach((item,i)=>checkRows.push([item, DB.checklist.states[i]?'Yes':'No']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(checkRows),'Checklist');
+
+    // 7. Expiry Alerts Summary
+    const today_d=new Date();
+    const alertRows=[['Type','Name','Expiry Date','Days Left','Status']];
+    (DB.audits||[]).forEach(a=>{ if(!a.next) return; const d=Math.floor((new Date(a.next)-today_d)/86400000); alertRows.push(['Audit',a.type,a.next,d,d<0?'EXPIRED':d<=30?'Critical':d<=60?'Warning':'OK']); });
+    (DB.textile||[]).forEach(t=>{ if(!t.to) return; const d=Math.floor((new Date(t.to)-today_d)/86400000); alertRows.push(['Certificate',t.std,t.to,d,d<0?'EXPIRED':d<=30?'Critical':d<=60?'Warning':'OK']); });
+    (DB.docs||[]).forEach(doc=>{ if(!doc.exp) return; const d=Math.floor((new Date(doc.exp)-today_d)/86400000); alertRows.push(['Document',doc.name,doc.exp,d,d<0?'EXPIRED':d<=30?'Critical':d<=60?'Warning':'OK']); });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(alertRows),'Expiry Alerts');
+
+    // 8. Company Info
+    const coRows=[['Field','Value'],['Company Name',co.name||''],['Address',co.addr||''],['Phone',co.phone||''],['Email',co.email||''],['Reg. No.',co.reg||''],['NTN',co.ntn||''],['Total Workers',co.workers||'']];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(coRows),'Company Info');
+
+    XLSX.writeFile(wb,`TextileCompliance_Export_${today}.xlsx`);
+
+    // Toast
+    const t=document.createElement('div');
+    t.textContent='✅ Excel export ho gaya! 7 sheets included.';
+    t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0d2137;color:#f0d080;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;border:1px solid #c8a84b';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),3000);
+  });
+}
+
+// Override renderDashboard to also check expiry — now handled inside renderDashboard() itself
+
+// ══════════════════════════════════════════
+//  🔥 FIREBASE CONNECTIVITY INDICATOR
+// ══════════════════════════════════════════
+function setFbStatus(online) {
+  const dot   = document.getElementById('fb-dot');
+  const label = document.getElementById('fb-label');
+  const btn   = document.getElementById('fb-status-btn');
+  if (!dot || !label) return;
+  if (online) {
+    dot.style.background   = '#22c55e';
+    dot.style.boxShadow    = '0 0 0 3px rgba(34,197,94,0.3)';
+    label.style.color      = '#4ade80';
+    label.textContent      = 'Connected';
+    dot.classList.add('online');
+    if (btn) btn.style.borderColor = 'rgba(34,197,94,0.35)';
+  } else {
+    dot.style.background   = '#ef4444';
+    dot.style.boxShadow    = '0 0 0 3px rgba(239,68,68,0.3)';
+    label.style.color      = '#f87171';
+    label.textContent      = 'Offline';
+    dot.classList.remove('online');
+    if (btn) btn.style.borderColor = 'rgba(239,68,68,0.35)';
+  }
+}
+
+function checkFirebaseStatus() {
+  const dot   = document.getElementById('fb-dot');
+  const label = document.getElementById('fb-label');
+  if (label) { label.textContent = 'Checking...'; }
+  if (dot)   { dot.style.background = '#f59e0b'; dot.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.3)'; }
+  // Ping .info/connected
+  firebase.database().ref('.info/connected').once('value')
+    .then(snap => setFbStatus(snap.val() === true))
+    .catch(() => setFbStatus(false));
+}
+
+// Live listener for connectivity
+firebase.database().ref('.info/connected').on('value', snap => {
+  setFbStatus(snap.val() === true);
+});
+
+// START
+init();
+// Redraw charts on window resize
+window.addEventListener('resize',()=>{
+  if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
+});
+checkExpiryAlerts();
+</script>
+</body>
+</html>

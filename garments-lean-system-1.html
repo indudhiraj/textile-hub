@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garments Lean Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg:#07090f;--surf:#0f1520;--surf2:#151e2e;--surf3:#1a2540;
+  --acc:#00c896;--acc2:#f4a024;--acc3:#e53e3e;--acc4:#7c5cbf;--acc5:#2b7de9;
+  --txt:#dde4f0;--txt2:#8899aa;--txt3:#4a5568;
+  --bdr:rgba(0,200,150,0.12);--bdr2:rgba(255,255,255,0.06);
+  --glow:0 0 24px rgba(0,200,150,0.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,200,150,0.06),transparent);pointer-events:none;z-index:0;}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#07090f,#0c1520,#0a1428);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:200;box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap;}
+.company-brand{display:flex;align-items:center;gap:14px;}
+.brand-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--acc),#009970);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:var(--glow);flex-shrink:0;}
+.brand-info h1{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:3px;color:var(--acc);text-transform:uppercase;}
+.brand-info .sub{font-size:0.72rem;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;}
+.brand-info .dev{font-size:0.65rem;color:var(--txt3);letter-spacing:1px;margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.fb-pill{display:flex;align-items:center;gap:5px;background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.2);border-radius:20px;padding:5px 12px;font-size:0.72rem;letter-spacing:1px;}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;transition:all .3s;}
+.fb-dot.ok{background:#00e676;box-shadow:0 0 6px #00e676;}
+.fb-dot.err{background:#ff1744;}
+.fb-dot.sync{background:#ffd740;animation:fbpulse .8s infinite;}
+@keyframes fbpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-btn{padding:5px 12px;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:5px;}
+.hdr-btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
+.hdr-btn-save{background:linear-gradient(135deg,#005c8a,#2b7de9);color:#fff;}
+.hdr-btn-load{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--txt2);}
+.hdr-btn-backup{background:linear-gradient(135deg,#005c2a,#00c896);color:#0a1a10;}
+.fb-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f1520;border:1px solid rgba(0,200,150,0.3);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:600;color:#00c896;opacity:0;transition:all .3s;z-index:9000;pointer-events:none;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,200,150,0.1);border:1px solid var(--bdr);border-radius:20px;padding:5px 12px;font-size:0.72rem;letter-spacing:1px;color:var(--acc);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--acc);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.3);}}
+.hdr-date{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--txt2);}
+
+/* ── NAV ── */
+.nav-wrap{border-top:1px solid var(--bdr2);overflow-x:auto;scrollbar-width:none;}
+.nav-wrap::-webkit-scrollbar{display:none;}
+.nav-tabs{display:flex;gap:0;min-width:max-content;}
+.nav-tab{padding:11px 18px;border:none;background:transparent;color:var(--txt2);font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;border-bottom:2px solid transparent;white-space:nowrap;}
+.nav-tab:hover{color:var(--txt);background:rgba(255,255,255,0.03);}
+.nav-tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(0,200,150,0.06);}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 20px 40px;}
+.section{display:none;padding:24px 0;animation:fadeUp .35s ease;}
+.section.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:12px;}
+.sec-hdr-left{display:flex;align-items:center;gap:12px;}
+.sec-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.sec-title h2{font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.sec-title p{font-size:0.78rem;color:var(--txt2);margin-top:2px;}
+.sec-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 18px;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--acc);color:#07090f;}
+.btn-primary:hover{background:#00aa80;box-shadow:var(--glow);}
+.btn-secondary{background:var(--surf2);color:var(--txt2);border:1px solid var(--bdr2);}
+.btn-secondary:hover{color:var(--txt);border-color:var(--bdr);}
+.btn-warn{background:rgba(244,160,36,.15);color:var(--acc2);border:1px solid rgba(244,160,36,.25);}
+.btn-danger{background:rgba(229,62,62,.15);color:var(--acc3);border:1px solid rgba(229,62,62,.25);}
+.btn-info{background:rgba(43,125,233,.15);color:var(--acc5);border:1px solid rgba(43,125,233,.25);}
+.btn-sm{padding:5px 12px;font-size:0.75rem;}
+.btn-xs{padding:3px 8px;font-size:0.7rem;}
+
+/* ── EXPORT BAR ── */
+.export-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;margin-bottom:20px;flex-wrap:wrap;}
+.export-label{font-size:0.75rem;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-right:4px;}
+
+/* ── CARDS ── */
+.card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;transition:all .25s;}
+.card:hover{border-color:var(--bdr);}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc);margin-bottom:14px;}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:0.72rem;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+input,textarea,select{background:var(--surf2);border:1px solid var(--bdr2);border-radius:7px;padding:9px 13px;color:var(--txt);font-family:'Barlow',sans-serif;font-size:0.88rem;outline:none;transition:border-color .25s;width:100%;}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,200,150,.08);}
+select option{background:var(--surf2);}
+textarea{resize:vertical;min-height:60px;}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--bdr2);}
+table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+thead tr{background:var(--surf2);}
+th{padding:11px 14px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt2);white-space:nowrap;border-bottom:1px solid var(--bdr2);}
+td{padding:10px 14px;border-bottom:1px solid var(--bdr2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;}
+.b-green{background:rgba(0,200,150,.15);color:var(--acc);}
+.b-yellow{background:rgba(244,160,36,.15);color:var(--acc2);}
+.b-red{background:rgba(229,62,62,.15);color:var(--acc3);}
+.b-blue{background:rgba(43,125,233,.15);color:var(--acc5);}
+.b-purple{background:rgba(124,92,191,.15);color:var(--acc4);}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;position:relative;overflow:hidden;transition:all .3s;}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px 2px 0 0;}
+.kpi-c1::after{background:var(--acc);}
+.kpi-c2::after{background:var(--acc2);}
+.kpi-c3::after{background:var(--acc3);}
+.kpi-c4::after{background:var(--acc4);}
+.kpi-c5::after{background:var(--acc5);}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.3);}
+.kpi-lbl{font-size:0.7rem;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:600;}
+.kpi-unit{font-size:0.75rem;color:var(--txt2);margin-top:2px;}
+.kpi-trend{font-size:0.72rem;margin-top:5px;}
+.trend-up{color:var(--acc);}
+.trend-dn{color:var(--acc3);}
+.kpi-c1 .kpi-val{color:var(--acc);}
+.kpi-c2 .kpi-val{color:var(--acc2);}
+.kpi-c3 .kpi-val{color:var(--acc3);}
+.kpi-c4 .kpi-val{color:var(--acc4);}
+.kpi-c5 .kpi-val{color:var(--acc5);}
+
+/* ── KANBAN ── */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:768px){.kanban{grid-template-columns:1fr;}}
+.k-col{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:14px;min-height:360px;}
+.k-col-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdr2);}
+.k-col-title{font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.k-count{font-family:'JetBrains Mono',monospace;font-size:0.78rem;background:var(--surf2);border:1px solid var(--bdr2);border-radius:20px;padding:2px 9px;}
+.k-card{background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:11px;margin-bottom:9px;cursor:grab;transition:all .2s;}
+.k-card:hover{border-color:var(--bdr);box-shadow:var(--glow);}
+.k-card.dragging{opacity:.45;cursor:grabbing;}
+.k-card-title{font-size:0.85rem;font-weight:600;margin-bottom:5px;}
+.k-card-sub{font-size:0.72rem;color:var(--txt3);}
+.k-card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:7px;}
+.k-add-btn{width:100%;padding:8px;border:1px dashed var(--bdr2);background:transparent;color:var(--txt3);border-radius:7px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;letter-spacing:1px;transition:all .25s;margin-top:8px;}
+.k-add-btn:hover{border-color:var(--acc);color:var(--acc);}
+
+/* ── AUDIT ── */
+.audit-cat{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;margin-bottom:14px;}
+.audit-cat-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.audit-cat-name{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;}
+.audit-score{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--acc);}
+.audit-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bdr2);}
+.audit-item:last-child{border-bottom:none;}
+.audit-item-lbl{font-size:0.83rem;color:var(--txt2);flex:1;padding-right:14px;}
+.stars{display:flex;gap:5px;}
+.star{width:26px;height:26px;border:1px solid var(--bdr2);background:var(--surf2);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:var(--txt3);}
+.star.on{background:rgba(244,160,36,.2);border-color:var(--acc2);color:var(--acc2);}
+
+/* ── PROGRESS BAR ── */
+.pbar-out{height:7px;background:var(--surf2);border-radius:4px;overflow:hidden;}
+.pbar-in{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),#007a5e);transition:width .5s ease;box-shadow:0 0 8px rgba(0,200,150,.3);}
+
+/* ── RULES ── */
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;}
+.rule-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;position:relative;transition:all .25s;}
+.rule-card:hover{border-color:var(--bdr);transform:translateY(-2px);}
+.rule-num{position:absolute;top:-11px;left:16px;background:var(--surf3);border:1px solid var(--acc);color:var(--acc);font-size:0.68rem;font-weight:700;padding:2px 10px;border-radius:8px;font-family:'JetBrains Mono',monospace;}
+.rule-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;margin-bottom:8px;letter-spacing:.5px;}
+.rule-desc{font-size:0.82rem;color:var(--txt2);line-height:1.65;}
+.rule-action{margin-top:10px;font-size:0.75rem;color:var(--acc);font-weight:600;letter-spacing:.5px;}
+
+/* ── WHYS ── */
+.why-step{background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:16px;margin-bottom:12px;position:relative;}
+.why-step.active{border-color:var(--acc);box-shadow:var(--glow);}
+.why-num{position:absolute;top:-10px;left:14px;background:var(--acc);color:#07090f;font-size:0.68rem;font-weight:700;padding:2px 10px;border-radius:8px;letter-spacing:1px;}
+.why-q{font-size:0.78rem;color:var(--txt3);font-style:italic;margin-bottom:6px;padding-top:6px;}
+.why-a{font-size:0.9rem;font-weight:600;}
+
+/* ── REPORT MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--bdr2);}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.modal-close{background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.modal-close:hover{color:var(--txt);border-color:var(--bdr);}
+.modal-body{overflow-y:auto;padding:22px;flex:1;}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--bdr2);display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── PRINT REPORT ── */
+.print-report{background:#fff;color:#111;font-family:'Barlow',sans-serif;padding:0;}
+.pr-header{background:linear-gradient(135deg,#0a2540,#0d3060);color:#fff;padding:28px 32px;}
+.pr-header h1{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;}
+.pr-header .pr-sub{font-size:0.8rem;opacity:.7;margin-top:4px;letter-spacing:1px;}
+.pr-header .pr-meta{display:flex;gap:30px;margin-top:14px;font-size:0.78rem;opacity:.8;}
+.pr-section{padding:20px 32px;border-bottom:1px solid #e5e7eb;}
+.pr-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0a2540;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #00c896;}
+.pr-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.pr-table th{background:#0a2540;color:#fff;padding:8px 12px;text-align:left;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;}
+.pr-table td{padding:7px 12px;border-bottom:1px solid #e5e7eb;}
+.pr-table tr:nth-child(even) td{background:#f9fafb;}
+.pr-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.pr-kpi{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center;}
+.pr-kpi-lbl{font-size:0.68rem;color:#666;text-transform:uppercase;letter-spacing:1px;}
+.pr-kpi-val{font-size:1.6rem;font-weight:700;color:#0a2540;font-family:'JetBrains Mono',monospace;}
+.pr-footer{padding:14px 32px;text-align:center;font-size:0.72rem;color:#888;background:#f9fafb;}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:36px;color:var(--txt3);}
+.empty-ico{font-size:2.5rem;opacity:.3;margin-bottom:8px;}
+.divider{height:1px;background:var(--bdr2);margin:18px 0;}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.tag{display:inline-flex;align-items:center;font-size:0.7rem;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.5px;}
+.add-form{background:var(--surf3);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-top:8px;display:none;animation:fadeUp .2s ease;}
+.add-form.show{display:block;}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.hdr-top{padding:10px 14px;}.wrap{padding:0 12px 40px;}}
+@media print{
+  header,.nav-wrap,.sec-actions,.export-bar,.btn,.modal-overlay{display:none!important;}
+  body{background:#fff;color:#111;}
+  .section{display:block!important;}
+  .card,.k-col,.audit-cat,.rule-card{background:#fff!important;border:1px solid #ddd!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="hdr-top">
+    <div class="company-brand">
+      <div class="brand-logo">🧵</div>
+      <div class="brand-info">
+        <h1 id="companyNameDisplay">Al-Faisal Garments Ltd.</h1>
+        <div class="sub">Garments &amp; Textile — Lean Management System</div>
+        <div class="dev">Developed by: Muhammad Azeem | IE Department | v2.0</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="fb-pill">
+        <div class="fb-dot sync" id="fb-dot"></div>
+        <span id="fb-txt" style="color:var(--txt2);">Connecting...</span>
+      </div>
+      <button class="hdr-btn hdr-btn-save" onclick="fbSaveNow()">☁️ Save</button>
+      <button class="hdr-btn hdr-btn-load" onclick="fbLoadNow()">📥 Load</button>
+      <button class="hdr-btn hdr-btn-backup" onclick="backupData()">💾 Backup</button>
+      <div class="live-badge"><div class="live-dot"></div>LIVE SYSTEM</div>
+      <div class="hdr-date" id="liveDate"></div>
+      <button class="btn btn-secondary btn-sm" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+  <div class="nav-wrap">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSec('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showSec('ie-rules',this)">📋 IE Rules</button>
+      <button class="nav-tab" onclick="showSec('workflow',this)">🔄 Workflow</button>
+      <button class="nav-tab" onclick="showSec('responsibility',this)">👥 Responsibility</button>
+      <button class="nav-tab" onclick="showSec('kanban',this)">📌 Kanban</button>
+      <button class="nav-tab" onclick="showSec('audit5s',this)">✅ 5S Audit</button>
+      <button class="nav-tab" onclick="showSec('whys',this)">🔍 5 Whys</button>
+      <button class="nav-tab" onclick="showSec('kaizen',this)">💡 Kaizen</button>
+      <button class="nav-tab" onclick="showSec('production',this)">🏭 Production</button>
+      <button class="nav-tab" onclick="showSec('quality',this)">🎯 Quality</button>
+      <button class="nav-tab" onclick="showSec('reports',this)">📄 Reports</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard" class="section active">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(0,200,150,.12);">📊</div>
+      <div class="sec-title"><h2>Operations Dashboard</h2><p>Real-time garments factory KPIs &amp; overview</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('dashboard')">📄 Report</button>
+      <button class="btn btn-primary btn-sm" onclick="refreshDashboard()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="dash-kpis">
+    <div class="kpi-card kpi-c1"><div class="kpi-lbl">Daily Output</div><div class="kpi-val" id="kpi-output">1,240</div><div class="kpi-unit">Pieces / Day</div><div class="kpi-trend trend-up">↑ +3.2% vs yesterday</div></div>
+    <div class="kpi-card kpi-c2"><div class="kpi-lbl">Efficiency</div><div class="kpi-val" id="kpi-eff">82</div><div class="kpi-unit">% Line Efficiency</div><div class="kpi-trend trend-up">↑ +1.5%</div></div>
+    <div class="kpi-card kpi-c3"><div class="kpi-lbl">Defect Rate</div><div class="kpi-val" id="kpi-def">3.2</div><div class="kpi-unit">% Defects</div><div class="kpi-trend trend-up">↓ -0.4% improved</div></div>
+    <div class="kpi-card kpi-c4"><div class="kpi-lbl">SMV</div><div class="kpi-val" id="kpi-smv">18.5</div><div class="kpi-unit">Min / Piece</div><div class="kpi-trend trend-dn">↑ +0.3 target miss</div></div>
+    <div class="kpi-card kpi-c5"><div class="kpi-lbl">On-Time Delivery</div><div class="kpi-val" id="kpi-otd">91</div><div class="kpi-unit">%</div><div class="kpi-trend trend-up">↑ On Track</div></div>
+    <div class="kpi-card kpi-c1"><div class="kpi-lbl">Absenteeism</div><div class="kpi-val" id="kpi-abs">4.1</div><div class="kpi-unit">%</div><div class="kpi-trend trend-dn">↑ Above target</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">📈 Weekly Production Trend</div>
+      <canvas id="prodChart" height="120"></canvas>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;" id="chartLabels"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚡ Quick Update KPIs</div>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="fg"><label>Daily Output (pcs)</label><input type="number" id="upd-output" placeholder="1240"></div>
+        <div class="fg"><label>Line Efficiency (%)</label><input type="number" id="upd-eff" placeholder="82"></div>
+        <div class="fg"><label>Defect Rate (%)</label><input type="number" id="upd-def" placeholder="3.2" step="0.1"></div>
+        <div class="fg"><label>SMV (min)</label><input type="number" id="upd-smv" placeholder="18.5" step="0.1"></div>
+        <div class="fg"><label>OTD (%)</label><input type="number" id="upd-otd" placeholder="91"></div>
+        <div class="fg"><label>Absenteeism (%)</label><input type="number" id="upd-abs" placeholder="4.1" step="0.1"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px;width:100%;" onclick="updateKPIs()">📊 Update Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IE RULES ══ -->
+<div id="ie-rules" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(244,160,36,.12);">📋</div>
+      <div class="sec-title"><h2>IE Rules — Garments &amp; Textile</h2><p>Industrial Engineering rules for lean operations</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('ie-rules')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('ie-rules')">📊 CSV</button>
+    </div>
+  </div>
+
+  <div class="rules-grid" id="ie-rules-grid"></div>
+</div>
+
+<!-- ══ WORKFLOW ══ -->
+<div id="workflow" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(43,125,233,.12);">🔄</div>
+      <div class="sec-title"><h2>Workflow Management</h2><p>Garments production workflow — entry &amp; tracking</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-primary btn-sm" onclick="showWFForm()">+ Add Entry</button>
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('workflow')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('workflow')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('workflow')">📗 Excel</button>
+    </div>
+  </div>
+
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('workflow')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('workflow')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('workflow')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('workflow')">🔷 Power BI</button>
+  </div>
+
+  <div class="card" id="wf-form-card" style="display:none;margin-bottom:16px;">
+    <div class="card-title">➕ New Workflow Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Style No.</label><input id="wf-style" placeholder="e.g. ST-2024-001"></div>
+      <div class="fg"><label>Department</label>
+        <select id="wf-dept">
+          <option value="">Select...</option>
+          <option>Cutting</option><option>Sewing</option><option>Finishing</option>
+          <option>Quality</option><option>Packing</option><option>Washing</option>
+          <option>Embroidery</option><option>Printing</option>
+        </select>
+      </div>
+      <div class="fg"><label>Process</label><input id="wf-process" placeholder="e.g. Front Panel Stitching"></div>
+      <div class="fg"><label>Operator / Team</label><input id="wf-operator" placeholder="Name or Team"></div>
+      <div class="fg"><label>Target Qty (pcs)</label><input id="wf-target" type="number" placeholder="500"></div>
+      <div class="fg"><label>Actual Qty (pcs)</label><input id="wf-actual" type="number" placeholder="480"></div>
+      <div class="fg"><label>SMV (min)</label><input id="wf-smv" type="number" placeholder="2.5" step="0.1"></div>
+      <div class="fg"><label>Status</label>
+        <select id="wf-status">
+          <option value="pending">⏳ Pending</option>
+          <option value="running">🔵 Running</option>
+          <option value="done">✅ Done</option>
+          <option value="hold">🔴 On Hold</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Remarks</label><textarea id="wf-remarks" rows="2" placeholder="Any notes..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="addWorkflow()">✅ Save Entry</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('wf-form-card').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table id="wf-table">
+      <thead><tr><th>#</th><th>Style</th><th>Dept</th><th>Process</th><th>Operator</th><th>Target</th><th>Actual</th><th>Eff%</th><th>SMV</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+      <tbody id="wf-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ RESPONSIBILITY ══ -->
+<div id="responsibility" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(124,92,191,.12);">👥</div>
+      <div class="sec-title"><h2>Responsibility Matrix</h2><p>RACI — Who does what in lean operations</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-primary btn-sm" onclick="showRespForm()">+ Assign</button>
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('responsibility')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('responsibility')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('responsibility')">📗 Excel</button>
+    </div>
+  </div>
+
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('responsibility')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('responsibility')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('responsibility')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('responsibility')">🔷 Power BI</button>
+  </div>
+
+  <div class="card" id="resp-form-card" style="display:none;margin-bottom:16px;">
+    <div class="card-title">➕ New Responsibility Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Task / Activity</label><input id="r-task" placeholder="e.g. Daily 5S Audit"></div>
+      <div class="fg"><label>Department</label>
+        <select id="r-dept">
+          <option value="">Select...</option>
+          <option>IE</option><option>Production</option><option>Quality</option>
+          <option>HR</option><option>Cutting</option><option>Sewing</option>
+          <option>Finishing</option><option>Management</option>
+        </select>
+      </div>
+      <div class="fg"><label>Responsible Person</label><input id="r-person" placeholder="Name"></div>
+      <div class="fg"><label>Role</label>
+        <select id="r-role">
+          <option value="R">R — Responsible (Karne wala)</option>
+          <option value="A">A — Accountable (Jawabdeh)</option>
+          <option value="C">C — Consulted (Mashwara)</option>
+          <option value="I">I — Informed (Malumat)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Frequency</label>
+        <select id="r-freq">
+          <option>Daily</option><option>Weekly</option><option>Monthly</option><option>As Needed</option>
+        </select>
+      </div>
+      <div class="fg"><label>Priority</label>
+        <select id="r-priority">
+          <option value="high">🔴 High</option>
+          <option value="med">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Description</label><textarea id="r-desc" rows="2" placeholder="Responsibility detail..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="addResponsibility()">✅ Save</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('resp-form-card').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Task</th><th>Dept</th><th>Person</th><th>RACI</th><th>Frequency</th><th>Priority</th><th>Date</th><th>Action</th></tr></thead>
+      <tbody id="resp-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ KANBAN ══ -->
+<div id="kanban" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(0,200,150,.12);">📌</div>
+      <div class="sec-title"><h2>Kanban Board</h2><p>Visual workflow — drag &amp; drop task management</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('kanban')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('kanban')">📊 CSV</button>
+    </div>
+  </div>
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('kanban')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('kanban')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('kanban')">📗 Excel</button>
+  </div>
+  <div class="kanban">
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'todo')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc2);">📌 To Do</span><span class="k-count" id="kc-todo">0</span></div>
+      <div id="kb-todo"></div>
+      <button class="k-add-btn" onclick="showKForm('todo')">+ Task Add</button>
+      <div class="add-form" id="kf-todo"><input id="kt-todo" placeholder="Task naam..." style="margin-bottom:8px;"><select id="kp-todo" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select><input id="kdept-todo" placeholder="Department..." style="margin-bottom:8px;"><div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('todo')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('todo')">✕</button></div></div>
+    </div>
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'prog')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc4);">⚙️ In Progress</span><span class="k-count" id="kc-prog">0</span></div>
+      <div id="kb-prog"></div>
+      <button class="k-add-btn" onclick="showKForm('prog')">+ Task Add</button>
+      <div class="add-form" id="kf-prog"><input id="kt-prog" placeholder="Task naam..." style="margin-bottom:8px;"><select id="kp-prog" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select><input id="kdept-prog" placeholder="Department..." style="margin-bottom:8px;"><div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('prog')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('prog')">✕</button></div></div>
+    </div>
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'done')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc);">✅ Done</span><span class="k-count" id="kc-done">0</span></div>
+      <div id="kb-done"></div>
+      <button class="k-add-btn" onclick="showKForm('done')">+ Task Add</button>
+      <div class="add-form" id="kf-done"><input id="kt-done" placeholder="Task naam..." style="margin-bottom:8px;"><select id="kp-done" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select><input id="kdept-done" placeholder="Department..." style="margin-bottom:8px;"><div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('done')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('done')">✕</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 5S AUDIT ══ -->
+<div id="audit5s" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(244,160,36,.12);">✅</div>
+      <div class="sec-title"><h2>5S Audit — Garments Factory</h2><p>Rate each area 1-5 stars</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('audit5s')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('audit5s')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('audit5s')">📗 Excel</button>
+    </div>
+  </div>
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('audit5s')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('audit5s')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('audit5s')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('audit5s')">🔷 Power BI</button>
+  </div>
+  <div id="audit-cats"></div>
+  <div style="background:linear-gradient(135deg,var(--surf2),var(--surf3));border:1px solid var(--acc);border-radius:12px;padding:22px;text-align:center;margin-top:18px;box-shadow:var(--glow);">
+    <div style="font-size:0.72rem;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">TOTAL 5S SCORE</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:700;color:var(--acc);" id="audit-total">0<span style="font-size:1.5rem;color:var(--txt2);">/100</span></div>
+    <div style="font-size:0.9rem;color:var(--txt2);margin-top:6px;" id="audit-grade">Rating shuru karein...</div>
+    <div class="pbar-out" style="margin-top:12px;max-width:400px;margin-left:auto;margin-right:auto;"><div class="pbar-in" id="audit-bar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- ══ 5 WHYS ══ -->
+<div id="whys" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(229,62,62,.12);">🔍</div>
+      <div class="sec-title"><h2>5 Whys Root Cause Analyzer</h2><p>Garments quality &amp; production problems solve karein</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('whys')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('whys')">📊 CSV</button>
+    </div>
+  </div>
+  <div style="max-width:720px;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">🔴 Problem Entry</div>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <div class="fg"><label>Problem Statement</label><input id="w-prob" placeholder="e.g. Seam pulli ho rahi hai..."></div>
+        <div class="fg"><label>Department</label><select id="w-dept"><option>Sewing</option><option>Cutting</option><option>Finishing</option><option>Quality</option><option>Packing</option></select></div>
+        <div class="fg"><label>Reported By</label><input id="w-by" placeholder="Name"></div>
+        <div class="fg"><label>Severity</label><select id="w-sev"><option value="high">🔴 High</option><option value="med">🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px;" onclick="startWhys()">🔍 Analysis Shuru Karein</button>
+    </div>
+    <div id="whys-steps"></div>
+    <div id="root-result" style="display:none;" class="card">
+      <div style="color:var(--acc);font-weight:700;letter-spacing:1px;margin-bottom:8px;font-size:0.78rem;">✅ ROOT CAUSE FOUND</div>
+      <div id="root-text" style="font-size:1rem;font-weight:600;margin-bottom:12px;"></div>
+      <div class="divider"></div>
+      <div style="font-size:0.82rem;color:var(--txt2);"><strong style="color:var(--acc2);">⚡ Action Required:</strong> Is root cause ka permanent corrective action (CAPA) tayar karein aur standard work mein shamil karein.</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec-hdr" style="margin-bottom:12px;">
+    <div class="sec-title"><h2 style="font-size:1rem;">📝 Saved Analyses</h2></div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Problem</th><th>Dept</th><th>Root Cause</th><th>By</th><th>Severity</th><th>Date</th></tr></thead><tbody id="whys-tbody"></tbody></table></div>
+</div>
+
+<!-- ══ KAIZEN ══ -->
+<div id="kaizen" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(124,92,191,.12);">💡</div>
+      <div class="sec-title"><h2>Kaizen Log</h2><p>Continuous improvement entries &amp; tracking</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('kaizen')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('kaizen')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('kaizen')">📗 Excel</button>
+    </div>
+  </div>
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('kaizen')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('kaizen')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('kaizen')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('kaizen')">🔷 Power BI</button>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ New Kaizen Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Improvement Title</label><input id="kz-title" placeholder="e.g. Motion waste reduce karna"></div>
+      <div class="fg"><label>Category</label><select id="kz-cat"><option value="process">⚙️ Process</option><option value="quality">✅ Quality</option><option value="safety">🦺 Safety</option><option value="waste">🗑️ Waste Reduction</option><option value="cost">💰 Cost Saving</option><option value="delivery">🚚 Delivery</option></select></div>
+      <div class="fg"><label>Department</label><select id="kz-dept"><option>Sewing</option><option>Cutting</option><option>Finishing</option><option>Quality</option><option>IE</option><option>Packing</option><option>Management</option></select></div>
+      <div class="fg"><label>Owner (Zimmedar)</label><input id="kz-owner" placeholder="Name"></div>
+      <div class="fg"><label>Target Date</label><input id="kz-date" type="date"></div>
+      <div class="fg"><label>Status</label><select id="kz-status"><option value="open">🟡 Open</option><option value="prog">🟣 In Progress</option><option value="done">🟢 Complete</option></select></div>
+      <div class="fg"><label>Before Condition</label><input id="kz-before" placeholder="Current situation..."></div>
+      <div class="fg"><label>Expected Result</label><input id="kz-after" placeholder="Expected improvement..."></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Detail</label><textarea id="kz-desc" rows="2" placeholder="Kaizen detail..."></textarea></div>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="addKaizen()">💡 Log Kaizen</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Dept</th><th>Owner</th><th>Before</th><th>Expected</th><th>Target Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="kz-tbody"></tbody></table></div>
+</div>
+
+<!-- ══ PRODUCTION ══ -->
+<div id="production" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(43,125,233,.12);">🏭</div>
+      <div class="sec-title"><h2>Production Entry</h2><p>Daily production data — line wise entry</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('production')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('production')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('production')">📗 Excel</button>
+    </div>
+  </div>
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('production')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('production')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('production')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('production')">🔷 Power BI</button>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ Production Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Date</label><input id="pr-date" type="date"></div>
+      <div class="fg"><label>Line No.</label><input id="pr-line" placeholder="e.g. Line 5"></div>
+      <div class="fg"><label>Style No.</label><input id="pr-style" placeholder="e.g. ST-001"></div>
+      <div class="fg"><label>Buyer</label><input id="pr-buyer" placeholder="e.g. H&M, Zara..."></div>
+      <div class="fg"><label>Target (pcs)</label><input id="pr-target" type="number" placeholder="500"></div>
+      <div class="fg"><label>Actual (pcs)</label><input id="pr-actual" type="number" placeholder="460"></div>
+      <div class="fg"><label>Workers</label><input id="pr-workers" type="number" placeholder="45"></div>
+      <div class="fg"><label>Working Hours</label><input id="pr-hours" type="number" placeholder="9" step="0.5"></div>
+      <div class="fg"><label>SMV (min)</label><input id="pr-smv" type="number" placeholder="18.5" step="0.1"></div>
+      <div class="fg"><label>Defects (pcs)</label><input id="pr-defects" type="number" placeholder="12"></div>
+      <div class="fg"><label>Shift</label><select id="pr-shift"><option>Morning</option><option>Evening</option><option>Night</option></select></div>
+      <div class="fg"><label>Supervisor</label><input id="pr-sup" placeholder="Supervisor name"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="addProduction()">🏭 Save Entry</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Line</th><th>Style</th><th>Buyer</th><th>Target</th><th>Actual</th><th>Eff%</th><th>Workers</th><th>SMV</th><th>Defects</th><th>Shift</th><th>Action</th></tr></thead><tbody id="pr-tbody"></tbody></table></div>
+</div>
+
+<!-- ══ QUALITY ══ -->
+<div id="quality" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(229,62,62,.12);">🎯</div>
+      <div class="sec-title"><h2>Quality Control Log</h2><p>Defect tracking &amp; CAPA — garments QC</p></div>
+    </div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('quality')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="exportCSV('quality')">📊 CSV</button>
+      <button class="btn btn-warn btn-sm" onclick="exportExcel('quality')">📗 Excel</button>
+    </div>
+  </div>
+  <div class="export-bar">
+    <span class="export-label">Export:</span>
+    <button class="btn btn-secondary btn-xs" onclick="generateReport('quality')">🖨️ Print/PDF</button>
+    <button class="btn btn-info btn-xs" onclick="exportCSV('quality')">📊 CSV</button>
+    <button class="btn btn-warn btn-xs" onclick="exportExcel('quality')">📗 Excel</button>
+    <button class="btn btn-secondary btn-xs" onclick="exportPowerBI('quality')">🔷 Power BI</button>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ Defect Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Date</label><input id="q-date" type="date"></div>
+      <div class="fg"><label>Style No.</label><input id="q-style" placeholder="ST-001"></div>
+      <div class="fg"><label>Line/Dept</label><input id="q-line" placeholder="Line 5 / Sewing"></div>
+      <div class="fg"><label>Defect Type</label>
+        <select id="q-deftype">
+          <option>Seam Pulli (Seam Slippage)</option>
+          <option>Skip Stitch</option>
+          <option>Uneven Stitch</option>
+          <option>Raw Edge</option>
+          <option>Oil Stain</option>
+          <option>Broken Stitch</option>
+          <option>Measurement Defect</option>
+          <option>Puckering</option>
+          <option>Button Missing</option>
+          <option>Zipper Defect</option>
+          <option>Color Variation</option>
+          <option>Shade Variation</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="fg"><label>Qty Defective</label><input id="q-qty" type="number" placeholder="5"></div>
+      <div class="fg"><label>Total Checked</label><input id="q-total" type="number" placeholder="200"></div>
+      <div class="fg"><label>Inspector</label><input id="q-inspector" placeholder="Name"></div>
+      <div class="fg"><label>Severity</label><select id="q-sev"><option value="critical">🔴 Critical</option><option value="major">🟡 Major</option><option value="minor">🟢 Minor</option></select></div>
+      <div class="fg"><label>CAPA Action</label><input id="q-capa" placeholder="Corrective action taken..."></div>
+      <div class="fg"><label>Status</label><select id="q-status"><option value="open">🔴 Open</option><option value="wip">🟡 WIP</option><option value="closed">🟢 Closed</option></select></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="addQuality()">🎯 Save Defect</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Line</th><th>Defect</th><th>Qty</th><th>Checked</th><th>DHU%</th><th>Inspector</th><th>Severity</th><th>CAPA</th><th>Status</th><th>Action</th></tr></thead><tbody id="q-tbody"></tbody></table></div>
+</div>
+
+<!-- ══ REPORTS ══ -->
+<div id="reports" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-icon" style="background:rgba(0,200,150,.12);">📄</div>
+      <div class="sec-title"><h2>Reports Center</h2><p>All reports — Print, PDF, Excel, CSV, Power BI</p></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">🖨️ Available Reports</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">📊 Dashboard Summary</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('dashboard')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('dashboard')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('dashboard')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">🏭 Production Report</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('production')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('production')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('production')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">🎯 Quality / DHU Report</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('quality')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('quality')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('quality')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">✅ 5S Audit Report</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('audit5s')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('audit5s')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('audit5s')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">💡 Kaizen Log Report</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('kaizen')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('kaizen')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('kaizen')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">🔄 Workflow Report</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('workflow')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('workflow')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('workflow')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+          <span style="font-size:0.85rem;">👥 Responsibility Matrix</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" onclick="generateReport('responsibility')">🖨️ Print</button>
+            <button class="btn btn-info btn-xs" onclick="exportCSV('responsibility')">CSV</button>
+            <button class="btn btn-warn btn-xs" onclick="exportExcel('responsibility')">Excel</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(43,125,233,.08);border-radius:8px;border:1px solid rgba(43,125,233,.2);">
+          <span style="font-size:0.85rem;color:var(--acc5);">🔷 Power BI — All Data Export</span>
+          <button class="btn btn-info btn-xs" onclick="exportAllPowerBI()">🔷 Export All</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Summary Statistics</div>
+      <div id="report-stats" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ══ SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-hdr">
+      <div class="modal-title">⚙️ System Settings</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg" style="margin-bottom:16px;"><label>Company Name</label><input id="s-company" value="Al-Faisal Garments Ltd."></div>
+      <div class="fg" style="margin-bottom:16px;"><label>Developed By</label><input id="s-dev" value="Muhammad Azeem"></div>
+      <div class="fg" style="margin-bottom:16px;"><label>Department</label><input id="s-dept" value="IE Department"></div>
+      <div class="fg"><label>System Version</label><input id="s-ver" value="v2.0"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="saveSettings()">✅ Save Settings</button>
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REPORT MODAL ══ -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="report-modal-title">Report</div>
+      <button class="modal-close" onclick="closeReport()">✕</button>
+    </div>
+    <div class="modal-body" id="report-modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="printReport()">🖨️ Print</button>
+      <button class="btn btn-info" onclick="savePDF()">📄 Save as PDF</button>
+      <button class="btn btn-secondary" onclick="closeReport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ STATE ═══
+// ═══ FIREBASE CONFIG ═══
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCDoJkRO-zKde-Atn0D1LSqIyZ9whqXYOQ",
+  authDomain: "garments-lean-master.firebaseapp.com",
+  databaseURL: "https://garments-lean-master-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "garments-lean-master",
+  storageBucket: "garments-lean-master.firebasestorage.app",
+  messagingSenderId: "393464503902",
+  appId: "1:393464503902:web:e4b6888925f451bde71ecf",
+  measurementId: "G-5172SZ202F"
+};
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const fbDB = firebase.database();
+
+// ── Firebase Status ──
+function initFbStatus() {
+  const dot = document.getElementById('fb-dot');
+  const txt = document.getElementById('fb-txt');
+  fbDB.ref('.info/connected').on('value', snap => {
+    if (snap.val() === true) {
+      dot.className = 'fb-dot ok';
+      txt.textContent = 'Firebase Connected';
+      txt.style.color = '#00e676';
+    } else {
+      dot.className = 'fb-dot err';
+      txt.textContent = 'Offline';
+      txt.style.color = '#ff1744';
+    }
+  });
+}
+
+// ── Firebase Toast ──
+let fbToastTimer;
+function fbToast(msg, color='#00c896') {
+  let t = document.getElementById('fb-toast-el');
+  if (!t) { t = document.createElement('div'); t.id='fb-toast-el'; t.className='fb-toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.color = color; t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(fbToastTimer);
+  fbToastTimer = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3000);
+}
+
+// ── Firebase Save ──
+function fbSaveNow() {
+  const dot = document.getElementById('fb-dot');
+  dot.className = 'fb-dot sync';
+  fbDB.ref('leanmaster/data').set({ data: JSON.stringify(state), updatedAt: new Date().toISOString() })
+    .then(() => { dot.className = 'fb-dot ok'; fbToast('☁️ Firebase mein save ho gaya!'); })
+    .catch(() => { dot.className = 'fb-dot err'; fbToast('❌ Save fail — internet check karein', '#ff1744'); });
+}
+
+// ── Firebase Load ──
+function fbLoadNow() {
+  fbToast('📥 Firebase se load ho raha hai...', '#ffd740');
+  fbDB.ref('leanmaster/data').once('value').then(snap => {
+    if (snap.exists()) {
+      try {
+        const d = JSON.parse(snap.val().data);
+        Object.assign(state, d);
+        refreshDashboard();
+        fbToast('✅ Data load ho gaya!');
+      } catch(e) { fbToast('❌ Data parse error', '#ff1744'); }
+    } else { fbToast('⚠️ Firebase mein koi data nahi abhi tak', '#ffd740'); }
+  }).catch(() => fbToast('❌ Load fail — internet check karein', '#ff1744'));
+}
+
+// ── Backup (JSON download) ──
+function backupData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'LeanSystem_Backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); fbToast('💾 Backup download ho raha hai!');
+}
+
+const state = {
+  company: 'Al-Faisal Garments Ltd.',
+  dev: 'Muhammad Azeem',
+  dept: 'IE Department',
+  ver: 'v2.0',
+  kpis: { output:'1,240', eff:'82', def:'3.2', smv:'18.5', otd:'91', abs:'4.1' },
+  workflow: [], responsibility: [], kanban: { todo:[], prog:[], done:[] },
+  kaizen: [], production: [], quality: [],
+  auditScores: {},
+  whysData: { prob:'', dept:'', by:'', sev:'high', answers:[] },
+  whysList: []
+};
+
+// ═══ LIVE DATE ═══
+function updateDate() {
+  const now = new Date();
+  document.getElementById('liveDate').textContent =
+    now.toLocaleDateString('en-PK',{weekday:'short',year:'numeric',month:'short',day:'numeric'}) + ' — ' +
+    now.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'});
+}
+updateDate(); setInterval(updateDate,30000);
+
+// ═══ NAV ═══
+function showSec(id, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  updateReportStats();
+}
+
+// ═══ SETTINGS ═══
+function openSettings() { document.getElementById('settings-modal').classList.add('show'); document.getElementById('s-company').value=state.company; document.getElementById('s-dev').value=state.dev; }
+function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+function saveSettings() {
+  state.company=document.getElementById('s-company').value;
+  state.dev=document.getElementById('s-dev').value;
+  state.dept=document.getElementById('s-dept').value||state.dept;
+  document.getElementById('companyNameDisplay').textContent=state.company;
+  closeSettings();
+}
+
+// ═══ KPIs ═══
+function updateKPIs() {
+  const map=[['upd-output','kpi-output','output'],['upd-eff','kpi-eff','eff'],['upd-def','kpi-def','def'],['upd-smv','kpi-smv','smv'],['upd-otd','kpi-otd','otd'],['upd-abs','kpi-abs','abs']];
+  map.forEach(([inp,el,key])=>{ const v=document.getElementById(inp).value; if(v){ document.getElementById(el).textContent=v; state.kpis[key]=v; document.getElementById(inp).value=''; }});
+}
+function refreshDashboard() { renderChart(); }
+
+// ═══ CHART ═══
+function renderChart() {
+  const data=[1120,1180,1095,1240,1300,1260,1210];
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const max=Math.max(...data);
+  const canvas=document.getElementById('prodChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth||500; canvas.height=120;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const W=canvas.width,H=canvas.height,pad=20,barW=(W-pad*2)/data.length*0.6,gap=(W-pad*2)/data.length;
+  data.forEach((v,i)=>{
+    const x=pad+i*gap+gap*0.2;
+    const h=(v/max)*(H-20);
+    const y=H-h;
+    const grad=ctx.createLinearGradient(0,y,0,H);
+    grad.addColorStop(0,'rgba(0,200,150,0.9)');
+    grad.addColorStop(1,'rgba(0,150,100,0.3)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.roundRect(x,y,barW,h,4);
+    ctx.fill();
+    ctx.fillStyle='rgba(221,228,240,0.6)';
+    ctx.font='10px JetBrains Mono';
+    ctx.textAlign='center';
+    ctx.fillText(v,x+barW/2,y-4);
+  });
+  const lbl=document.getElementById('chartLabels');
+  lbl.innerHTML=days.map(d=>`<span style="font-size:0.7rem;color:var(--txt3);flex:1;text-align:center;">${d}</span>`).join('');
+}
+setTimeout(renderChart,200);
+
+// ═══ IE RULES (Garments/Textile) ═══
+const ieRules=[
+  {n:'IE-01',title:'Line Balancing',emoji:'⚖️',col:'var(--acc)',desc:'Har operator ka workload balanced hona chahiye. Bottleneck operations identify karein aur balance karein taake flow smooth ho. Target: <10% imbalance.',action:'Weekly line balancing check karo aur operations reassign karo.'},
+  {n:'IE-02',title:'SMV (Standard Minute Value)',emoji:'⏱️',col:'var(--acc2)',desc:'Har operation ka SMV documented hona chahiye. SMV = Basic Time + Allowances. SMV se target set hota hai aur efficiency calculate hoti hai.',action:'Naye style pe pehle din SMV study karo.'},
+  {n:'IE-03',title:'Efficiency Monitoring',emoji:'📊',col:'var(--acc5)',desc:'Line efficiency = (Actual output × SMV) / (Workers × Working time × 60) × 100. Target minimum 75%. Daily monitor karein.',action:'Hourly production board update karein.'},
+  {n:'IE-04',title:'DHU Control',emoji:'🎯',col:'var(--acc3)',desc:'DHU (Defects per Hundred Units) = (Total Defects / Total Checked) × 100. Target <3% for inline, <1% for final audit.',action:'Inline QC hourly checking mandatory hai.'},
+  {n:'IE-05',title:'Motion Study',emoji:'🚶',col:'var(--acc4)',desc:'Operators ki unnecessary movements eliminate karein. Tool placement, machine layout aur ergonomics optimize karein. Gilbreth therblig analysis use karein.',action:'Monthly motion study aur workplace layout review.'},
+  {n:'IE-06',title:'Time Study',emoji:'⌚',col:'var(--acc)',desc:'Stopwatch time study se accurate SMV set karein. Rating factor apply karein. Minimum 20 cycles observe karein valid SMV ke liye.',action:'New style aur operator change par time study karo.'},
+  {n:'IE-07',title:'Layout Optimization',emoji:'🗺️',col:'var(--acc2)',desc:'Machine layout flow ke hisaab se set karein — no backtracking. U-shape ya straight line layout use karein style ke hisaab se. WIP kam karein.',action:'Style change par layout review mandatory hai.'},
+  {n:'IE-08',title:'Cutting Ratio Control',emoji:'✂️',col:'var(--acc5)',desc:'Marker efficiency minimum 85% maintain karein. Fabric consumption track karein. Shrinkage aur relaxation properly consider karein.',action:'Har marker maker ki daily marker efficiency check karo.'},
+  {n:'IE-09',title:'Thread Consumption',emoji:'🧵',col:'var(--acc3)',desc:'Thread consumption per piece calculate karein. Stitch class aur seam type ke hisaab se thread usage standard set karein. Waste track karein.',action:'Monthly thread consumption vs standard compare karo.'},
+  {n:'IE-10',title:'Absenteeism Control',emoji:'👤',col:'var(--acc4)',desc:'Daily attendance track karein. >5% absenteeism target miss ka risk hai. Absent workers ke liye contingency plan rakhein. Root cause analyze karein.',action:'Weekly absenteeism report management ko bhejo.'},
+  {n:'IE-11',title:'Changeover Reduction (SMED)',emoji:'🔧',col:'var(--acc)',desc:'Style change time minimize karein. Target <2 hours changeover. Pre-planning, parallel activities aur standard kits se time reduce hota hai.',action:'Changeover checklist follow karo, internal/external activities alag karo.'},
+  {n:'IE-12',title:'Ergonomics & Safety',emoji:'🦺',col:'var(--acc2)',desc:'Operator workstation height, lighting aur seating ergonomic honi chahiye. RSI (Repetitive Strain Injury) prevent karein. Safety guards mandatory hain.',action:'Monthly ergonomic audit aur safety inspection karo.'},
+  {n:'IE-13',title:'WIP Control',emoji:'📦',col:'var(--acc5)',desc:'Work-In-Progress har operation par minimum rakhein. Target: max 1 hour WIP per operation. Kanban system se WIP control karein.',action:'Hourly WIP count karo aur visual board update karo.'},
+  {n:'IE-14',title:'Needle Management',emoji:'🪡',col:'var(--acc3)',desc:'Broken needle register mandatory hai. Har broken needle count aur location record karein. Metal detector se garments scan karein.',action:'Broken needle log daily maintain karo — zero tolerance.'},
+  {n:'IE-15',title:'Traceability System',emoji:'🏷️',col:'var(--acc4)',desc:'Har bundle ka tracking hona chahiye cutting se packing tak. Bundle card system implement karein. Quality issues trace back possible honi chahiye.',action:'Bundle card system strictly follow karo — no loose pieces.'},
+];
+
+function renderIERules() {
+  const grid=document.getElementById('ie-rules-grid');
+  grid.innerHTML=ieRules.map(r=>`
+    <div class="rule-card">
+      <div class="rule-num">${r.n}</div>
+      <div class="rule-title">${r.emoji} ${r.title}</div>
+      <div class="rule-desc">${r.desc}</div>
+      <div class="rule-action">→ ${r.action}</div>
+    </div>`).join('');
+}
+renderIERules();
+
+// ═══ WORKFLOW ═══
+function showWFForm() { const c=document.getElementById('wf-form-card'); c.style.display=c.style.display==='none'?'block':'none'; }
+function addWorkflow() {
+  const style=document.getElementById('wf-style').value.trim();
+  if(!style) return alert('Style No. required!');
+  const target=parseFloat(document.getElementById('wf-target').value)||0;
+  const actual=parseFloat(document.getElementById('wf-actual').value)||0;
+  const eff=target>0?Math.round((actual/target)*100):0;
+  const entry={
+    id:Date.now(),
+    style, dept:document.getElementById('wf-dept').value,
+    process:document.getElementById('wf-process').value,
+    operator:document.getElementById('wf-operator').value,
+    target, actual, eff,
+    smv:document.getElementById('wf-smv').value,
+    status:document.getElementById('wf-status').value,
+    remarks:document.getElementById('wf-remarks').value,
+    date:new Date().toLocaleDateString('en-PK')
+  };
+  state.workflow.unshift(entry);
+  renderWorkflow();
+  document.getElementById('wf-form-card').style.display='none';
+  ['wf-style','wf-process','wf-operator','wf-target','wf-actual','wf-smv','wf-remarks'].forEach(id=>document.getElementById(id).value='');
+}
+function renderWorkflow() {
+  const tb=document.getElementById('wf-tbody');
+  if(!state.workflow.length){tb.innerHTML='<tr><td colspan="12" class="empty"><div class="empty-ico">🔄</div><div>No entries yet</div></td></tr>';return;}
+  const stMap={pending:'<span class="badge b-yellow">⏳ Pending</span>',running:'<span class="badge b-blue">🔵 Running</span>',done:'<span class="badge b-green">✅ Done</span>',hold:'<span class="badge b-red">🔴 Hold</span>'};
+  tb.innerHTML=state.workflow.map((w,i)=>`<tr>
+    <td style="color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${i+1}</td>
+    <td><strong>${w.style}</strong></td><td>${w.dept}</td><td>${w.process}</td><td>${w.operator}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${w.target}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${w.actual}</td>
+    <td><span class="badge ${w.eff>=80?'b-green':w.eff>=60?'b-yellow':'b-red'}">${w.eff}%</span></td>
+    <td style="font-family:'JetBrains Mono',monospace;">${w.smv}</td>
+    <td>${stMap[w.status]||w.status}</td>
+    <td style="font-size:0.75rem;color:var(--txt3);">${w.date}</td>
+    <td><button class="btn btn-danger btn-xs" onclick="delItem('workflow',${w.id})">✕</button></td>
+  </tr>`).join('');
+}
+renderWorkflow();
+
+// ═══ RESPONSIBILITY ═══
+function showRespForm() { const c=document.getElementById('resp-form-card'); c.style.display=c.style.display==='none'?'block':'none'; }
+function addResponsibility() {
+  const task=document.getElementById('r-task').value.trim();
+  if(!task) return alert('Task required!');
+  const entry={
+    id:Date.now(),
+    task, dept:document.getElementById('r-dept').value,
+    person:document.getElementById('r-person').value,
+    role:document.getElementById('r-role').value,
+    freq:document.getElementById('r-freq').value,
+    priority:document.getElementById('r-priority').value,
+    desc:document.getElementById('r-desc').value,
+    date:new Date().toLocaleDateString('en-PK')
+  };
+  state.responsibility.unshift(entry);
+  renderResponsibility();
+  document.getElementById('resp-form-card').style.display='none';
+  ['r-task','r-person','r-desc'].forEach(id=>document.getElementById(id).value='');
+}
+function renderResponsibility() {
+  const tb=document.getElementById('resp-tbody');
+  if(!state.responsibility.length){tb.innerHTML='<tr><td colspan="9" class="empty"><div class="empty-ico">👥</div><div>No assignments yet</div></td></tr>';return;}
+  const roleMap={R:'<span class="badge b-red">R</span>',A:'<span class="badge b-yellow">A</span>',C:'<span class="badge b-blue">C</span>',I:'<span class="badge b-green">I</span>'};
+  const priMap={high:'<span class="badge b-red">High</span>',med:'<span class="badge b-yellow">Medium</span>',low:'<span class="badge b-green">Low</span>'};
+  tb.innerHTML=state.responsibility.map((r,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td>
+    <td><strong>${r.task}</strong>${r.desc?`<div style="font-size:0.72rem;color:var(--txt3);">${r.desc}</div>`:''}</td>
+    <td>${r.dept}</td><td>${r.person}</td>
+    <td>${roleMap[r.role]||r.role}</td>
+    <td><span class="badge b-purple">${r.freq}</span></td>
+    <td>${priMap[r.priority]||r.priority}</td>
+    <td style="font-size:0.75rem;color:var(--txt3);">${r.date}</td>
+    <td><button class="btn btn-danger btn-xs" onclick="delItem('responsibility',${r.id})">✕</button></td>
+  </tr>`).join('');
+}
+renderResponsibility();
+
+// ═══ KANBAN ═══
+let dragK=null;
+function showKForm(col){document.getElementById('kf-'+col).classList.add('show');}
+function hideKForm(col){document.getElementById('kf-'+col).classList.remove('show');}
+function addK(col){
+  const t=document.getElementById('kt-'+col).value.trim();
+  if(!t)return;
+  state.kanban[col].push({id:Date.now(),title:t,priority:document.getElementById('kp-'+col).value,dept:document.getElementById('kdept-'+col).value,date:new Date().toLocaleDateString('en-PK')});
+  hideKForm(col);
+  document.getElementById('kt-'+col).value='';
+  document.getElementById('kdept-'+col).value='';
+  renderKanban();
+}
+function delK(col,id){state.kanban[col]=state.kanban[col].filter(c=>c.id!==id);renderKanban();}
+function renderKanban(){
+  ['todo','prog','done'].forEach(col=>{
+    const box=document.getElementById('kb-'+col);
+    document.getElementById('kc-'+col).textContent=state.kanban[col].length;
+    if(!state.kanban[col].length){box.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt3);font-size:0.78rem;">Empty</div>';return;}
+    const pMap={high:'b-red',med:'b-yellow',low:'b-green'};
+    box.innerHTML=state.kanban[col].map(c=>`
+      <div class="k-card" draggable="true" ondragstart="dragK='${col}|${c.id}'">
+        <div class="k-card-title">${c.title}</div>
+        ${c.dept?`<div class="k-card-sub">${c.dept}</div>`:''}
+        <div class="k-card-meta">
+          <span class="badge ${pMap[c.priority]}">${c.priority}</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:0.7rem;color:var(--txt3);">${c.date}</span>
+          <button onclick="delK('${col}',${c.id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;">✕</button></div>
+        </div>
+      </div>`).join('');
+  });
+}
+function dropK(e,targetCol){
+  if(!dragK)return;
+  const[srcCol,idStr]=dragK.split('|');
+  const id=parseInt(idStr);
+  const card=state.kanban[srcCol].find(c=>c.id===id);
+  if(card){state.kanban[srcCol]=state.kanban[srcCol].filter(c=>c.id!==id);state.kanban[targetCol].push(card);}
+  dragK=null;renderKanban();
+}
+// Init kanban
+state.kanban.todo.push({id:1,title:'5S Audit — Sewing Floor',priority:'high',dept:'IE',date:new Date().toLocaleDateString('en-PK')});
+state.kanban.prog.push({id:2,title:'Line Balancing — Line 5',priority:'med',dept:'Production',date:new Date().toLocaleDateString('en-PK')});
+state.kanban.done.push({id:3,title:'DHU Board Update',priority:'low',dept:'Quality',date:new Date().toLocaleDateString('en-PK')});
+renderKanban();
+
+// ═══ 5S AUDIT ═══
+const auditCats=[
+  {id:'sort',title:'SORT (Seiri)',emoji:'🔵',col:'#3b82f6',items:['Cutting floor par unnecessary fabric remove kiya gaya','Sewing machines ke paas sirf zaroorat ki tools hain','Scrap aur waste ke liye alag container hai','Red tag system implement hai']},
+  {id:'set',title:'SET IN ORDER (Seiton)',emoji:'🟣',col:'#8b5cf6',items:['Har machine aur tool ki jagah marked hai','Accessories clearly labeled hain','Bundles aur WIP ka area designated hai','Pattern aur marker ka storage organized hai']},
+  {id:'shine',title:'SHINE (Seiso)',emoji:'🟡',col:'#f4a024',items:['Machine cleaning daily ho rahi hai','Floor saaf aur dry hai','Oil aur lubricant spills nahi hain','Maintenance schedule follow ho raha hai']},
+  {id:'std',title:'STANDARDIZE (Seiketsu)',emoji:'🟢',col:'#00c896',items:['Standard operating procedures (SOPs) display hain','Visual management boards updated hain','Cleaning schedule posted hai','Inspection checklists available hain']},
+  {id:'sus',title:'SUSTAIN (Shitsuke)',emoji:'🔴',col:'#e53e3e',items:['Weekly audit ho raha hai','Management regular floor visit kar raha hai','Training records maintained hain','Improvement suggestions welcome hain']},
+];
+function initAudit(){
+  document.getElementById('audit-cats').innerHTML=auditCats.map(cat=>`
+    <div class="audit-cat">
+      <div class="audit-cat-hdr">
+        <div class="audit-cat-name" style="color:${cat.col};">${cat.emoji} ${cat.title}</div>
+        <div class="audit-score" id="ascore-${cat.id}">0/20</div>
+      </div>
+      ${cat.items.map((item,i)=>`
+        <div class="audit-item">
+          <div class="audit-item-lbl">${item}</div>
+          <div class="stars" id="stars-${cat.id}-${i}">
+            ${[1,2,3,4,5].map(s=>`<div class="star" onclick="rateAudit('${cat.id}',${i},${s})">${s}</div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+function rateAudit(cat,item,rating){
+  state.auditScores[`${cat}-${item}`]=rating;
+  const stars=document.getElementById(`stars-${cat}-${item}`).children;
+  for(let i=0;i<5;i++) stars[i].classList.toggle('on',i<rating);
+  updateAuditTotal();
+}
+function updateAuditTotal(){
+  let total=0;
+  auditCats.forEach(cat=>{
+    let s=0;
+    cat.items.forEach((_,i)=>s+=(state.auditScores[`${cat.id}-${i}`]||0));
+    const norm=Math.round((s/(cat.items.length*5))*20);
+    document.getElementById(`ascore-${cat.id}`).textContent=`${norm}/20`;
+    total+=norm;
+  });
+  document.getElementById('audit-total').innerHTML=`${total}<span style="font-size:1.5rem;color:var(--txt2);">/100</span>`;
+  document.getElementById('audit-bar').style.width=total+'%';
+  const g=total>=90?'🏆 Excellent — World Class!':total>=75?'✅ Good — Keep Improving!':total>=50?'⚠️ Average — Action Needed':'🔴 Poor — Immediate Action!';
+  document.getElementById('audit-grade').textContent=g;
+}
+initAudit();
+
+// ═══ 5 WHYS ═══
+function startWhys(){
+  const prob=document.getElementById('w-prob').value.trim();
+  if(!prob)return alert('Problem enter karein!');
+  state.whysData={prob,dept:document.getElementById('w-dept').value,by:document.getElementById('w-by').value,sev:document.getElementById('w-sev').value,answers:[]};
+  document.getElementById('root-result').style.display='none';
+  renderWhys();
+}
+function renderWhys(){
+  const qs=['Yeh kyun hua? (Why #1)','Iske peeche kyun? (Why #2)','Aur is wajah se kyun? (Why #3)','Is wajah ka bhi kyun? (Why #4)','Bilkul asal wajah kyun? (Why #5 — Root Cause)'];
+  let html=`<div class="why-step" style="background:rgba(229,62,62,.05);border-color:rgba(229,62,62,.2);">
+    <div class="why-num" style="background:var(--acc3);">PROBLEM</div>
+    <div style="padding-top:6px;font-weight:700;font-size:0.95rem;">${state.whysData.prob}</div>
+    <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">${state.whysData.dept} | ${state.whysData.by} | Severity: ${state.whysData.sev}</div>
+  </div>`;
+  state.whysData.answers.forEach((a,i)=>{html+=`<div class="why-step"><div class="why-num">WHY ${i+1}</div><div class="why-q" style="padding-top:6px;">${qs[i]}</div><div class="why-a">${a}</div></div>`;});
+  const cur=state.whysData.answers.length;
+  if(cur<5){html+=`<div class="why-step active"><div class="why-num">WHY ${cur+1}</div><div class="why-q" style="padding-top:6px;">${qs[cur]}</div><div class="fg" style="margin-top:8px;"><input id="why-inp" placeholder="Jawab likhen..." onkeydown="if(event.key==='Enter')submitWhy()"></div><button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="submitWhy()">Aage →</button></div>`;}
+  document.getElementById('whys-steps').innerHTML=html;
+  if(cur===5){
+    document.getElementById('root-text').textContent='🎯 Root Cause: '+state.whysData.answers[4];
+    document.getElementById('root-result').style.display='block';
+    state.whysList.push({...state.whysData,rootCause:state.whysData.answers[4],date:new Date().toLocaleDateString('en-PK')});
+    renderWhysList();
+  }
+  setTimeout(()=>document.getElementById('why-inp')?.focus(),80);
+}
+function submitWhy(){const inp=document.getElementById('why-inp');if(!inp?.value.trim())return;state.whysData.answers.push(inp.value.trim());renderWhys();}
+function renderWhysList(){
+  const tb=document.getElementById('whys-tbody');
+  if(!state.whysList.length){tb.innerHTML='<tr><td colspan="7" class="empty"><div>No analyses saved yet</div></td></tr>';return;}
+  const sm={high:'b-red',med:'b-yellow',low:'b-green'};
+  tb.innerHTML=state.whysList.map((w,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td>
+    <td><strong>${w.prob}</strong></td><td>${w.dept}</td>
+    <td style="font-size:0.82rem;">${w.rootCause||'—'}</td>
+    <td>${w.by||'—'}</td><td><span class="badge ${sm[w.sev]}">${w.sev}</span></td>
+    <td style="font-size:0.75rem;color:var(--txt3);">${w.date}</td>
+  </tr>`).join('');
+}
+
+// ═══ KAIZEN ═══
+function addKaizen(){
+  const t=document.getElementById('kz-title').value.trim();
+  if(!t)return alert('Title required!');
+  const entry={
+    id:Date.now(),title:t,
+    cat:document.getElementById('kz-cat').value,
+    dept:document.getElementById('kz-dept').value,
+    owner:document.getElementById('kz-owner').value,
+    before:document.getElementById('kz-before').value,
+    after:document.getElementById('kz-after').value,
+    tdate:document.getElementById('kz-date').value,
+    status:document.getElementById('kz-status').value,
+    desc:document.getElementById('kz-desc').value,
+    date:new Date().toLocaleDateString('en-PK')
+  };
+  state.kaizen.unshift(entry);
+  renderKaizen();
+  ['kz-title','kz-owner','kz-before','kz-after','kz-desc'].forEach(id=>document.getElementById(id).value='');
+}
+function renderKaizen(){
+  const tb=document.getElementById('kz-tbody');
+  if(!state.kaizen.length){tb.innerHTML='<tr><td colspan="10" class="empty"><div class="empty-ico">💡</div><div>No Kaizen entries yet</div></td></tr>';return;}
+  const catMap={process:'⚙️',quality:'✅',safety:'🦺',waste:'🗑️',cost:'💰',delivery:'🚚'};
+  const stMap={open:'<span class="badge b-yellow">🟡 Open</span>',prog:'<span class="badge b-purple">🟣 In Progress</span>',done:'<span class="badge b-green">🟢 Done</span>'};
+  tb.innerHTML=state.kaizen.map((k,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td>
+    <td><strong>${k.title}</strong>${k.desc?`<div style="font-size:0.72rem;color:var(--txt3);">${k.desc}</div>`:''}</td>
+    <td><span class="badge b-blue">${catMap[k.cat]||''} ${k.cat}</span></td>
+    <td>${k.dept}</td><td>${k.owner}</td>
+    <td style="font-size:0.78rem;">${k.before||'—'}</td>
+    <td style="font-size:0.78rem;">${k.after||'—'}</td>
+    <td style="font-size:0.75rem;color:var(--txt3);">${k.tdate||'—'}</td>
+    <td>${stMap[k.status]||k.status}</td>
+    <td><button class="btn btn-danger btn-xs" onclick="delItem('kaizen',${k.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+// ═══ PRODUCTION ═══
+function addProduction(){
+  const line=document.getElementById('pr-line').value.trim();
+  if(!line)return alert('Line No. required!');
+  const target=parseFloat(document.getElementById('pr-target').value)||0;
+  const actual=parseFloat(document.getElementById('pr-actual').value)||0;
+  const workers=parseFloat(document.getElementById('pr-workers').value)||1;
+  const hours=parseFloat(document.getElementById('pr-hours').value)||9;
+  const smv=parseFloat(document.getElementById('pr-smv').value)||0;
+  const eff=smv>0?((actual*smv)/(workers*hours*60)*100).toFixed(1):((actual/target)*100).toFixed(1);
+  const entry={
+    id:Date.now(),
+    date:document.getElementById('pr-date').value||new Date().toLocaleDateString('en-PK'),
+    line,style:document.getElementById('pr-style').value,
+    buyer:document.getElementById('pr-buyer').value,
+    target,actual,eff,workers,hours,smv,
+    defects:document.getElementById('pr-defects').value||0,
+    shift:document.getElementById('pr-shift').value,
+    sup:document.getElementById('pr-sup').value
+  };
+  state.production.unshift(entry);
+  renderProduction();
+  ['pr-style','pr-buyer','pr-target','pr-actual','pr-workers','pr-smv','pr-defects','pr-sup'].forEach(id=>document.getElementById(id).value='');
+}
+function renderProduction(){
+  const tb=document.getElementById('pr-tbody');
+  if(!state.production.length){tb.innerHTML='<tr><td colspan="13" class="empty"><div class="empty-ico">🏭</div><div>No production entries yet</div></td></tr>';return;}
+  tb.innerHTML=state.production.map((p,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td>
+    <td style="font-size:0.78rem;">${p.date}</td>
+    <td><strong>${p.line}</strong></td>
+    <td>${p.style}</td><td>${p.buyer}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${p.target}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${p.actual}</td>
+    <td><span class="badge ${p.eff>=75?'b-green':p.eff>=60?'b-yellow':'b-red'}">${p.eff}%</span></td>
+    <td>${p.workers}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${p.smv}</td>
+    <td style="color:${p.defects>10?'var(--acc3)':'var(--txt)'};">${p.defects}</td>
+    <td><span class="badge b-blue">${p.shift}</span></td>
+    <td><button class="btn btn-danger btn-xs" onclick="delItem('production',${p.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+// ═══ QUALITY ═══
+function addQuality(){
+  const style=document.getElementById('q-style').value.trim();
+  if(!style)return alert('Style No. required!');
+  const qty=parseFloat(document.getElementById('q-qty').value)||0;
+  const total=parseFloat(document.getElementById('q-total').value)||1;
+  const dhu=((qty/total)*100).toFixed(2);
+  const entry={
+    id:Date.now(),
+    date:document.getElementById('q-date').value||new Date().toLocaleDateString('en-PK'),
+    style,line:document.getElementById('q-line').value,
+    deftype:document.getElementById('q-deftype').value,
+    qty,total,dhu,
+    inspector:document.getElementById('q-inspector').value,
+    sev:document.getElementById('q-sev').value,
+    capa:document.getElementById('q-capa').value,
+    status:document.getElementById('q-status').value
+  };
+  state.quality.unshift(entry);
+  renderQuality();
+  ['q-style','q-line','q-qty','q-total','q-inspector','q-capa'].forEach(id=>document.getElementById(id).value='');
+}
+function renderQuality(){
+  const tb=document.getElementById('q-tbody');
+  if(!state.quality.length){tb.innerHTML='<tr><td colspan="13" class="empty"><div class="empty-ico">🎯</div><div>No quality entries yet</div></td></tr>';return;}
+  const sevMap={critical:'<span class="badge b-red">🔴 Critical</span>',major:'<span class="badge b-yellow">🟡 Major</span>',minor:'<span class="badge b-green">🟢 Minor</span>'};
+  const stMap={open:'<span class="badge b-red">Open</span>',wip:'<span class="badge b-yellow">WIP</span>',closed:'<span class="badge b-green">Closed</span>'};
+  tb.innerHTML=state.quality.map((q,i)=>`<tr>
+    <td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td>
+    <td style="font-size:0.78rem;">${q.date}</td>
+    <td><strong>${q.style}</strong></td>
+    <td>${q.line}</td>
+    <td style="font-size:0.8rem;">${q.deftype}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${q.qty}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${q.total}</td>
+    <td><span class="badge ${q.dhu<=1?'b-green':q.dhu<=3?'b-yellow':'b-red'}">${q.dhu}%</span></td>
+    <td>${q.inspector}</td>
+    <td>${sevMap[q.sev]||q.sev}</td>
+    <td style="font-size:0.78rem;">${q.capa||'—'}</td>
+    <td>${stMap[q.status]||q.status}</td>
+    <td><button class="btn btn-danger btn-xs" onclick="delItem('quality',${q.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+// ═══ DELETE HELPER ═══
+function delItem(type,id){
+  if(type==='workflow') state.workflow=state.workflow.filter(x=>x.id!==id), renderWorkflow();
+  else if(type==='responsibility') state.responsibility=state.responsibility.filter(x=>x.id!==id), renderResponsibility();
+  else if(type==='kaizen') state.kaizen=state.kaizen.filter(x=>x.id!==id), renderKaizen();
+  else if(type==='production') state.production=state.production.filter(x=>x.id!==id), renderProduction();
+  else if(type==='quality') state.quality=state.quality.filter(x=>x.id!==id), renderQuality();
+}
+
+// ═══ REPORT STATS ═══
+function updateReportStats(){
+  const el=document.getElementById('report-stats');
+  if(!el)return;
+  const stats=[
+    {label:'Total Workflow Entries',val:state.workflow.length,col:'var(--acc)'},
+    {label:'Kaizen Improvements',val:state.kaizen.length,col:'var(--acc4)'},
+    {label:'Production Entries',val:state.production.length,col:'var(--acc5)'},
+    {label:'Quality Defect Logs',val:state.quality.length,col:'var(--acc3)'},
+    {label:'Responsibility Entries',val:state.responsibility.length,col:'var(--acc2)'},
+    {label:'5 Whys Analyses',val:state.whysList.length,col:'var(--acc)'},
+  ];
+  el.innerHTML=stats.map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);">
+      <span style="font-size:0.83rem;color:var(--txt2);">${s.label}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:${s.col};">${s.val}</span>
+    </div>`).join('');
+}
+
+// ═══ EXPORT CSV ═══
+function exportCSV(section){
+  let rows=[], filename='';
+  const now=new Date().toLocaleDateString('en-PK');
+  const co=state.company;
+
+  if(section==='workflow'){
+    filename=`Workflow_Report_${now}.csv`;
+    rows=[['#','Style','Department','Process','Operator','Target','Actual','Efficiency%','SMV','Status','Remarks','Date']];
+    state.workflow.forEach((w,i)=>rows.push([i+1,w.style,w.dept,w.process,w.operator,w.target,w.actual,w.eff+'%',w.smv,w.status,w.remarks,w.date]));
+  } else if(section==='production'){
+    filename=`Production_Report_${now}.csv`;
+    rows=[['#','Date','Line','Style','Buyer','Target','Actual','Efficiency%','Workers','Hours','SMV','Defects','Shift','Supervisor']];
+    state.production.forEach((p,i)=>rows.push([i+1,p.date,p.line,p.style,p.buyer,p.target,p.actual,p.eff+'%',p.workers,p.hours,p.smv,p.defects,p.shift,p.sup]));
+  } else if(section==='quality'){
+    filename=`Quality_Report_${now}.csv`;
+    rows=[['#','Date','Style','Line','Defect Type','Qty Defective','Total Checked','DHU%','Inspector','Severity','CAPA','Status']];
+    state.quality.forEach((q,i)=>rows.push([i+1,q.date,q.style,q.line,q.deftype,q.qty,q.total,q.dhu+'%',q.inspector,q.sev,q.capa,q.status]));
+  } else if(section==='kaizen'){
+    filename=`Kaizen_Log_${now}.csv`;
+    rows=[['#','Title','Category','Department','Owner','Before','Expected','Target Date','Status','Description']];
+    state.kaizen.forEach((k,i)=>rows.push([i+1,k.title,k.cat,k.dept,k.owner,k.before,k.after,k.tdate,k.status,k.desc]));
+  } else if(section==='responsibility'){
+    filename=`Responsibility_Matrix_${now}.csv`;
+    rows=[['#','Task','Department','Person','RACI Role','Frequency','Priority','Description','Date']];
+    state.responsibility.forEach((r,i)=>rows.push([i+1,r.task,r.dept,r.person,r.role,r.freq,r.priority,r.desc,r.date]));
+  } else if(section==='audit5s'){
+    filename=`5S_Audit_${now}.csv`;
+    rows=[['Category','Item','Score (1-5)']];
+    auditCats.forEach(cat=>cat.items.forEach((item,i)=>rows.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0])));
+  } else if(section==='dashboard'){
+    filename=`Dashboard_KPIs_${now}.csv`;
+    rows=[['Metric','Value'],['Daily Output',state.kpis.output],['Line Efficiency',state.kpis.eff+'%'],['Defect Rate',state.kpis.def+'%'],['SMV',state.kpis.smv+' min'],['OTD',state.kpis.otd+'%'],['Absenteeism',state.kpis.abs+'%']];
+  } else if(section==='ie-rules'){
+    filename=`IE_Rules_${now}.csv`;
+    rows=[['Rule No.','Title','Description','Action']];
+    ieRules.forEach(r=>rows.push([r.n,r.title,r.desc,r.action]));
+  }
+  if(!rows.length) return alert('No data to export!');
+  rows.unshift([co+' — Lean Management System','','Exported: '+now]);
+  const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadFile(csv,'text/csv',filename);
+}
+
+// ═══ EXPORT EXCEL ═══
+function exportExcel(section){
+  let data=[], filename='';
+  const now=new Date().toLocaleDateString('en-PK');
+  if(section==='production'){
+    filename=`Production_Report_${now}.xlsx`;
+    data=[['Date','Line','Style','Buyer','Target','Actual','Efficiency%','Workers','SMV','Defects','Shift','Supervisor']];
+    state.production.forEach(p=>data.push([p.date,p.line,p.style,p.buyer,p.target,p.actual,parseFloat(p.eff),p.workers,p.smv,p.defects,p.shift,p.sup]));
+  } else if(section==='quality'){
+    filename=`Quality_DHU_Report_${now}.xlsx`;
+    data=[['Date','Style','Line','Defect Type','Qty Defective','Total Checked','DHU%','Inspector','Severity','CAPA','Status']];
+    state.quality.forEach(q=>data.push([q.date,q.style,q.line,q.deftype,q.qty,q.total,parseFloat(q.dhu),q.inspector,q.sev,q.capa,q.status]));
+  } else if(section==='workflow'){
+    filename=`Workflow_${now}.xlsx`;
+    data=[['Style','Dept','Process','Operator','Target','Actual','Eff%','SMV','Status','Date']];
+    state.workflow.forEach(w=>data.push([w.style,w.dept,w.process,w.operator,w.target,w.actual,parseFloat(w.eff),w.smv,w.status,w.date]));
+  } else if(section==='kaizen'){
+    filename=`Kaizen_Log_${now}.xlsx`;
+    data=[['Title','Category','Dept','Owner','Before','Expected','Target Date','Status']];
+    state.kaizen.forEach(k=>data.push([k.title,k.cat,k.dept,k.owner,k.before,k.after,k.tdate,k.status]));
+  } else if(section==='responsibility'){
+    filename=`Responsibility_Matrix_${now}.xlsx`;
+    data=[['Task','Dept','Person','RACI','Frequency','Priority','Description']];
+    state.responsibility.forEach(r=>data.push([r.task,r.dept,r.person,r.role,r.freq,r.priority,r.desc]));
+  } else if(section==='audit5s'){
+    filename=`5S_Audit_${now}.xlsx`;
+    data=[['Category','Item','Score']];
+    auditCats.forEach(cat=>cat.items.forEach((item,i)=>data.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0])));
+  } else if(section==='dashboard'){
+    filename=`Dashboard_KPIs_${now}.xlsx`;
+    data=[['Metric','Value'],['Daily Output',state.kpis.output],['Efficiency',state.kpis.eff],['Defect Rate',state.kpis.def],['SMV',state.kpis.smv],['OTD',state.kpis.otd],['Absenteeism',state.kpis.abs]];
+  }
+  if(!data.length) return alert('No data to export!');
+  try{
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=data[0].map(()=>({wch:20}));
+    XLSX.utils.book_append_sheet(wb,ws,'Data');
+    // Summary sheet
+    const sum=[['Company',state.company],['Exported By',state.dev],['Date',now],['Section',section]];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'Info');
+    XLSX.writeFile(wb,filename);
+  }catch(e){alert('Excel export ke liye internet connection zaruri hai (XLSX library).');}
+}
+
+// ═══ POWER BI CSV (formatted for Power BI) ═══
+function exportPowerBI(section){
+  let rows=[], filename=`PowerBI_${section}_${new Date().toLocaleDateString('en-PK')}.csv`;
+  if(section==='production'){
+    rows=[['Date','Line','Style','Buyer','Target_Qty','Actual_Qty','Efficiency_Pct','Workers','Hours','SMV','Defects','Shift','Supervisor','Company']];
+    state.production.forEach(p=>rows.push([p.date,p.line,p.style,p.buyer,p.target,p.actual,p.eff,p.workers,p.hours,p.smv,p.defects,p.shift,p.sup,state.company]));
+  } else if(section==='quality'){
+    rows=[['Date','Style','Line','Defect_Type','Qty_Defective','Total_Checked','DHU_Pct','Inspector','Severity','Status','Company']];
+    state.quality.forEach(q=>rows.push([q.date,q.style,q.line,q.deftype,q.qty,q.total,q.dhu,q.inspector,q.sev,q.status,state.company]));
+  } else if(section==='workflow'){
+    rows=[['Style','Department','Process','Operator','Target','Actual','Efficiency_Pct','SMV','Status','Date','Company']];
+    state.workflow.forEach(w=>rows.push([w.style,w.dept,w.process,w.operator,w.target,w.actual,w.eff,w.smv,w.status,w.date,state.company]));
+  } else if(section==='kaizen'){
+    rows=[['Title','Category','Department','Owner','Status','Target_Date','Date','Company']];
+    state.kaizen.forEach(k=>rows.push([k.title,k.cat,k.dept,k.owner,k.status,k.tdate,k.date,state.company]));
+  } else if(section==='audit5s'){
+    rows=[['Category','Item','Score','Max_Score','Company','Export_Date']];
+    auditCats.forEach(cat=>cat.items.forEach((item,i)=>rows.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0,5,state.company,new Date().toLocaleDateString('en-PK')])));
+  } else if(section==='dashboard'){
+    rows=[['Metric','Value','Unit','Company','Date']];
+    const d=[['Daily_Output',state.kpis.output,'pcs'],['Line_Efficiency',state.kpis.eff,'%'],['Defect_Rate',state.kpis.def,'%'],['SMV',state.kpis.smv,'min'],['OTD',state.kpis.otd,'%'],['Absenteeism',state.kpis.abs,'%']];
+    d.forEach(r=>rows.push([r[0],r[1],r[2],state.company,new Date().toLocaleDateString('en-PK')]));
+  }
+  if(!rows.length) return alert('No data for Power BI export!');
+  const csv=rows.map(r=>r.map(c=>`"${String(c||'')}"`).join(',')).join('\n');
+  downloadFile(csv,'text/csv',filename);
+  alert(`✅ Power BI CSV exported!\n\nIn Power BI Desktop:\n1. Get Data → Text/CSV\n2. Select this file\n3. Load and create visuals`);
+}
+
+function exportAllPowerBI(){
+  ['production','quality','workflow','kaizen','audit5s','dashboard'].forEach(s=>exportPowerBI(s));
+}
+
+// ═══ DOWNLOAD HELPER ═══
+function downloadFile(content, type, filename){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ═══ PRINT/PDF REPORT ═══
+function generateReport(section){
+  document.getElementById('report-modal-title').textContent=section.toUpperCase()+' REPORT';
+  const now=new Date().toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  let body=`<div class="print-report">
+    <div class="pr-header">
+      <h1>🧵 ${state.company}</h1>
+      <div class="pr-sub">Garments &amp; Textile — Lean Management System</div>
+      <div class="pr-meta">
+        <span>📅 Date: ${now}</span>
+        <span>👤 Developed by: ${state.dev}</span>
+        <span>🏢 Dept: ${state.dept}</span>
+        <span>📋 Section: ${section.toUpperCase()}</span>
+      </div>
+    </div>`;
+
+  if(section==='dashboard'){
+    body+=`<div class="pr-section"><h2>Key Performance Indicators</h2>
+      <div class="pr-kpis">
+        <div class="pr-kpi"><div class="pr-kpi-lbl">Daily Output</div><div class="pr-kpi-val">${state.kpis.output}</div><div style="font-size:0.72rem;color:#666;">pcs/day</div></div>
+        <div class="pr-kpi"><div class="pr-kpi-lbl">Efficiency</div><div class="pr-kpi-val">${state.kpis.eff}%</div></div>
+        <div class="pr-kpi"><div class="pr-kpi-lbl">Defect Rate</div><div class="pr-kpi-val">${state.kpis.def}%</div></div>
+        <div class="pr-kpi"><div class="pr-kpi-lbl">OTD</div><div class="pr-kpi-val">${state.kpis.otd}%</div></div>
+      </div></div>`;
+  } else if(section==='production' && state.production.length){
+    body+=`<div class="pr-section"><h2>Production Report (${state.production.length} entries)</h2>
+      <table class="pr-table"><thead><tr><th>#</th><th>Date</th><th>Line</th><th>Style</th><th>Buyer</th><th>Target</th><th>Actual</th><th>Eff%</th><th>SMV</th><th>Defects</th><th>Shift</th></tr></thead><tbody>
+      ${state.production.map((p,i)=>`<tr><td>${i+1}</td><td>${p.date}</td><td>${p.line}</td><td>${p.style}</td><td>${p.buyer}</td><td>${p.target}</td><td>${p.actual}</td><td>${p.eff}%</td><td>${p.smv}</td><td>${p.defects}</td><td>${p.shift}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='quality' && state.quality.length){
+    body+=`<div class="pr-section"><h2>Quality / DHU Report (${state.quality.length} entries)</h2>
+      <table class="pr-table"><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Defect Type</th><th>Qty</th><th>Checked</th><th>DHU%</th><th>Inspector</th><th>Severity</th><th>Status</th></tr></thead><tbody>
+      ${state.quality.map((q,i)=>`<tr><td>${i+1}</td><td>${q.date}</td><td>${q.style}</td><td>${q.deftype}</td><td>${q.qty}</td><td>${q.total}</td><td>${q.dhu}%</td><td>${q.inspector}</td><td>${q.sev}</td><td>${q.status}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='kaizen' && state.kaizen.length){
+    body+=`<div class="pr-section"><h2>Kaizen Log (${state.kaizen.length} improvements)</h2>
+      <table class="pr-table"><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Dept</th><th>Owner</th><th>Before</th><th>Expected</th><th>Status</th></tr></thead><tbody>
+      ${state.kaizen.map((k,i)=>`<tr><td>${i+1}</td><td>${k.title}</td><td>${k.cat}</td><td>${k.dept}</td><td>${k.owner}</td><td>${k.before}</td><td>${k.after}</td><td>${k.status}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='workflow' && state.workflow.length){
+    body+=`<div class="pr-section"><h2>Workflow Report (${state.workflow.length} entries)</h2>
+      <table class="pr-table"><thead><tr><th>#</th><th>Style</th><th>Dept</th><th>Process</th><th>Operator</th><th>Target</th><th>Actual</th><th>Eff%</th><th>Status</th><th>Date</th></tr></thead><tbody>
+      ${state.workflow.map((w,i)=>`<tr><td>${i+1}</td><td>${w.style}</td><td>${w.dept}</td><td>${w.process}</td><td>${w.operator}</td><td>${w.target}</td><td>${w.actual}</td><td>${w.eff}%</td><td>${w.status}</td><td>${w.date}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='responsibility' && state.responsibility.length){
+    body+=`<div class="pr-section"><h2>Responsibility Matrix (${state.responsibility.length} entries)</h2>
+      <table class="pr-table"><thead><tr><th>#</th><th>Task</th><th>Dept</th><th>Person</th><th>RACI</th><th>Frequency</th><th>Priority</th></tr></thead><tbody>
+      ${state.responsibility.map((r,i)=>`<tr><td>${i+1}</td><td>${r.task}</td><td>${r.dept}</td><td>${r.person}</td><td>${r.role}</td><td>${r.freq}</td><td>${r.priority}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='audit5s'){
+    let total=0;
+    const catRows=auditCats.map(cat=>{
+      let s=0;cat.items.forEach((_,i)=>s+=(state.auditScores[`${cat.id}-${i}`]||0));
+      const norm=Math.round((s/(cat.items.length*5))*20);total+=norm;
+      return `<tr><td>${cat.title}</td><td>${norm}/20</td></tr>`;
+    }).join('');
+    body+=`<div class="pr-section"><h2>5S Audit Report — Total: ${total}/100</h2>
+      <table class="pr-table"><thead><tr><th>Category</th><th>Score</th></tr></thead><tbody>${catRows}</tbody></table></div>`;
+  } else if(section==='ie-rules'){
+    body+=`<div class="pr-section"><h2>IE Rules — Garments &amp; Textile (${ieRules.length} rules)</h2>
+      <table class="pr-table"><thead><tr><th>Rule</th><th>Title</th><th>Description</th><th>Action</th></tr></thead><tbody>
+      ${ieRules.map(r=>`<tr><td>${r.n}</td><td>${r.title}</td><td>${r.desc}</td><td>${r.action}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if(section==='kanban'){
+    body+=`<div class="pr-section"><h2>Kanban Board Status</h2>
+      <table class="pr-table"><thead><tr><th>Status</th><th>Task</th><th>Department</th><th>Priority</th><th>Date</th></tr></thead><tbody>
+      ${['todo','prog','done'].flatMap(col=>state.kanban[col].map(c=>`<tr><td>${col==='todo'?'To Do':col==='prog'?'In Progress':'Done'}</td><td>${c.title}</td><td>${c.dept||'—'}</td><td>${c.priority}</td><td>${c.date}</td></tr>`)).join('')}
+      </tbody></table></div>`;
+  } else {
+    body+=`<div class="pr-section"><h2>No Data</h2><p style="color:#666;font-size:0.85rem;">Is section mein abhi koi data nahi hai. Entries karein phir report generate karein.</p></div>`;
+  }
+  body+=`<div class="pr-footer">${state.company} | Developed by: ${state.dev} | ${state.dept} | Generated: ${now}</div></div>`;
+  document.getElementById('report-modal-body').innerHTML=body;
+  document.getElementById('report-modal').classList.add('show');
+}
+
+function closeReport(){document.getElementById('report-modal').classList.remove('show');}
+
+function printReport(){
+  const content=document.getElementById('report-modal-body').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=Barlow:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <style>
+  *{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Barlow',sans-serif;background:#fff;color:#111;}
+  .pr-header{background:linear-gradient(135deg,#0a2540,#0d3060);color:#fff;padding:28px 32px;}
+  .pr-header h1{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;}
+  .pr-sub{font-size:0.8rem;opacity:.7;margin-top:4px;letter-spacing:1px;}
+  .pr-meta{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;font-size:0.78rem;opacity:.8;}
+  .pr-section{padding:20px 32px;border-bottom:1px solid #e5e7eb;}
+  .pr-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0a2540;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #00c896;}
+  table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+  th{background:#0a2540;color:#fff;padding:8px 12px;text-align:left;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;}
+  td{padding:7px 12px;border-bottom:1px solid #e5e7eb;}
+  tr:nth-child(even) td{background:#f9fafb;}
+  .pr-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  .pr-kpi{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center;}
+  .pr-kpi-lbl{font-size:0.68rem;color:#666;text-transform:uppercase;letter-spacing:1px;}
+  .pr-kpi-val{font-size:1.6rem;font-weight:700;color:#0a2540;font-family:'JetBrains Mono',monospace;}
+  .pr-footer{padding:14px 32px;text-align:center;font-size:0.72rem;color:#888;background:#f9fafb;}
+  @media print{@page{size:A4;margin:0;}}
+  </style></head><body>${content}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+function savePDF(){
+  alert('PDF save karne ke liye:\n\n1. "Print" button click karein\n2. Print dialog mein "Save as PDF" select karein\n3. File save karein\n\nYa browser ka Ctrl+P → Save as PDF use karein.');
+  printReport();
+}
+
+// ═══ INIT ═══
+initFbStatus();
+updateReportStats();
+</script>
+</body>
+</html>
