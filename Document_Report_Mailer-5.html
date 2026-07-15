@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Document Intake &amp; Report Mailer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.6.2/fuse.min.js"></script>
+<style>
+  :root{
+    --bg:#FAF9F5; --surface:#FFFFFF; --surface-alt:#F1EFE8;
+    --ink:#1F2420; --muted:#6E6A5E; --border:#E3DFD3;
+    --accent:#1E8A72; --accent-dark:#146354; --accent-tint:#E3F4EF;
+    --amber:#C97D2E; --amber-tint:#FBF0DF;
+    --danger:#C1452C; --danger-tint:#FBEAE5;
+    --blue:#3B6FD6; --blue-tint:#E8EEFC;
+    --wa:#25D366; --wa-dark:#1DA851; --wa-tint:#E3F9EC;
+    --badge-xlsx-bg:#E4F2E9; --badge-xlsx-fg:#1F7A46;
+    --badge-pdf-bg:#FBE7E3; --badge-pdf-fg:#A33A22;
+    --badge-docx-bg:#E4EAF7; --badge-docx-fg:#2C4C9B;
+    --mono:'SF Mono','Consolas','Roboto Mono',monospace;
+    --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --shadow:0 2px 10px rgba(30,25,15,.06);
+  }
+  html[data-theme="dark"]{
+    --bg:#11151A; --surface:#1A2025; --surface-alt:#212A30;
+    --ink:#EDEDE6; --muted:#9AA1A7; --border:#2C363D;
+    --accent:#3FCDAE; --accent-dark:#2E9B84; --accent-tint:rgba(63,205,174,.15);
+    --amber:#E3A15C; --amber-tint:rgba(227,161,92,.15);
+    --danger:#E4735A; --danger-tint:rgba(228,115,90,.15);
+    --blue:#7DA0F0; --blue-tint:rgba(125,160,240,.15);
+    --wa:#2FDB74; --wa-dark:#25C265; --wa-tint:rgba(47,219,116,.14);
+    --badge-xlsx-bg:rgba(63,205,174,.16); --badge-xlsx-fg:#5EDCB8;
+    --badge-pdf-bg:rgba(228,115,90,.16); --badge-pdf-fg:#F0917A;
+    --badge-docx-bg:rgba(125,160,240,.16); --badge-docx-fg:#A9C0F5;
+    --shadow:0 2px 14px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; transition:background .2s,color .2s; }
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:50;
+  }
+  header h1{ font-size:17px; margin:0; letter-spacing:.2px; }
+  header .tag{ font-size:11.5px; color:var(--muted); font-family:var(--mono); }
+  .header-actions{ display:flex; align-items:center; gap:10px; }
+  .stamp{ border:1.5px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:10.5px; letter-spacing:1.5px; padding:4px 9px; border-radius:3px; transform:rotate(-3deg); font-weight:700; }
+  .theme-toggle{
+    border:1px solid var(--border); background:var(--surface-alt); color:var(--ink); border-radius:20px;
+    padding:6px 12px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .layout{ display:flex; min-height:calc(100vh - 60px); }
+  .sidebar{ width:320px; flex-shrink:0; border-right:1px solid var(--border); background:var(--surface); }
+  .sidebar-inner{ padding:16px; }
+  .sidebar-head{ display:flex; align-items:center; justify-content:space-between; cursor:default; }
+  .sidebar-head b{ font-size:13px; }
+  .mobile-collapse-btn{ display:none; }
+  .btn{ border:none; border-radius:8px; padding:10px 15px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:var(--sans); }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ background:var(--accent-dark); }
+  .btn-outline{ background:var(--surface); border:1px solid var(--border); color:var(--ink); }
+  .btn-outline:hover{ background:var(--surface-alt); }
+  .btn-blue{ background:var(--blue); color:#fff; }
+  .btn-wa{ background:var(--wa); color:#fff; }
+  .btn-wa:hover{ background:var(--wa-dark); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn-block{ width:100%; }
+  .file-row{ display:flex; align-items:center; gap:8px; padding:9px 6px; border-radius:7px; border:1px solid transparent; cursor:pointer; font-size:13px; }
+  .file-row:hover{ background:var(--surface-alt); }
+  .file-row.active{ border-color:var(--accent); background:var(--accent-tint); }
+  .badge{ font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:.4px; flex-shrink:0; }
+  .badge-xlsx{ background:var(--badge-xlsx-bg); color:var(--badge-xlsx-fg); }
+  .badge-pdf{ background:var(--badge-pdf-bg); color:var(--badge-pdf-fg); }
+  .badge-docx{ background:var(--badge-docx-bg); color:var(--badge-docx-fg); }
+  .file-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--mono); }
+  .file-size{ color:var(--muted); font-size:11px; font-family:var(--mono); }
+  .empty-hint{ color:var(--muted); font-size:13px; padding:20px 8px; text-align:center; line-height:1.55; }
+  .main{ flex:1; padding:20px; overflow-y:auto; }
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto; }
+  .tab{ padding:9px 16px; font-size:13.5px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; }
+  .tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+  .panel{ display:none; } .panel.active{ display:block; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:16px; box-shadow:var(--shadow); }
+  .table-scroll{ overflow-x:auto; }
+  table.data-table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; min-width:480px; }
+  table.data-table th, table.data-table td{ border:1px solid var(--border); padding:6px 8px; text-align:left; }
+  table.data-table th{ background:var(--surface-alt); }
+  .pre-text{ white-space:pre-wrap; font-family:var(--mono); font-size:12.5px; line-height:1.6; max-height:420px; overflow-y:auto; background:var(--surface-alt); padding:12px; border-radius:8px; }
+  .stat-row{ display:flex; gap:22px; margin-bottom:14px; flex-wrap:wrap; }
+  .stat{ font-family:var(--mono); }
+  .stat b{ display:block; font-size:20px; color:var(--accent); }
+  .stat span{ font-size:11px; color:var(--muted); }
+  .img-gallery{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .img-gallery img{ width:120px; height:120px; object-fit:cover; border-radius:8px; border:1px solid var(--border); background:var(--surface-alt); }
+  .col-picker{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:8px; }
+  .col-picker label{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:400; margin:0; font-family:var(--mono); }
+  .col-picker input{ accent-color:var(--accent); }
+  .sheet-select{ padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--surface); color:var(--ink); margin-top:6px; }
+  .file-group{ margin-bottom:8px; }
+  .file-group summary{ font-size:11.5px; font-weight:700; color:var(--muted); letter-spacing:.3px; cursor:pointer; padding:6px 4px; list-style:none; display:flex; align-items:center; gap:6px; text-transform:uppercase; }
+  .file-group summary::-webkit-details-marker{ display:none; }
+  .file-group summary::before{ content:'▸'; font-size:10px; transition:transform .15s; }
+  .file-group[open] summary::before{ transform:rotate(90deg); }
+  #fileSearchInput{ margin-top:12px; }
+  label{ font-size:12.5px; font-weight:600; display:block; margin-bottom:5px; margin-top:12px; }
+  input[type=text], input[type=email], input[type=tel], textarea{
+    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;
+    font-family:var(--sans); font-size:16px; background:var(--surface); color:var(--ink);
+  }
+  textarea{ font-family:var(--mono); font-size:13px; min-height:200px; resize:vertical; }
+  .note{ font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.5; }
+  .send-mode-row{ display:flex; gap:14px; margin-top:14px; flex-wrap:wrap; }
+  .mode-pill{ display:flex; align-items:center; gap:6px; font-size:13px; padding:8px 12px; border:1px solid var(--border); border-radius:20px; cursor:pointer; }
+  .mode-pill input{ accent-color:var(--accent); }
+  .toast-wrap{ position:fixed; bottom:16px; right:16px; left:16px; z-index:200; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .toast{ padding:10px 14px; border-radius:8px; font-size:13px; max-width:340px; box-shadow:0 4px 14px rgba(0,0,0,.15); }
+  .toast-info{ background:var(--surface); border:1px solid var(--border); color:var(--ink); }
+  .toast-success{ background:var(--accent-tint); border:1px solid var(--accent); color:var(--accent-dark); }
+  .toast-warn{ background:var(--amber-tint); border:1px solid var(--amber); color:var(--amber); }
+  .toast-error{ background:var(--danger-tint); border:1px solid var(--danger); color:var(--danger); }
+  .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(10,10,8,.5); z-index:150; align-items:center; justify-content:center; padding:14px; }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ background:var(--surface); width:560px; max-width:100%; max-height:90vh; overflow-y:auto; border-radius:12px; padding:20px; }
+  .modal h2{ margin-top:0; font-size:16px; }
+  .attach-list-box{ border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:8px; font-family:var(--mono); font-size:12px; background:var(--surface-alt); }
+  .attach-list-box div{ padding:2px 0; }
+  .confirm-box{ background:var(--amber-tint); border:1px solid var(--amber); border-radius:8px; padding:12px; margin-top:14px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  details.settings{ margin-top:18px; }
+  details.settings summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--muted); }
+  #folderInputFallback{ display:none; }
+  .progress-line{ font-size:12px; color:var(--muted); margin-top:8px; font-family:var(--mono); }
+
+  @media (max-width:760px){
+    header{ padding:12px 14px; }
+    header h1{ font-size:15px; }
+    .layout{ flex-direction:column; }
+    .sidebar{ width:100%; border-right:none; border-bottom:1px solid var(--border); }
+    .mobile-collapse-btn{ display:inline-flex; align-items:center; gap:4px; background:none; border:none; color:var(--accent); font-size:13px; font-weight:600; cursor:pointer; }
+    #fileListContainer.mobile-collapsed{ display:none; }
+    .main{ padding:14px; }
+    .card{ padding:14px; }
+    .tab{ padding:9px 12px; font-size:13px; }
+    .stat b{ font-size:17px; }
+    .modal{ padding:16px; }
+    .modal-actions button, .send-mode-row .mode-pill{ flex:1; justify-content:center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Document Intake &amp; Report Mailer</h1>
+    <div class="tag">read folder → preview → report → send</div>
+  </div>
+  <div class="header-actions">
+    <div class="stamp">MANIFEST</div>
+    <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-primary btn-block" id="pickFolderBtn">Select Folder</button>
+        <button class="btn btn-outline" id="rescanBtn" title="Rescan same folder" disabled>⟳</button>
+      </div>
+      <input type="file" id="folderInputFallback" webkitdirectory multiple>
+      <div class="progress-line" id="scanProgress"></div>
+      <input type="text" id="fileSearchInput" placeholder="Search files...">
+
+      <div class="sidebar-head" style="margin-top:14px;">
+        <b id="fileCountLabel">Files</b>
+        <button class="mobile-collapse-btn" id="mobileCollapseBtn">Show/Hide ▾</button>
+      </div>
+      <div id="fileListContainer" style="margin-top:8px;">
+        <div class="empty-hint">Koi folder select nahi hui. Excel (.xlsx/.xls), PDF (.pdf), Word (.docx/.doc) files yahan list honge. Attach karne wali files ka checkbox tick karo.</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tabs">
+      <div class="tab active" data-tab="preview">Preview</div>
+      <div class="tab" data-tab="report">Report</div>
+      <div class="tab" data-tab="ask">Ask</div>
+      <div class="tab" data-tab="email">Send</div>
+    </div>
+
+    <div class="panel active" id="panel-preview">
+      <div class="card" id="previewCard">
+        <div class="empty-hint">File list se koi file select karo preview dekhne ke liye.</div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-report">
+      <div class="card">
+        <label>Report Template</label>
+        <select class="sheet-select" id="reportTemplate">
+          <option value="full">Full Detail</option>
+          <option value="summary">Summary Only</option>
+          <option value="data">Data Only</option>
+        </select>
+        <div class="col-picker" style="margin-top:10px;">
+          <label style="font-weight:400;"><input type="checkbox" id="incStats" checked> Stats</label>
+          <label style="font-weight:400;"><input type="checkbox" id="incFileTable" checked> File Table</label>
+          <label style="font-weight:400;"><input type="checkbox" id="incExtracted" checked> Extracted Data</label>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="generateReportBtn">Generate Report</button>
+          <button class="btn btn-outline" id="downloadCombinedBtn">Download Combined Excel</button>
+        </div>
+        <div id="reportOutput" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-ask">
+      <div class="card">
+        <label>Apna sawaal likho</label>
+        <input type="text" id="askInput" placeholder="e.g. Total qty cut kitni hai / Sab cutting report combine karo / June ki files dikhao">
+        <button class="btn btn-primary" id="askBtn" style="margin-top:12px;">Ask</button>
+        <button class="btn btn-outline" id="askClearBtn" style="margin-top:12px;">Clear Conversation</button>
+        <div id="askResultOutput" style="margin-top:12px;"></div>
+        <button class="btn btn-primary" id="askSendBtn" style="display:none; margin-top:14px;">Send as Email/WhatsApp</button>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-email">
+      <div class="card">
+        <button class="btn btn-outline" id="draftFromReportBtn">Fill Draft From Report</button>
+
+        <label>Email (Manual / Auto ke liye)</label>
+        <input type="email" id="emailTo" placeholder="buyer@example.com">
+
+        <label>WhatsApp Number (country code ke saath, e.g. 91XXXXXXXXXX)</label>
+        <input type="tel" id="waNumber" placeholder="91XXXXXXXXXX">
+
+        <label>Subject</label>
+        <input type="text" id="emailSubject">
+        <label>Message / Body</label>
+        <textarea id="emailBody"></textarea>
+
+        <div id="combinedAttachRow" style="display:none; margin-top:12px;">
+          <label style="display:flex; align-items:center; gap:8px; margin:0; font-weight:400;">
+            <input type="checkbox" id="attachCombinedExcel"> Attach generated Combined Excel (<span id="combinedFileName"></span>)
+          </label>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="previewSendBtn">Preview &amp; Send</button>
+        </div>
+
+        <details class="settings">
+          <summary>Send Settings (EmailJS — auto-send ke liye)</summary>
+          <label>Service ID</label>
+          <input type="text" id="cfgServiceId">
+          <label>Template ID</label>
+          <input type="text" id="cfgTemplateId">
+          <label>Public Key</label>
+          <input type="text" id="cfgPublicKey">
+          <div class="note">Ye settings sirf is session ke liye hain (page reload hone par reset ho jayenge, kahin save nahi hote). Attachment auto-send ~3MB tak hi try karo, aur EmailJS template pehle se configure hona chahiye.</div>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2>Preview</h2>
+    <div><b id="mRecipientLabel">To (Email):</b> <span id="mRecipientValue"></span></div>
+    <div style="margin-top:6px;"><b>Subject:</b> <span id="mSubject"></span></div>
+    <div class="pre-text" id="mBody" style="margin-top:8px;"></div>
+
+    <div id="mAttachSection" style="display:none;">
+      <label style="margin-top:16px;">Attachments (as-is)</label>
+      <div class="attach-list-box" id="mAttachList"></div>
+      <div class="confirm-box">
+        <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input type="checkbox" id="mConfirmAttach">
+          Main confirm karta/karti hoon ki yahi files as-is attach honi chahiye.
+        </label>
+      </div>
+    </div>
+
+    <div class="send-mode-row">
+      <label class="mode-pill"><input type="radio" name="sendMode" value="manual" checked> 📧 Manual (Mail App)</label>
+      <label class="mode-pill"><input type="radio" name="sendMode" value="auto"> ⚡ Auto (EmailJS)</label>
+      <label class="mode-pill"><input type="radio" name="sendMode" value="whatsapp"> 💬 WhatsApp</label>
+    </div>
+    <div class="note" id="modeNote"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="modalBackBtn">Back / Edit</button>
+      <button class="btn btn-primary" id="modalSendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let scannedFiles = [];
+let activeFileId = null;
+let currentReport = null;
+let folderName = 'Selected Folder';
+let fileIdCounter = 0;
+let currentDirHandle = null;
+let columnPresets = []; // {name, signature, selected[]} — in-memory only, resets on reload
+let combinedExcelFile = null;
+let askHistory = []; // {query, html, interpretation, emailText} — accumulates across the session
+
+// ---------- Ask: rule-based query understanding (no AI, all local) ----------
+const SUM_WORDS = ['total','sum','jod','kul','add'];
+const COMBINE_WORDS = ['combine','merge','jodo','milao'];
+const LIST_WORDS = ['list','dikhao','show','dekhao','batao'];
+const STOPWORDS = ['hai','hain','ka','ki','ke','ko','se','me','mein','do','de','dena','dijiye','please',
+  'kitni','kitna','sab','sabka','sabki','sabko','alag','file','files','hisab','wise','and','the','is',
+  'of','for','a','an','with','saath','total','sum','jod','jodo','kul','add','combine','merge','milao',
+  'list','dikhao','show','dekhao','batao','ki','wali'];
+const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+const SYNONYMS = { qty:'quantity', amt:'amount', pcs:'pieces', no:'number', wt:'weight', rt:'rate', desc:'description' };
+
+// ---------- theme ----------
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(mode){
+  document.documentElement.setAttribute('data-theme', mode);
+  themeToggle.textContent = mode === 'dark' ? '☀️ Light' : '🌙 Dark';
+}
+applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+themeToggle.addEventListener('click', ()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+// ---------- mobile sidebar collapse ----------
+const fileListContainer = document.getElementById('fileListContainer');
+const mobileCollapseBtn = document.getElementById('mobileCollapseBtn');
+function isMobile(){ return window.innerWidth <= 760; }
+if(isMobile()) fileListContainer.classList.add('mobile-collapsed');
+mobileCollapseBtn.addEventListener('click', ()=> fileListContainer.classList.toggle('mobile-collapsed'));
+
+// ---------- helpers ----------
+function showToast(msg, kind){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + (kind||'info');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=> el.remove(), 6000);
+}
+function formatBytes(b){
+  if(b < 1024) return b + ' B';
+  if(b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/(1024*1024)).toFixed(2) + ' MB';
+}
+function getExt(name){ const m = name.toLowerCase().match(/\.([a-z0-9]+)$/); return m ? m[1] : ''; }
+function typeFromExt(ext){
+  if(ext === 'xlsx' || ext === 'xls') return 'xlsx';
+  if(ext === 'pdf') return 'pdf';
+  if(ext === 'docx' || ext === 'doc') return 'docx';
+  return null;
+}
+function toBase64(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ---------- column presets (session only, resets on reload) ----------
+function headerSignature(header){
+  return header.map(h=>String(h||'').trim().toLowerCase()).join('|');
+}
+function findMatchingPreset(header){
+  const sig = headerSignature(header);
+  return columnPresets.find(p => p.signature === sig);
+}
+function applyPreset(entry, preset, header){
+  entry.selectedCols = {};
+  header.forEach((h,i)=>{ entry.selectedCols[i] = preset.selected[i] !== false; });
+}
+function saveCurrentAsPreset(entry, header){
+  const name = prompt('Preset ka naam do (e.g. Cutting Report):');
+  if(!name) return;
+  const selected = header.map((h,i)=> entry.selectedCols[i] !== false);
+  columnPresets.push({ name, signature: headerSignature(header), selected });
+  entry._presetApplied = name;
+  showToast(`Preset "${name}" save ho gaya (is session ke liye).`, 'success');
+  renderPreview(entry);
+}
+
+// ---------- folder selection ----------
+document.getElementById('pickFolderBtn').addEventListener('click', async ()=>{
+  scannedFiles = []; activeFileId = null; currentReport = null; combinedExcelFile = null;
+  renderFileList();
+  renderCombinedAttachOption();
+  document.getElementById('previewCard').innerHTML = '<div class="empty-hint">File list se koi file select karo preview dekhne ke liye.</div>';
+  document.getElementById('reportOutput').innerHTML = '';
+
+  if('showDirectoryPicker' in window){
+    try{
+      const dirHandle = await window.showDirectoryPicker();
+      currentDirHandle = dirHandle;
+      document.getElementById('rescanBtn').disabled = false;
+      folderName = dirHandle.name;
+      document.getElementById('scanProgress').textContent = 'Scanning...';
+      await scanDirHandle(dirHandle, '');
+      document.getElementById('scanProgress').textContent = '';
+      await parseAllFiles();
+    }catch(err){
+      if(err.name !== 'AbortError') showToast('Folder access cancel ya fail hua.', 'warn');
+    }
+  } else {
+    currentDirHandle = null;
+    document.getElementById('rescanBtn').disabled = true;
+    document.getElementById('folderInputFallback').click();
+  }
+});
+
+document.getElementById('rescanBtn').addEventListener('click', async ()=>{
+  if(!currentDirHandle){ showToast('Rescan sirf tab kaam karta hai jab folder is browser me directly pick ki gayi ho.', 'warn'); return; }
+  scannedFiles = []; activeFileId = null; currentReport = null; combinedExcelFile = null;
+  renderFileList();
+  renderCombinedAttachOption();
+  document.getElementById('previewCard').innerHTML = '<div class="empty-hint">File list se koi file select karo preview dekhne ke liye.</div>';
+  document.getElementById('reportOutput').innerHTML = '';
+  document.getElementById('scanProgress').textContent = 'Rescanning...';
+  await scanDirHandle(currentDirHandle, '');
+  document.getElementById('scanProgress').textContent = '';
+  await parseAllFiles();
+  showToast('Folder rescan ho gaya — latest files load ho gayi.', 'success');
+});
+
+document.getElementById('folderInputFallback').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files);
+  if(!files.length) return;
+  combinedExcelFile = null;
+  renderCombinedAttachOption();
+  folderName = (files[0].webkitRelativePath || '').split('/')[0] || 'Selected Folder';
+  files.forEach(f=>{
+    const type = typeFromExt(getExt(f.name));
+    if(type) addFile(f, f.webkitRelativePath || f.name, type);
+  });
+  renderFileList();
+  await parseAllFiles();
+});
+
+async function scanDirHandle(handle, path){
+  for await (const [name, entry] of handle.entries()){
+    const fullPath = path + name;
+    if(entry.kind === 'file'){
+      const type = typeFromExt(getExt(name));
+      if(type){ const file = await entry.getFile(); addFile(file, fullPath, type); }
+    } else if(entry.kind === 'directory'){
+      await scanDirHandle(entry, fullPath + '/');
+    }
+  }
+}
+
+function addFile(file, path, type){
+  fileIdCounter++;
+  scannedFiles.push({ id:'f'+fileIdCounter, name:file.name, path, size:file.size, type, file, parsed:null, attach:false, status:'pending', lastModified: file.lastModified || Date.now() });
+}
+
+// ---------- parsing ----------
+async function parseAllFiles(){
+  renderFileList();
+  for(const entry of scannedFiles){
+    document.getElementById('scanProgress').textContent = 'Reading: ' + entry.name;
+    try{
+      if(entry.type === 'xlsx') entry.parsed = await parseExcelFile(entry.file);
+      else if(entry.type === 'pdf') entry.parsed = await parsePdfFile(entry.file);
+      else if(entry.type === 'docx') entry.parsed = await parseDocxFile(entry.file);
+      entry.status = 'done';
+    }catch(err){ entry.status = 'error'; console.error('Parse error', entry.name, err); }
+    renderFileList();
+  }
+  document.getElementById('scanProgress').textContent = scannedFiles.length + ' file(s) read.';
+}
+
+async function parseExcelFile(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:'array'});
+  const sheets = wb.SheetNames.map(sheetName=>{
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    return { name: sheetName, rowCount: rows.length, rows, preview: rows.slice(0,15) };
+  });
+  const images = await extractExcelImages(buf);
+  return { kind:'xlsx', sheets, sheetCount: sheets.length, totalRows: sheets.reduce((a,s)=>a+s.rowCount,0), images };
+}
+
+const SUPPORTED_IMG_EXT = ['png','jpg','jpeg','gif','bmp'];
+async function extractExcelImages(bufOrFile){
+  try{
+    const zip = await JSZip.loadAsync(bufOrFile);
+    const mediaPaths = Object.keys(zip.files).filter(p => p.startsWith('xl/media/'));
+    const images = [];
+    for(const path of mediaPaths){
+      const ext = getExt(path);
+      if(!SUPPORTED_IMG_EXT.includes(ext)) continue;
+      const blob = await zip.files[path].async('blob');
+      images.push({ name: path.split('/').pop(), url: URL.createObjectURL(blob) });
+    }
+    return images;
+  }catch(err){
+    console.error('Image extraction failed', err);
+    return [];
+  }
+}
+async function parsePdfFile(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let text = '';
+  for(let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it=>it.str).join(' ') + '\n';
+  }
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  return { kind:'pdf', pageCount: pdf.numPages, text, wordCount };
+}
+async function parseDocxFile(file){
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({arrayBuffer: buf});
+  const text = result.value || '';
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  return { kind:'docx', text, wordCount };
+}
+
+// ---------- file list UI ----------
+document.getElementById('fileSearchInput').addEventListener('input', renderFileList);
+
+function renderFileList(){
+  document.getElementById('fileCountLabel').textContent = 'Files (' + scannedFiles.length + ')';
+  const container = fileListContainer;
+  if(!scannedFiles.length){
+    container.innerHTML = '<div class="empty-hint">Koi folder select nahi hui. Excel (.xlsx/.xls), PDF (.pdf), Word (.docx/.doc) files yahan list honge.</div>';
+    return;
+  }
+  const term = (document.getElementById('fileSearchInput').value || '').toLowerCase().trim();
+  const filtered = term ? scannedFiles.filter(f => f.name.toLowerCase().includes(term)) : scannedFiles;
+
+  container.innerHTML = '';
+  if(!filtered.length){
+    container.innerHTML = '<div class="empty-hint">Koi file match nahi hui "' + term + '" se.</div>';
+    return;
+  }
+
+  const groupLabels = { xlsx: 'Excel Files', pdf: 'PDF Files', docx: 'Word Files' };
+  ['xlsx','pdf','docx'].forEach(type=>{
+    const groupFiles = filtered.filter(f=>f.type === type);
+    if(!groupFiles.length) return;
+    const details = document.createElement('details');
+    details.className = 'file-group';
+    details.open = true;
+    const summary = document.createElement('summary');
+    summary.textContent = `${groupLabels[type]} (${groupFiles.length})`;
+    details.appendChild(summary);
+    groupFiles.forEach(entry=>{
+      const row = document.createElement('div');
+      row.className = 'file-row' + (entry.id === activeFileId ? ' active' : '');
+      row.innerHTML = `
+        <input type="checkbox" ${entry.attach ? 'checked' : ''} title="Attach as-is">
+        <span class="badge badge-${entry.type}">${entry.type.toUpperCase()}</span>
+        <span class="file-name">${entry.name}</span>
+        <span class="file-size">${formatBytes(entry.size)}</span>
+      `;
+      row.querySelector('input[type=checkbox]').addEventListener('click', (e)=>{ e.stopPropagation(); entry.attach = e.target.checked; });
+      row.addEventListener('click', ()=> selectFile(entry.id));
+      details.appendChild(row);
+    });
+    container.appendChild(details);
+  });
+}
+
+function selectFile(id){
+  activeFileId = id;
+  renderFileList();
+  const entry = scannedFiles.find(f=>f.id === id);
+  document.querySelector('.tab[data-tab="preview"]').click();
+  renderPreview(entry);
+  if(isMobile()) fileListContainer.classList.add('mobile-collapsed');
+}
+
+function renderPreview(entry){
+  const card = document.getElementById('previewCard');
+  if(!entry.parsed){
+    card.innerHTML = `<div class="empty-hint">"${entry.name}" abhi parse ho raha hai ya parse fail hua.</div>`;
+    return;
+  }
+  if(entry.type === 'xlsx'){
+    if(entry.reportSheetIndex == null) entry.reportSheetIndex = 0;
+    const sheet = entry.parsed.sheets[entry.reportSheetIndex];
+    let html = `<div class="stat-row">
+        <div class="stat"><b>${entry.parsed.sheetCount}</b><span>SHEETS</span></div>
+        <div class="stat"><b>${entry.parsed.totalRows}</b><span>TOTAL ROWS</span></div>
+        <div class="stat"><b>${entry.parsed.images ? entry.parsed.images.length : 0}</b><span>PHOTOS FOUND</span></div>
+      </div>`;
+
+    if(entry.parsed.images && entry.parsed.images.length){
+      html += `<label style="margin-top:0;">Photos in this file</label><div class="img-gallery">`;
+      entry.parsed.images.forEach(img=> html += `<img src="${img.url}" alt="${img.name}">`);
+      html += `</div>`;
+    }
+
+    if(entry.parsed.sheets.length > 1){
+      html += `<label>Sheet</label><select class="sheet-select" id="sheetSelect_${entry.id}">`;
+      entry.parsed.sheets.forEach((s,i)=> html += `<option value="${i}" ${i===entry.reportSheetIndex?'selected':''}>${s.name}</option>`);
+      html += `</select>`;
+    }
+
+    html += `<b style="display:block; margin-top:14px;">${entry.name}</b> — showing "${sheet.name}" (first 15 rows)<br><br>`;
+    html += '<div class="table-scroll"><table class="data-table"><tbody>';
+    sheet.preview.forEach(row=>{ html += '<tr>' + row.map(c=>`<td>${(c===''||c==null)?'':String(c)}</td>`).join('') + '</tr>'; });
+    html += '</tbody></table></div>';
+
+    const header = sheet.rows[0] || [];
+    if(!entry.selectedCols){
+      entry.selectedCols = {};
+      const match = findMatchingPreset(header);
+      if(match){ applyPreset(entry, match, header); entry._presetApplied = match.name; }
+    }
+    html += `<label>Select columns for Report / Email (jo columns chahiye unhe tick rakho)</label><div class="col-picker" id="colPicker_${entry.id}">`;
+    header.forEach((h,i)=>{
+      const checked = entry.selectedCols[i] !== false;
+      html += `<label><input type="checkbox" data-col="${i}" ${checked?'checked':''}> ${h || '(col '+(i+1)+')'}</label>`;
+    });
+    html += `</div>`;
+
+    if(entry._presetApplied){
+      html += `<div class="note">Preset "${entry._presetApplied}" applied.</div>`;
+    }
+    html += `<div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">`;
+    if(columnPresets.length){
+      html += `<select class="sheet-select" id="presetSelect_${entry.id}" style="margin-top:0;"><option value="">Apply preset...</option>`;
+      columnPresets.forEach((p,i)=> html += `<option value="${i}">${p.name}</option>`);
+      html += `</select>`;
+    }
+    html += `<button class="btn btn-outline" type="button" id="savePresetBtn_${entry.id}">Save as Preset</button>`;
+    html += `</div>`;
+
+    card.innerHTML = html;
+
+    if(entry.parsed.sheets.length > 1){
+      document.getElementById(`sheetSelect_${entry.id}`).addEventListener('change', (e)=>{
+        entry.reportSheetIndex = parseInt(e.target.value, 10);
+        entry.selectedCols = null;
+        entry._presetApplied = null;
+        renderPreview(entry);
+      });
+    }
+    document.querySelectorAll(`#colPicker_${entry.id} input[type=checkbox]`).forEach(cb=>{
+      cb.addEventListener('change', (e)=>{
+        entry.selectedCols[parseInt(e.target.dataset.col,10)] = e.target.checked;
+        entry._presetApplied = null;
+      });
+    });
+    if(columnPresets.length){
+      document.getElementById(`presetSelect_${entry.id}`).addEventListener('change', (e)=>{
+        if(e.target.value === '') return;
+        const preset = columnPresets[parseInt(e.target.value,10)];
+        applyPreset(entry, preset, header);
+        entry._presetApplied = preset.name;
+        renderPreview(entry);
+      });
+    }
+    document.getElementById(`savePresetBtn_${entry.id}`).addEventListener('click', ()=> saveCurrentAsPreset(entry, header));
+  } else if(entry.type === 'pdf'){
+    card.innerHTML = `<div class="stat-row">
+        <div class="stat"><b>${entry.parsed.pageCount}</b><span>PAGES</span></div>
+        <div class="stat"><b>${entry.parsed.wordCount}</b><span>WORDS</span></div>
+      </div>
+      <b>${entry.name}</b><div class="pre-text" style="margin-top:8px;">${entry.parsed.text.slice(0,4000) || '(no extractable text)'}</div>`;
+  } else if(entry.type === 'docx'){
+    card.innerHTML = `<div class="stat-row"><div class="stat"><b>${entry.parsed.wordCount}</b><span>WORDS</span></div></div>
+      <b>${entry.name}</b><div class="pre-text" style="margin-top:8px;">${entry.parsed.text.slice(0,4000) || '(no extractable text)'}</div>`;
+  }
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- report ----------
+const MAX_EXTRACTED_ROWS = 200; // safety cap so email/report text doesn't blow up on huge sheets
+
+function formatNum(n){ return Number.isInteger(n) ? String(n) : n.toFixed(2); }
+
+function buildExtractedData(entry, opts){
+  opts = opts || {};
+  if(entry.type !== 'xlsx' || !entry.parsed) return null;
+  const sheetIdx = entry.reportSheetIndex || 0;
+  const sheet = entry.parsed.sheets[sheetIdx];
+  if(!sheet || !sheet.rows || !sheet.rows.length) return null;
+  const header = sheet.rows[0];
+  const selectedIdx = header.map((h,i)=>i).filter(i => !entry.selectedCols || entry.selectedCols[i] !== false);
+  if(!selectedIdx.length) return null;
+  const dataRows = sheet.rows.slice(1);
+  const limit = opts.full ? dataRows.length : MAX_EXTRACTED_ROWS;
+
+  const totals = selectedIdx.map(colI=>{
+    let sum = 0, isNumeric = true, hasValue = false;
+    for(const row of dataRows){
+      const v = row[colI];
+      if(v === '' || v == null) continue;
+      const num = Number(v);
+      if(Number.isNaN(num)){ isNumeric = false; break; }
+      sum += num; hasValue = true;
+    }
+    return (isNumeric && hasValue) ? sum : null;
+  });
+
+  return {
+    sheetName: sheet.name,
+    header: selectedIdx.map(i=> header[i] || '(col '+(i+1)+')'),
+    rows: dataRows.slice(0, limit).map(row => selectedIdx.map(i=> row[i] ?? '')),
+    totalRows: dataRows.length,
+    truncated: !opts.full && dataRows.length > MAX_EXTRACTED_ROWS,
+    totals
+  };
+}
+
+document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+function generateReport(){
+  if(!scannedFiles.length){ showToast('Pehle folder select karo.', 'warn'); return; }
+  const report = { generatedAt:new Date().toLocaleString(), folderName, totalFiles:scannedFiles.length, byType:{xlsx:0,pdf:0,docx:0}, items:[] };
+  scannedFiles.forEach(f=>{
+    report.byType[f.type] = (report.byType[f.type]||0) + 1;
+    let stat = 'Not parsed';
+    if(f.parsed){
+      if(f.type === 'xlsx') stat = `${f.parsed.sheetCount} sheet(s), ${f.parsed.totalRows} row(s)`;
+      if(f.type === 'pdf') stat = `${f.parsed.pageCount} page(s), ~${f.parsed.wordCount} words`;
+      if(f.type === 'docx') stat = `~${f.parsed.wordCount} words`;
+    }
+    report.items.push({ name:f.name, path:f.path, type:f.type, size:f.size, stat, extracted: buildExtractedData(f) });
+  });
+  currentReport = report;
+  renderReport(report);
+  showToast('Report ban gayi.', 'success');
+}
+function renderReport(report){
+  const incStats = document.getElementById('incStats').checked;
+  const incFileTable = document.getElementById('incFileTable').checked;
+  const incExtracted = document.getElementById('incExtracted').checked;
+  let html = '';
+
+  if(incStats){
+    html += `<div class="stat-row">
+        <div class="stat"><b>${report.totalFiles}</b><span>TOTAL FILES</span></div>
+        <div class="stat"><b>${report.byType.xlsx||0}</b><span>EXCEL</span></div>
+        <div class="stat"><b>${report.byType.pdf||0}</b><span>PDF</span></div>
+        <div class="stat"><b>${report.byType.docx||0}</b><span>WORD</span></div>
+      </div>
+      <div class="note">Generated: ${report.generatedAt} — Folder: ${report.folderName}</div>`;
+  }
+
+  if(incFileTable){
+    html += `<div class="table-scroll"><table class="data-table" style="margin-top:12px;">
+      <thead><tr><th>#</th><th>File</th><th>Type</th><th>Size</th><th>Stats</th></tr></thead><tbody>`;
+    report.items.forEach((it,i)=>{ html += `<tr><td>${i+1}</td><td>${it.name}</td><td>${it.type.toUpperCase()}</td><td>${formatBytes(it.size)}</td><td>${it.stat}</td></tr>`; });
+    html += '</tbody></table></div>';
+  }
+
+  if(incExtracted){
+    report.items.forEach(it=>{
+      if(it.extracted){
+        html += `<div style="margin-top:16px;"><b>${it.name}</b> — extracted data (${it.extracted.totalRows} row${it.extracted.totalRows===1?'':'s'}${it.extracted.truncated ? ', showing first '+MAX_EXTRACTED_ROWS : ''})</div>`;
+        html += '<div class="table-scroll"><table class="data-table" style="margin-top:6px;"><thead><tr>';
+        it.extracted.header.forEach(h=> html += `<th>${h}</th>`);
+        html += '</tr></thead><tbody>';
+        it.extracted.rows.forEach(row=>{ html += '<tr>' + row.map(c=>`<td>${c===''||c==null?'':String(c)}</td>`).join('') + '</tr>'; });
+        html += `<tr style="font-weight:700; background:var(--surface-alt);">`;
+        it.extracted.totals.forEach((t,idx)=>{ html += `<td>${t===null ? (idx===0?'TOTAL':'') : formatNum(t)}</td>`; });
+        html += '</tr>';
+        html += '</tbody></table></div>';
+        if(it.extracted.truncated) html += `<div class="note">Totals sabhi ${it.extracted.totalRows} rows par based hain, sirf display upar truncated hai.</div>`;
+      }
+    });
+  }
+
+  document.getElementById('reportOutput').innerHTML = html || '<div class="empty-hint">Kuch include nahi kiya — upar checkboxes se select karo.</div>';
+}
+function reportToPlainText(report){
+  const incStats = document.getElementById('incStats').checked;
+  const incFileTable = document.getElementById('incFileTable').checked;
+  const incExtracted = document.getElementById('incExtracted').checked;
+  const lines = [];
+
+  if(incStats){
+    lines.push(`Report generated: ${report.generatedAt}`);
+    lines.push(`Folder: ${report.folderName}`);
+    lines.push(`Total files: ${report.totalFiles} (Excel: ${report.byType.xlsx||0}, PDF: ${report.byType.pdf||0}, Word: ${report.byType.docx||0})`);
+    lines.push('');
+  }
+
+  if(incFileTable){
+    report.items.forEach((it,i)=>{ lines.push(`${i+1}. ${it.name} [${it.type.toUpperCase()}] - ${formatBytes(it.size)} - ${it.stat}`); });
+  }
+
+  if(incExtracted){
+    report.items.forEach(it=>{
+      if(it.extracted){
+        lines.push('');
+        lines.push(`--- ${it.name}: extracted data (${it.extracted.totalRows} row${it.extracted.totalRows===1?'':'s'}) ---`);
+        lines.push(it.extracted.header.join(' | '));
+        it.extracted.rows.forEach(row=> lines.push(row.map(c=> c===''||c==null?'':String(c)).join(' | ')));
+        const totalsLine = it.extracted.totals.map((t,idx)=> t===null ? (idx===0?'TOTAL':'') : formatNum(t)).join(' | ');
+        lines.push(totalsLine);
+        if(it.extracted.truncated) lines.push(`(+${it.extracted.totalRows - MAX_EXTRACTED_ROWS} more rows not shown, totals include all rows)`);
+      }
+    });
+  }
+
+  return lines.join('\n');
+}
+
+document.getElementById('reportTemplate').addEventListener('change', (e)=>{
+  const v = e.target.value;
+  const incStats = document.getElementById('incStats');
+  const incFileTable = document.getElementById('incFileTable');
+  const incExtracted = document.getElementById('incExtracted');
+  if(v === 'full'){ incStats.checked = true; incFileTable.checked = true; incExtracted.checked = true; }
+  else if(v === 'summary'){ incStats.checked = true; incFileTable.checked = true; incExtracted.checked = false; }
+  else if(v === 'data'){ incStats.checked = false; incFileTable.checked = false; incExtracted.checked = true; }
+  if(currentReport) renderReport(currentReport);
+});
+['incStats','incFileTable','incExtracted'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{ if(currentReport) renderReport(currentReport); });
+});
+
+// ---------- draft ----------
+function sanitizeSheetName(name){
+  return String(name).replace(/[\[\]:*?\/\\]/g, '').slice(0,31) || 'Sheet';
+}
+
+document.getElementById('downloadCombinedBtn').addEventListener('click', downloadCombinedExcel);
+
+function downloadCombinedExcel(filesOverride){
+  if(!filesOverride && !currentReport){ showToast('Pehle Report generate karo.', 'warn'); return; }
+  const sourceFiles = filesOverride || scannedFiles.filter(f=> f.type === 'xlsx' && f.parsed);
+  const withData = sourceFiles
+    .filter(f=> f.type === 'xlsx' && f.parsed)
+    .map(f=> ({ file:f, extracted: buildExtractedData(f, {full:true}) }))
+    .filter(x=> x.extracted && x.extracted.header.length);
+
+  if(!withData.length){ showToast('Koi Excel data nahi mila combine karne ke liye — pehle Preview me columns select karo.', 'warn'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const usedNames = new Set();
+  withData.forEach(({file, extracted})=>{
+    let base = sanitizeSheetName(file.name.replace(/\.[^.]+$/, ''));
+    let sheetName = base, n = 1;
+    while(usedNames.has(sheetName)){ n++; sheetName = sanitizeSheetName(base + '_' + n); }
+    usedNames.add(sheetName);
+    const ws = XLSX.utils.aoa_to_sheet([extracted.header, ...extracted.rows]);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const firstSig = headerSignature(withData[0].extracted.header);
+  const allMatch = withData.length > 1 && withData.every(x=> headerSignature(x.extracted.header) === firstSig);
+  if(allMatch){
+    const combinedHeader = ['Source File', ...withData[0].extracted.header];
+    const combinedRows = [];
+    withData.forEach(({file, extracted})=> extracted.rows.forEach(row=> combinedRows.push([file.name, ...row])));
+    const wsCombined = XLSX.utils.aoa_to_sheet([combinedHeader, ...combinedRows]);
+    XLSX.utils.book_append_sheet(wb, wsCombined, 'Combined');
+  }
+
+  const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const filename = `Combined_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
+  combinedExcelFile = new File([blob], filename, {type: blob.type});
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 3000);
+
+  showToast('Combined Excel download ho gayi' + (allMatch ? ' (+ ek Combined sheet bhi bani).' : '.'), 'success');
+  renderCombinedAttachOption();
+}
+
+function renderCombinedAttachOption(){
+  const row = document.getElementById('combinedAttachRow');
+  if(combinedExcelFile){
+    row.style.display = 'block';
+    document.getElementById('combinedFileName').textContent = combinedExcelFile.name;
+  } else {
+    row.style.display = 'none';
+    document.getElementById('attachCombinedExcel').checked = false;
+  }
+}
+
+// ---------- Ask: query parsing + execution (rule-based, offline, free) ----------
+function detectMonth(qLower){
+  for(let i=0;i<MONTHS.length;i++){
+    const re = new RegExp('\\b' + MONTHS[i] + '\\b', 'i');
+    if(re.test(qLower)) return i;
+  }
+  return null;
+}
+
+function extractPhrase(qLower, monthIdx){
+  let cleaned = qLower.replace(/[^a-z0-9\u0900-\u097F\s]/g, ' ');
+  if(monthIdx != null) cleaned = cleaned.replace(new RegExp('\\b'+MONTHS[monthIdx]+'\\b','i'), ' ');
+  const tokens = cleaned.split(/\s+/).filter(w => w && !STOPWORDS.includes(w));
+  return tokens.map(w => SYNONYMS[w] || w).join(' ').trim();
+}
+
+function filterByMonth(files, monthIdx){
+  if(monthIdx == null) return files;
+  return files.filter(f => new Date(f.lastModified).getMonth() === monthIdx);
+}
+
+function findMatchingFiles(phrase, typeFilter){
+  let candidates = typeFilter ? scannedFiles.filter(f=>f.type===typeFilter) : scannedFiles.slice();
+  if(!phrase) return candidates;
+  const fuse = new Fuse(candidates, {keys:['name'], includeScore:true, threshold:0.45});
+  const res = fuse.search(phrase);
+  return res.length ? res.map(r=>r.item) : candidates;
+}
+
+function findBestColumnMatch(files, phrase){
+  const results = [];
+  files.forEach(f=>{
+    const sheet = f.parsed.sheets[f.reportSheetIndex || 0];
+    if(!sheet || !sheet.rows.length) return;
+    const header = sheet.rows[0].map(h=>String(h||''));
+    if(!phrase || !header.length) return;
+    const fuse = new Fuse(header, {includeScore:true, threshold:0.55});
+    const res = fuse.search(phrase);
+    if(res.length){
+      results.push({ file:f, colIndex: res[0].refIndex, colName: header[res[0].refIndex] });
+    }
+  });
+  return results;
+}
+
+function renderAskThread(){
+  const out = document.getElementById('askResultOutput');
+  if(!askHistory.length){
+    out.innerHTML = '<div class="empty-hint">Abhi tak koi sawaal nahi poocha gaya.</div>';
+    document.getElementById('askSendBtn').style.display = 'none';
+    return;
+  }
+  out.innerHTML = askHistory.map((h,i)=>`
+    <div style="padding:${i===0?'0':'14px'} 0 0 0; ${i>0?'border-top:1px solid var(--border); margin-top:14px;':''}">
+      <div style="font-weight:700; font-size:13px;">Q: ${h.query}</div>
+      <div class="note" style="margin-top:4px;">${h.interpretation}</div>
+      <div style="margin-top:8px;">${h.html}</div>
+    </div>
+  `).join('');
+  document.getElementById('askSendBtn').style.display = askHistory.some(h=>h.emailText) ? 'inline-block' : 'none';
+}
+
+function addAskResult(query, html, interpretation, emailText){
+  askHistory.push({ query, html, interpretation, emailText });
+  renderAskThread();
+  document.getElementById('askInput').value = '';
+  document.getElementById('askInput').focus();
+}
+
+document.getElementById('askClearBtn').addEventListener('click', ()=>{
+  askHistory = [];
+  renderAskThread();
+  showToast('Conversation clear ho gayi.', 'info');
+});
+
+document.getElementById('askBtn').addEventListener('click', runQuery);
+
+function runQuery(){
+  const input = document.getElementById('askInput').value.trim();
+  if(!input){ showToast('Pehle sawaal likho.', 'warn'); return; }
+  if(!scannedFiles.length){ showToast('Pehle folder select karo.', 'warn'); return; }
+
+  const qLower = input.toLowerCase();
+  let action = 'list';
+  if(SUM_WORDS.some(w=> new RegExp('\\b'+w+'\\b').test(qLower))) action = 'sum';
+  else if(COMBINE_WORDS.some(w=> new RegExp('\\b'+w+'\\b').test(qLower))) action = 'combine';
+  else if(LIST_WORDS.some(w=> new RegExp('\\b'+w+'\\b').test(qLower))) action = 'list';
+
+  const monthIdx = detectMonth(qLower);
+  const phrase = extractPhrase(qLower, monthIdx);
+  const monthNote = monthIdx != null ? ` • Month: ${MONTHS[monthIdx]}` : '';
+
+  if(action === 'sum'){
+    let files = scannedFiles.filter(f=> f.type==='xlsx' && f.parsed);
+    files = filterByMonth(files, monthIdx);
+    if(!files.length){ addAskResult(input, '<div class="empty-hint">Koi matching Excel file nahi mili.</div>', 'Maine samjha: Action = Total, lekin koi file match nahi hui.', ''); return; }
+    const matches = findBestColumnMatch(files, phrase);
+    if(!matches.length){
+      addAskResult(input, '<div class="empty-hint">Column samajh nahi aaya. Column ka naam thoda specific likho.</div>', `Maine samjha: Action = Total • Column phrase: "${phrase||'(khali)'}" — match nahi mila.`, '');
+      return;
+    }
+    let grandTotal = 0;
+    const breakdown = matches.map(m=>{
+      const sheet = m.file.parsed.sheets[m.file.reportSheetIndex||0];
+      let sum = 0;
+      sheet.rows.slice(1).forEach(row=>{
+        const v = row[m.colIndex];
+        if(v !== '' && v != null){ const n = Number(v); if(!Number.isNaN(n)) sum += n; }
+      });
+      grandTotal += sum;
+      return `${m.file.name} — "${m.colName}": ${formatNum(sum)}`;
+    });
+    const interpretation = `Maine samjha: Action = Total • Column ≈ "${phrase}" • Files matched: ${matches.length}${monthNote}`;
+    const html = `<div class="stat-row"><div class="stat"><b>${formatNum(grandTotal)}</b><span>GRAND TOTAL</span></div></div>
+      <div class="pre-text">${breakdown.join('\n')}</div>`;
+    const emailText = `Query: ${input}\n\nGrand Total: ${formatNum(grandTotal)}\n\n${breakdown.join('\n')}`;
+    addAskResult(input, html, interpretation, emailText);
+
+  } else if(action === 'combine'){
+    let files = findMatchingFiles(phrase, 'xlsx').filter(f=>f.parsed);
+    files = filterByMonth(files, monthIdx);
+    if(!files.length){ addAskResult(input, '<div class="empty-hint">Koi matching Excel file nahi mili combine karne ke liye.</div>', 'Maine samjha: Action = Combine, lekin koi file match nahi hui.', ''); return; }
+    const interpretation = `Maine samjha: Action = Combine • Files: ${files.map(f=>f.name).join(', ')}${monthNote}`;
+    downloadCombinedExcel(files);
+    const html = `<div class="note">${files.length} file(s) ka combined Excel download ho gaya.</div>`;
+    const emailText = `Query: ${input}\n\nCombined Excel banayi gayi in files se:\n` + files.map(f=>`- ${f.name}`).join('\n');
+    addAskResult(input, html, interpretation, emailText);
+
+  } else {
+    let files = phrase ? findMatchingFiles(phrase, null) : scannedFiles.slice();
+    files = filterByMonth(files, monthIdx);
+    const interpretation = `Maine samjha: Action = List • Match: "${phrase || 'sab files'}"${monthNote}`;
+    if(!files.length){ addAskResult(input, '<div class="empty-hint">Koi file match nahi hui.</div>', interpretation, ''); return; }
+    const html = '<div class="table-scroll"><table class="data-table"><thead><tr><th>File</th><th>Type</th><th>Size</th></tr></thead><tbody>' +
+      files.map(f=>`<tr><td>${f.name}</td><td>${f.type.toUpperCase()}</td><td>${formatBytes(f.size)}</td></tr>`).join('') + '</tbody></table></div>';
+    const emailText = `Query: ${input}\n\n` + files.map(f=>`- ${f.name} [${f.type.toUpperCase()}] ${formatBytes(f.size)}`).join('\n');
+    addAskResult(input, html, interpretation, emailText);
+  }
+}
+
+document.getElementById('askSendBtn').addEventListener('click', ()=>{
+  const combined = askHistory.filter(h=>h.emailText).map(h=>h.emailText).join('\n\n----------\n\n');
+  document.getElementById('emailSubject').value = 'Answers — ' + new Date().toLocaleDateString();
+  document.getElementById('emailBody').value = combined;
+  document.querySelector('.tab[data-tab="email"]').click();
+  openModal();
+});
+
+document.getElementById('draftFromReportBtn').addEventListener('click', ()=>{
+  if(!currentReport){ showToast('Pehle Report tab me "Generate Report" dabao.', 'warn'); return; }
+  document.getElementById('emailSubject').value = `File Report – ${currentReport.folderName} – ${new Date().toLocaleDateString()}`;
+  document.getElementById('emailBody').value =
+`Hi,
+
+Please find the summary report generated from the folder "${currentReport.folderName}" below.
+
+${reportToPlainText(currentReport)}
+
+Regards,`;
+  showToast('Draft report se fill ho gaya.', 'success');
+});
+
+// ---------- preview & send modal ----------
+document.getElementById('previewSendBtn').addEventListener('click', openModal);
+
+function getAllAttachments(){
+  const attachments = scannedFiles.filter(f=>f.attach).map(f=> ({ name:f.name, size:f.size, file:f.file }));
+  const combinedCb = document.getElementById('attachCombinedExcel');
+  if(combinedCb && combinedCb.checked && combinedExcelFile){
+    attachments.push({ name: combinedExcelFile.name, size: combinedExcelFile.size, file: combinedExcelFile });
+  }
+  return attachments;
+}
+
+function openModal(){
+  const subject = document.getElementById('emailSubject').value.trim();
+  const body = document.getElementById('emailBody').value;
+  if(!subject){ showToast('Subject bharo.', 'warn'); return; }
+
+  document.getElementById('mSubject').textContent = subject;
+  document.getElementById('mBody').textContent = body;
+
+  const attachments = getAllAttachments();
+  const attachSection = document.getElementById('mAttachSection');
+  document.getElementById('mConfirmAttach').checked = false;
+  if(attachments.length){
+    attachSection.style.display = 'block';
+    document.getElementById('mAttachList').innerHTML = attachments.map(a=>`<div>${a.name} — ${formatBytes(a.size)}</div>`).join('');
+  } else {
+    attachSection.style.display = 'none';
+  }
+
+  document.querySelector('input[name=sendMode][value=manual]').checked = true;
+  updateModeUI();
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+document.querySelectorAll('input[name=sendMode]').forEach(r=> r.addEventListener('change', updateModeUI));
+
+function updateModeUI(){
+  const mode = document.querySelector('input[name=sendMode]:checked').value;
+  const sendBtn = document.getElementById('modalSendBtn');
+  sendBtn.classList.remove('btn-primary','btn-wa');
+  if(mode === 'whatsapp'){
+    document.getElementById('mRecipientLabel').textContent = 'WhatsApp Number:';
+    document.getElementById('mRecipientValue').textContent = document.getElementById('waNumber').value.trim() || '(empty)';
+    const hasAttachments = getAllAttachments().length > 0;
+    document.getElementById('modeNote').textContent = hasAttachments
+      ? 'Files as-is bhejne ke liye share sheet khulega — usme WhatsApp choose karo, phir contact/number waha manually chuno (number yahan se pre-fill nahi ho sakta, ye OS/WhatsApp ki limitation hai). Agar device/browser file-share support nahi karta to sirf text ke saath chat khulega.'
+      : 'WhatsApp chat khulega message ke saath ready (number se seedha).';
+    sendBtn.classList.add('btn-wa');
+  } else {
+    document.getElementById('mRecipientLabel').textContent = 'To (Email):';
+    document.getElementById('mRecipientValue').textContent = document.getElementById('emailTo').value.trim() || '(empty)';
+    sendBtn.classList.add('btn-primary');
+    document.getElementById('modeNote').textContent = mode === 'manual'
+      ? 'Manual mode me attachments automatically nahi jud sakti (browser restriction) — mail app khulne ke baad tumhe manually attach karke Send dabana hoga.'
+      : 'Auto mode EmailJS se bhejega. Settings me Service ID / Template ID / Public Key bhara hona chahiye. Attachment size limited hai (~3MB tak).';
+  }
+}
+
+document.getElementById('modalBackBtn').addEventListener('click', ()=> document.getElementById('modalBackdrop').classList.remove('open'));
+
+document.getElementById('modalSendBtn').addEventListener('click', async ()=>{
+  const attachments = getAllAttachments();
+  if(attachments.length && !document.getElementById('mConfirmAttach').checked){
+    showToast('Attachments confirm karo pehle (checkbox tick karo).', 'warn');
+    return;
+  }
+  const mode = document.querySelector('input[name=sendMode]:checked').value;
+  const data = {
+    to: document.getElementById('emailTo').value.trim(),
+    waNumber: document.getElementById('waNumber').value.trim(),
+    subject: document.getElementById('emailSubject').value.trim(),
+    body: document.getElementById('emailBody').value,
+    attachments
+  };
+  if(mode === 'whatsapp'){
+    if(!data.waNumber){ showToast('WhatsApp number bharo.', 'warn'); return; }
+    await sendWhatsApp(data);
+  } else {
+    if(!data.to){ showToast('Email address bharo.', 'warn'); return; }
+    if(mode === 'manual') sendManual(data);
+    else await sendAuto(data);
+  }
+});
+
+function sendManual(data){
+  const mailto = `mailto:${encodeURIComponent(data.to)}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
+  window.location.href = mailto;
+  showToast(data.attachments.length ? 'Mail app khul gaya. Manually attach karo: ' + data.attachments.map(a=>a.name).join(', ') : 'Mail app khul gaya.', 'info');
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+async function sendWhatsApp(data){
+  const message = `${data.subject}\n\n${data.body}`;
+
+  if(data.attachments.length){
+    const fileObjs = data.attachments.map(a=>a.file);
+    const canShareFiles = navigator.canShare && navigator.share && navigator.canShare({files: fileObjs});
+    if(canShareFiles){
+      try{
+        await navigator.share({ files: fileObjs, text: message });
+        showToast('Share sheet khula — WhatsApp choose karo, files as-is chali jayengi (contact waha manually chuno).', 'success');
+        document.getElementById('modalBackdrop').classList.remove('open');
+        return;
+      }catch(err){
+        if(err.name === 'AbortError'){ return; } // user cancelled the share sheet
+        console.error('Web Share failed', err);
+      }
+    }
+    showToast('Is browser/device me direct file-share support nahi hai — WhatsApp chat text ke saath khul raha hai, files manually attach karo: ' + data.attachments.map(a=>a.name).join(', '), 'warn');
+  }
+
+  const digits = data.waNumber.replace(/[^0-9]/g, '');
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+async function sendAuto(data){
+  const serviceId = document.getElementById('cfgServiceId').value.trim();
+  const templateId = document.getElementById('cfgTemplateId').value.trim();
+  const publicKey = document.getElementById('cfgPublicKey').value.trim();
+  if(!serviceId || !templateId || !publicKey){ showToast('Settings me Service ID / Template ID / Public Key bharo.', 'error'); return; }
+  const MAX_AUTO_SIZE = 3 * 1024 * 1024;
+  const totalSize = data.attachments.reduce((a,f)=>a+f.size, 0);
+  if(totalSize > MAX_AUTO_SIZE){ showToast('Attachments bade hain auto-send ke liye (~3MB limit). Manual mode try karo.', 'error'); return; }
+  showToast('Bhej raha hoon...', 'info');
+  try{
+    const attachmentsPayload = [];
+    for(const f of data.attachments){
+      const base64 = await toBase64(f.file);
+      attachmentsPayload.push({ name: f.name, data: base64 });
+    }
+    await emailjs.send(serviceId, templateId, {
+      to_email: data.to, subject: data.subject, message: data.body,
+      attachment_count: attachmentsPayload.length, attachments_json: JSON.stringify(attachmentsPayload)
+    }, publicKey);
+    showToast('Email bhej diya gaya.', 'success');
+    document.getElementById('modalBackdrop').classList.remove('open');
+  }catch(err){
+    showToast('Send fail hua: ' + (err.text || err.message || 'unknown error'), 'error');
+  }
+}
+
+renderAskThread();
+</script>
+</body>
+</html>

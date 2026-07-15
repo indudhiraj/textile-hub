@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShipDoc Pro v2 — Garment Export Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0a1628;--navy2:#0f2044;--navy3:#162d5a;
+  --blue:#1e6fdc;--blue2:#2e85f5;--cyan:#00c8d4;
+  --gold:#f0b429;--gold2:#ffd166;--green:#06d6a0;
+  --red:#ef4444;--orange:#fb923c;--purple:#a78bfa;
+  --text:#e8f0fe;--text2:#94a3c8;--text3:#64748b;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
+  --glass:rgba(14,32,68,0.85);
+  --fm:'Rajdhani',sans-serif;--fb:'Noto Sans',sans-serif;--fmono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--navy);color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.5;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 10% 20%,rgba(30,111,220,0.18) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 80%,rgba(6,214,160,0.10) 0%,transparent 60%),
+    linear-gradient(180deg,#061020 0%,#0a1628 40%,#061428 100%);}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);
+  background-size:40px 40px;}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(6,16,32,0.97);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);padding:0 20px;display:flex;align-items:center;
+  justify-content:space-between;height:56px;box-shadow:0 4px 24px rgba(0,0,0,0.5);gap:10px;}
+.tb-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.tb-logo{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 14px rgba(30,111,220,0.4);}
+.tb-name{font-family:var(--fm);font-size:1.35rem;font-weight:700;color:#fff;letter-spacing:1px}
+.tb-name span{color:var(--cyan)}
+.tb-sub{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:2px;text-transform:uppercase;margin-top:-3px}
+.tb-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* CONNECTIVITY DOT */
+.conn-dot{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;transition:.2s;}
+.conn-dot:hover{background:rgba(255,255,255,0.08)}
+.dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;transition:.4s}
+.dot.online{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,0.25);animation:pulse 2s infinite}
+.dot.offline{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.25)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}}
+.conn-label{font-size:10px;font-weight:700;font-family:var(--fm);color:#94a3b8}
+
+/* ALERTS BELL */
+.alert-bell{position:relative;cursor:pointer;padding:6px 10px;border-radius:6px;
+  border:1px solid var(--border2);background:var(--surface2);transition:.2s;font-size:16px;}
+.alert-bell:hover{background:rgba(255,255,255,0.1)}
+.alert-count{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+  border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:800;font-family:var(--fm);
+  display:flex;align-items:center;justify-content:center;}
+
+/* BUTTONS */
+.tbtn{padding:6px 13px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);
+  color:var(--text);cursor:pointer;font-family:var(--fm);font-size:12px;font-weight:600;
+  letter-spacing:.5px;transition:.2s;white-space:nowrap;}
+.tbtn:hover{background:rgba(255,255,255,0.12);transform:translateY(-1px)}
+.tbtn.primary{background:linear-gradient(135deg,var(--blue),var(--blue2));border-color:var(--blue2);color:#fff}
+.tbtn.gold{background:linear-gradient(135deg,#b8860b,var(--gold));border-color:var(--gold);color:#000}
+.tbtn.green{background:linear-gradient(135deg,#047857,var(--green));border-color:var(--green);color:#000}
+.tbtn.red{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5}
+.tbtn.purple{background:linear-gradient(135deg,#6d28d9,var(--purple));border-color:var(--purple);color:#fff}
+
+/* COMPANY BANNER */
+.co-banner{background:linear-gradient(135deg,rgba(14,32,68,0.98),rgba(9,24,52,0.98));
+  border-bottom:2px solid rgba(30,111,220,0.35);padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+.co-emblem{width:58px;height:58px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 24px rgba(30,111,220,0.45);flex-shrink:0;}
+.co-name{font-family:var(--fm);font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:1px}
+.co-tagline{font-size:10px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.co-details{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.8}
+.co-badge{display:inline-block;padding:3px 10px;border-radius:20px;background:rgba(6,214,160,0.15);
+  border:1px solid rgba(6,214,160,0.3);color:var(--green);font-size:9px;font-weight:700;letter-spacing:1px;font-family:var(--fm);}
+.co-cert{font-size:10px;color:var(--text3);line-height:1.9}
+
+/* TAB BAR */
+.tab-bar{position:sticky;top:56px;z-index:90;background:rgba(8,20,44,0.97);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:2px;padding:0 16px;overflow-x:auto;}
+.tab-bar::-webkit-scrollbar{height:3px}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--blue)}
+.tab{padding:13px 15px;font-family:var(--fm);font-size:12px;font-weight:600;letter-spacing:.8px;
+  color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s;
+  display:flex;align-items:center;gap:5px;}
+.tab:hover{color:var(--text);background:var(--surface)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+
+/* SCREENS */
+.screen{display:none;padding:20px;position:relative;z-index:1}
+.screen.active{display:block}
+
+/* SECTION TITLE */
+.sec-title{font-family:var(--fm);font-size:1rem;font-weight:700;letter-spacing:1px;color:#fff;
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* SHIPMENT SELECTOR */
+.ship-sel{display:flex;align-items:center;gap:10px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:10px;padding:10px 14px;margin-bottom:18px;flex-wrap:wrap;}
+.ship-sel select{background:rgba(255,255,255,0.06);border:1px solid var(--border2);
+  color:var(--text);border-radius:7px;padding:7px 12px;font-family:var(--fm);font-size:13px;font-weight:600;
+  outline:none;cursor:pointer;min-width:260px;}
+.ship-sel select option{background:#0f2044}
+.status-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
+  font-size:10px;font-weight:700;font-family:var(--fm);letter-spacing:.5px;}
+.sp-draft{background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8}
+.sp-ready{background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);color:var(--gold)}
+.sp-shipped{background:rgba(6,214,160,0.15);border:1px solid rgba(6,214,160,0.3);color:var(--green)}
+.sp-complete{background:rgba(30,111,220,0.15);border:1px solid rgba(30,111,220,0.3);color:var(--blue2)}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--glass);border:1px solid var(--border2);border-radius:11px;padding:14px;
+  backdrop-filter:blur(10px);transition:.2s;}
+.card:hover{border-color:rgba(30,111,220,0.4);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+.card-lbl{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.card-val{font-family:var(--fm);font-size:1.15rem;font-weight:700;color:#fff}
+.card-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.prog-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:.5s}
+
+/* DOCUMENT CARDS */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:13px;
+  cursor:pointer;transition:.25s;display:flex;flex-direction:column;gap:5px;}
+.doc-card:hover{background:var(--surface2);border-color:var(--border2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.doc-icon{font-size:1.5rem}
+.doc-name{font-family:var(--fm);font-size:12px;font-weight:700;color:#fff;letter-spacing:.3px}
+.doc-desc{font-size:10px;color:var(--text2)}
+.doc-status{font-size:9px;font-weight:700;font-family:var(--fm);padding:2px 8px;border-radius:10px;letter-spacing:.5px;margin-top:auto;width:fit-content}
+.ds-req{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+.ds-opt{background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8}
+.ds-done{background:rgba(6,214,160,0.15);border:1px solid rgba(6,214,160,0.3);color:var(--green)}
+.ds-pend{background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);color:var(--gold)}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border2);margin-bottom:14px}
+table{width:100%;border-collapse:collapse}
+thead tr{background:rgba(30,111,220,0.15)}
+thead th{padding:9px 11px;font-family:var(--fm);font-size:10px;font-weight:700;letter-spacing:1px;
+  color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border2);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:.15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:8px 11px;font-size:11px;color:var(--text)}
+tfoot tr{background:rgba(30,111,220,0.1)}
+tfoot td{padding:8px 11px;font-family:var(--fm);font-size:11px;font-weight:700;color:#fff;border-top:1px solid var(--border2)}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:9px;color:var(--text3);font-family:var(--fm);letter-spacing:1px;text-transform:uppercase}
+.form-input{background:rgba(255,255,255,0.05);border:1px solid var(--border2);color:var(--text);
+  border-radius:7px;padding:7px 11px;font-family:var(--fb);font-size:12px;outline:none;transition:.2s;}
+.form-input:focus{border-color:var(--blue2);background:rgba(30,111,220,0.08);box-shadow:0 0 0 3px rgba(30,111,220,0.15)}
+.form-input::placeholder{color:var(--text3)}
+select.form-input option{background:#0f2044}
+textarea.form-input{resize:vertical;min-height:65px}
+
+/* INFO BOXES */
+.info-box{background:rgba(30,111,220,0.08);border:1px solid rgba(30,111,220,0.25);border-radius:9px;
+  padding:12px 14px;margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.9;}
+.info-box.gold{background:rgba(240,180,41,0.08);border-color:rgba(240,180,41,0.25);color:var(--gold2)}
+.info-box.green{background:rgba(6,214,160,0.08);border-color:rgba(6,214,160,0.25);color:#6ee7b7}
+.info-box.red{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25);color:#fca5a5}
+.info-box.purple{background:rgba(167,139,250,0.08);border-color:rgba(167,139,250,0.25);color:#c4b5fd}
+.info-title{font-family:var(--fm);font-size:12px;font-weight:700;color:#fff;margin-bottom:5px;letter-spacing:.5px}
+
+/* CHECKLISTS */
+.checklist{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.check-item{display:flex;align-items:flex-start;gap:9px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;cursor:pointer;transition:.2s;}
+.check-item:hover{border-color:var(--border2)}
+.check-item input[type=checkbox]{margin-top:2px;accent-color:var(--cyan);width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.check-item.checked{background:rgba(6,214,160,0.05);border-color:rgba(6,214,160,0.2)}
+.check-item.checked .check-name{color:var(--green);text-decoration:line-through;text-decoration-color:rgba(6,214,160,0.4)}
+.check-name{font-size:12px;font-weight:500;color:var(--text)}
+.check-note{font-size:10px;color:var(--text3);margin-top:2px}
+.check-resp{font-size:10px;color:var(--blue2);font-weight:600;margin-top:2px}
+.check-due{font-size:10px;font-family:var(--fmono)}
+
+/* ALERT PANEL */
+.alert-panel{position:fixed;top:56px;right:0;width:340px;max-height:calc(100vh - 56px);
+  background:rgba(9,20,44,0.97);border-left:1px solid var(--border2);backdrop-filter:blur(20px);
+  z-index:85;overflow-y:auto;transform:translateX(100%);transition:.3s cubic-bezier(.4,0,.2,1);}
+.alert-panel.open{transform:translateX(0)}
+.alert-head{padding:14px 16px;border-bottom:1px solid var(--border2);font-family:var(--fm);
+  font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between;}
+.alert-item{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.alert-item:hover{background:var(--surface)}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.alert-msg{font-size:11px;color:var(--text2);line-height:1.6}
+.alert-msg b{color:var(--text);display:block;margin-bottom:2px;font-family:var(--fm);font-size:12px}
+.alert-time{font-size:9px;color:var(--text3);font-family:var(--fmono);margin-top:3px}
+.alert-urgency{font-size:9px;font-weight:700;font-family:var(--fm);padding:1px 7px;border-radius:10px;margin-left:auto}
+.au-high{background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
+.au-med{background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.3)}
+.au-low{background:rgba(6,214,160,0.15);color:var(--green);border:1px solid rgba(6,214,160,0.3)}
+
+/* L/C DISCREPANCY */
+.disc-row{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:7px;
+  padding:10px 13px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+.disc-row.ok{background:rgba(6,214,160,0.06);border-color:rgba(6,214,160,0.2)}
+.disc-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.disc-label{font-size:12px;font-weight:600;color:var(--text);font-family:var(--fm)}
+.disc-detail{font-size:11px;color:var(--text2);margin-top:2px}
+.disc-suggest{font-size:10px;color:var(--gold);margin-top:3px}
+
+/* DRAWBACK CALCULATOR */
+.calc-box{background:linear-gradient(135deg,rgba(30,111,220,0.1),rgba(6,214,160,0.05));
+  border:1px solid rgba(30,111,220,0.3);border-radius:12px;padding:18px;margin-bottom:16px;}
+.calc-result{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:14px}
+.calc-item{background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;text-align:center}
+.calc-item-val{font-family:var(--fm);font-size:1.3rem;font-weight:700;color:var(--gold)}
+.calc-item-lbl{font-size:10px;color:var(--text3);font-family:var(--fm);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+
+/* ANALYTICS */
+.chart-box{background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+  padding:16px;margin-bottom:14px;min-height:200px;position:relative;overflow:hidden;}
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:8px;height:140px;padding:0 8px}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+.chart-bar{border-radius:4px 4px 0 0;min-height:4px;transition:.6s;width:100%;max-width:40px}
+.chart-bar-lbl{font-size:9px;color:var(--text3);font-family:var(--fm);text-align:center;white-space:nowrap}
+.chart-bar-val{font-size:10px;color:var(--text2);font-family:var(--fmono)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex}
+.modal{background:var(--navy2);border:1px solid var(--border2);border-radius:14px;width:100%;
+  max-width:860px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,0.7);}
+.modal-head{padding:16px 22px;border-bottom:1px solid var(--border2);display:flex;
+  align-items:center;justify-content:space-between;background:rgba(30,111,220,0.08);}
+.modal-title{font-family:var(--fm);font-size:1rem;font-weight:700;color:#fff;letter-spacing:.5px}
+.modal-close{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;
+  border-radius:7px;padding:4px 11px;cursor:pointer;font-family:var(--fm);font-size:12px;font-weight:700;transition:.2s;}
+.modal-close:hover{background:rgba(239,68,68,0.3)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border2);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+
+/* DISPATCH LOG */
+.log-item{display:flex;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:7px;}
+.log-icon{font-size:16px;flex-shrink:0}
+.log-msg{font-size:11px;color:var(--text2);line-height:1.6}
+.log-msg b{color:var(--text);font-family:var(--fm)}
+.log-time{font-size:9px;color:var(--text3);font-family:var(--fmono);margin-top:2px}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:400;background:var(--navy2);
+  border:1px solid var(--border2);border-radius:9px;padding:11px 16px;font-family:var(--fm);
+  font-size:12px;font-weight:600;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.5);
+  transform:translateY(80px);opacity:0;transition:.3s cubic-bezier(.4,0,.2,1);
+  display:flex;align-items:center;gap:8px;min-width:200px;}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* COUNTDOWN */
+.countdown{font-family:var(--fmono);font-size:1.4rem;font-weight:600;color:var(--gold);
+  background:rgba(240,180,41,0.1);border:1px solid rgba(240,180,41,0.25);border-radius:8px;
+  padding:8px 16px;display:inline-block;letter-spacing:2px;}
+.countdown.urgent{color:var(--red);background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);
+  animation:blink .8s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* MISC */
+.divider{height:1px;background:var(--border2);margin:16px 0}
+.flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ml-auto{margin-left:auto}
+.mono{font-family:var(--fmono)}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:9px;font-family:var(--fm);font-weight:700;letter-spacing:.5px}
+.chip-blue{background:rgba(30,111,220,0.15);border:1px solid rgba(30,111,220,0.3);color:var(--blue2)}
+.chip-gold{background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);color:var(--gold)}
+.chip-green{background:rgba(6,214,160,0.15);border:1px solid rgba(6,214,160,0.3);color:var(--green)}
+.chip-red{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+.chip-purple{background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);color:var(--purple)}
+.devby{font-size:10px;color:var(--text3);text-align:center;padding:10px;letter-spacing:.5px;position:relative;z-index:1}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(30,111,220,0.4);border-radius:4px}
+
+/* PRINT */
+@media print{
+  body,html{background:#fff!important;color:#111!important}
+  body::before,body::after,.topbar,.tab-bar,.tb-actions,.ship-sel .tbtn,
+  .alert-bell,.conn-dot,.alert-panel,.modal-bg,#toast,.no-print,.devby{display:none!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .screen{display:block!important;padding:0!important}
+  .screen:not(.active){display:none!important}
+  table{font-size:9px}
+}
+@media(max-width:640px){
+  .co-banner{padding:12px 14px}.cards-grid{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 12px}.tb-name{font-size:1rem}
+  .screen{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-logo">🚢</div>
+    <div>
+      <div class="tb-name">Ship<span>Doc</span> Pro</div>
+      <div class="tb-sub">Export Documentation v2.0</div>
+    </div>
+  </div>
+  <div class="tb-actions">
+    <!-- FIREBASE BIG INDICATOR -->
+    <div id="fb-indicator" onclick="pingFirebase()" title="Click to recheck Firebase connection" style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:9px;border:1px solid rgba(255,163,0,0.35);background:rgba(255,163,0,0.08);cursor:pointer;transition:.2s;min-width:210px;">
+      <div style="position:relative;flex-shrink:0">
+        <div style="font-size:22px;line-height:1">🔥</div>
+        <div id="fb-dot" style="width:10px;height:10px;border-radius:50%;background:#22c55e;position:absolute;bottom:-1px;right:-2px;box-shadow:0 0 0 3px rgba(34,197,94,0.3);animation:pulse 2s infinite"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-family:var(--fm);font-size:11px;font-weight:700;color:#ffa300;letter-spacing:.5px">Firebase</span>
+          <span id="fb-status-badge" style="font-size:9px;font-weight:800;font-family:var(--fm);padding:1px 7px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#22c55e;letter-spacing:.5px">CONNECTED</span>
+        </div>
+        <div style="font-family:var(--fm);font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="fb-project-name">shipping-document-678f4</div>
+        <div style="font-size:9px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" id="fb-url-label">shipping-document-678f4.firebaseapp.com</div>
+      </div>
+    </div>
+    <!-- INTERNET CONNECTIVITY DOT -->
+    <div class="conn-dot" onclick="pingServer()" title="Click to recheck connection">
+      <div class="dot online" id="conn-dot"></div>
+      <span class="conn-label" id="conn-label" style="color:#22c55e">Online</span>
+    </div>
+    <div class="alert-bell" onclick="toggleAlerts()" title="Alerts">
+      🔔<div class="alert-count" id="alert-count">5</div>
+    </div>
+    <button class="tbtn" onclick="openModal('analytics-modal')">📊 Analytics</button>
+    <button class="tbtn purple" onclick="openModal('dispatch-modal')">📤 Dispatch Log</button>
+    <button class="tbtn gold" onclick="exportExcel()">📥 Excel</button>
+    <button class="tbtn green" onclick="generatePDF()">📄 PDF</button>
+    <button class="tbtn primary" onclick="openModal('new-modal')">+ New Shipment</button>
+  </div>
+</div>
+
+<!-- ALERT PANEL -->
+<div class="alert-panel" id="alert-panel">
+  <div class="alert-head">
+    🔔 Smart Alerts
+    <button class="tbtn" onclick="toggleAlerts()" style="font-size:11px;padding:3px 9px">✕ Close</button>
+  </div>
+  <div id="alert-list"></div>
+</div>
+
+<!-- COMPANY BANNER -->
+<div class="co-banner">
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="co-emblem">🏭</div>
+    <div>
+      <div class="co-name" id="co-name-d">TDD GARMENTS PVT. LTD.</div>
+      <div class="co-tagline">Garment & Textile Exporters | Est. 2005</div>
+      <div class="co-details">
+        📍 Plot 47, Garment Export Zone, Sector 5, Noida, UP — 201301 &nbsp;|&nbsp;
+        📞 +91 98765 43210 &nbsp;|&nbsp; ✉️ exports@tddgarments.com<br>
+        IEC: AABCT1234F &nbsp;|&nbsp; GSTIN: 09AABCT1234F1ZX &nbsp;|&nbsp; AD Code: 1234567 &nbsp;|&nbsp; RCMC: AEPC/2026/5678
+      </div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="co-badge">✅ EXPORT CERTIFIED</div><br>
+    <div class="co-cert">🏅 OEKO-TEX &nbsp;|&nbsp; 🌿 GOTS &nbsp;|&nbsp; 📜 ISO 9001:2015 &nbsp;|&nbsp; 🤝 SEDEX<br>
+    L/C Countdown: <span class="countdown" id="lc-countdown">07d 14h 22m</span></div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+  <div class="tab" onclick="switchTab('pre-doc')">📁 Pre-Shipment</div>
+  <div class="tab" onclick="switchTab('post-doc')">📦 Post-Shipment</div>
+  <div class="tab" onclick="switchTab('shipping-bill')">🚢 Shipping Bill</div>
+  <div class="tab" onclick="switchTab('lc-check')">🏦 L/C Checker</div>
+  <div class="tab" onclick="switchTab('drawback')">💰 Drawback Calc</div>
+  <div class="tab" onclick="switchTab('govt-docs')">🏛️ Govt. Docs</div>
+  <div class="tab" onclick="switchTab('buyer-docs')">🤝 Buyer Docs</div>
+  <div class="tab" onclick="switchTab('norms')">📐 Norms</div>
+  <div class="tab" onclick="switchTab('timeline')">📅 Timeline</div>
+  <div class="tab" onclick="switchTab('guidelines')" style="color:var(--gold)">🌍 Country Guidelines</div>
+</div>
+
+<div class="app" style="position:relative;z-index:1;padding-bottom:50px">
+
+<!-- ══════════════ DASHBOARD ══════════════ -->
+<div class="screen active" id="sc-dashboard">
+  <div class="ship-sel">
+    <span style="font-family:var(--fm);font-weight:700;color:var(--text2);white-space:nowrap;font-size:12px">📦 SHIPMENT:</span>
+    <select id="ship-select" onchange="loadShipment(this.value)">
+      <option value="0">— Select Shipment —</option>
+      <option value="1" selected>#SHP-2026-001 | TJX Companies | USA | MSKU1234567</option>
+      <option value="2">#SHP-2026-002 | Marks & Spencer | UK | TEMU9876543</option>
+    </select>
+    <div class="status-pill sp-ready" id="ship-status-badge">🟡 READY TO SHIP</div>
+    <button class="tbtn no-print" onclick="openModal('edit-ship-modal')" style="margin-left:auto">✏️ Edit</button>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">📦</div><div class="card-lbl">Shipment ID</div><div class="card-val" id="db-id">SHP-2026-001</div><div class="card-sub">Export to USA</div></div>
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">🏢</div><div class="card-lbl">Buyer</div><div class="card-val" id="db-buyer">TJX Companies</div><div class="card-sub" id="db-country">🇺🇸 USA</div></div>
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">👕</div><div class="card-lbl">Total Quantity</div><div class="card-val" id="db-qty">5,400 Pcs</div><div class="card-sub" id="db-cartons">180 Cartons</div></div>
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">💰</div><div class="card-lbl">FOB Value</div><div class="card-val" id="db-value">$ 18,900.00</div><div class="card-sub" id="db-inr">₹ 17,01,000 (@ ₹90)</div></div>
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">🚢</div><div class="card-lbl">Port / Vessel</div><div class="card-val" id="db-pol">JNPT Mumbai</div><div class="card-sub" id="db-vessel">MAERSK EXETER</div></div>
+    <div class="card"><div style="font-size:1.6rem;margin-bottom:6px">📅</div><div class="card-lbl">ETD / ETA</div><div class="card-val" id="db-date">17-May-2026</div><div class="card-sub" id="db-eta">ETA: 10-Jun-2026</div></div>
+  </div>
+
+  <div class="sec-title">📊 DOCUMENT STATUS OVERVIEW</div>
+  <div class="cards-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+    <div class="card" style="border-color:rgba(6,214,160,0.3)">
+      <div class="card-lbl">Pre-Shipment</div><div class="card-val" id="pre-prog-lbl">7 / 9</div>
+      <div class="prog-bar"><div class="prog-fill" id="pre-prog" style="width:78%"></div></div>
+      <div class="card-sub" style="margin-top:5px">78% Complete</div>
+    </div>
+    <div class="card" style="border-color:rgba(240,180,41,0.3)">
+      <div class="card-lbl">Post-Shipment</div><div class="card-val" id="post-prog-lbl">3 / 6</div>
+      <div class="prog-bar"><div class="prog-fill" id="post-prog" style="width:50%;background:linear-gradient(90deg,var(--gold),var(--gold2))"></div></div>
+      <div class="card-sub" style="margin-top:5px">50% Complete</div>
+    </div>
+    <div class="card" style="border-color:rgba(167,139,250,0.3)">
+      <div class="card-lbl">Govt. Documents</div><div class="card-val">5 / 7</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:71%;background:linear-gradient(90deg,var(--purple),#c4b5fd)"></div></div>
+      <div class="card-sub" style="margin-top:5px">71% Complete</div>
+    </div>
+    <div class="card" style="border-color:rgba(251,146,60,0.3)">
+      <div class="card-lbl">Buyer Documents</div><div class="card-val">4 / 5</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:80%;background:linear-gradient(90deg,var(--orange),#fdba74)"></div></div>
+      <div class="card-sub" style="margin-top:5px">80% Complete</div>
+    </div>
+    <div class="card" style="border-color:rgba(30,111,220,0.3)">
+      <div class="card-lbl">L/C Discrepancies</div><div class="card-val" style="color:var(--red)">3 Found</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:30%;background:linear-gradient(90deg,var(--red),#f87171)"></div></div>
+      <div class="card-sub" style="margin-top:5px"><a onclick="switchTab('lc-check')" style="color:var(--blue2);cursor:pointer">→ Check Now</a></div>
+    </div>
+    <div class="card" style="border-color:rgba(6,214,160,0.3)">
+      <div class="card-lbl">Drawback Benefit</div><div class="card-val" style="color:var(--green)">₹ 43,735</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div>
+      <div class="card-sub" style="margin-top:5px"><a onclick="switchTab('drawback')" style="color:var(--blue2);cursor:pointer">→ View Details</a></div>
+    </div>
+  </div>
+
+  <div class="sec-title">⚠️ PENDING ACTIONS</div>
+  <div class="info-box red">
+    <div class="info-title">🔴 Urgent — Act Today</div>
+    ⚠ <b>GSP Certificate (Form A)</b> — Apply on AEPC portal immediately (L/C requires it)<br>
+    ⚠ <b>Fumigation Certificate</b> — Contact fumigator, ETD in 3 days<br>
+    ⚠ <b>L/C Discrepancy</b> — Invoice date mismatch with L/C terms — <a onclick="switchTab('lc-check')" style="color:var(--gold);cursor:pointer">Check now →</a>
+  </div>
+  <div class="info-box gold">
+    <div class="info-title">🟡 This Week</div>
+    • <b>Lab Test Report</b> (Tensile Strength) — Intertek se pending<br>
+    • <b>Packing Approval</b> — Buyer confirmation awaited<br>
+    • <b>B/L</b> — Will come post-shipment from Maersk Line
+  </div>
+  <div class="info-box green">
+    <div class="info-title">✅ Recently Completed</div>
+    • Commercial Invoice sent to bank &nbsp;|&nbsp; Packing List finalized &nbsp;|&nbsp; COO applied &nbsp;|&nbsp; Insurance done
+  </div>
+</div>
+
+<!-- ══════════════ PRE-SHIPMENT ══════════════ -->
+<div class="screen" id="sc-pre-doc">
+  <div class="sec-title">📁 PRE-SHIPMENT DOCUMENTS</div>
+  <div class="info-box"><div class="info-title">ℹ️ Pre-Shipment Documents</div>
+    Shipment se PEHLE prepare hote hain. Bank ko negotiate karne ke liye aur buyer ko bhejne ke liye zaroori hain.</div>
+
+  <div class="doc-grid">
+    <div class="doc-card" onclick="openDocModal('proforma')"><div class="doc-icon">📄</div><div class="doc-name">Proforma Invoice</div><div class="doc-desc">Buyer ko order confirm karne ke liye</div><div class="doc-status ds-done">✅ SENT</div></div>
+    <div class="doc-card" onclick="openDocModal('commercial')"><div class="doc-icon">🧾</div><div class="doc-name">Commercial Invoice</div><div class="doc-desc">Main export financial document</div><div class="doc-status ds-done">✅ READY</div></div>
+    <div class="doc-card" onclick="openDocModal('packing')"><div class="doc-icon">📦</div><div class="doc-name">Packing List</div><div class="doc-desc">Carton-wise qty, weight, measurement</div><div class="doc-status ds-done">✅ READY</div></div>
+    <div class="doc-card" onclick="openDocModal('lc')"><div class="doc-icon">🏦</div><div class="doc-name">Letter of Credit</div><div class="doc-desc">Bank payment guarantee — buyer se</div><div class="doc-status ds-done">✅ RECEIVED</div></div>
+    <div class="doc-card" onclick="openDocModal('inspection')"><div class="doc-icon">🔍</div><div class="doc-name">Inspection Certificate</div><div class="doc-desc">Third party / buyer inspector</div><div class="doc-status ds-done">✅ PASSED</div></div>
+    <div class="doc-card" onclick="openDocModal('insurance')"><div class="doc-icon">🛡️</div><div class="doc-name">Insurance Certificate</div><div class="doc-desc">Cargo insurance — CIF ke liye</div><div class="doc-status ds-done">✅ DONE</div></div>
+    <div class="doc-card" onclick="openDocModal('test')"><div class="doc-icon">🧪</div><div class="doc-name">Lab Test Reports</div><div class="doc-desc">Azo, pH, colour fastness, shrinkage</div><div class="doc-status ds-pend">🔄 PARTIAL</div></div>
+    <div class="doc-card" onclick="openDocModal('coo')"><div class="doc-icon">🌏</div><div class="doc-name">Certificate of Origin</div><div class="doc-desc">AEPC / Chamber of Commerce</div><div class="doc-status ds-done">✅ APPLIED</div></div>
+    <div class="doc-card" onclick="openDocModal('gsp')"><div class="doc-icon">🇺🇸</div><div class="doc-name">GSP Form A</div><div class="doc-desc">USA duty benefit certificate</div><div class="doc-status ds-req">❌ PENDING</div></div>
+  </div>
+
+  <div class="sec-title">🧾 COMMERCIAL INVOICE</div>
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div class="flex" style="margin-bottom:12px">
+      <span style="font-family:var(--fm);font-weight:700">Invoice #: INV-2026-001 &nbsp;|&nbsp; Date: 10-May-2026</span>
+      <div class="ml-auto flex">
+        <button class="tbtn green" onclick="generatePDF('invoice')">📄 PDF</button>
+        <button class="tbtn" onclick="logDispatch('Commercial Invoice INV-2026-001','Bank — HDFC Export Branch')">📤 Mark Sent</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Description</th><th>PO No.</th><th>HSN</th><th>Qty</th><th>Unit ($)</th><th>Amount ($)</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Men's Cotton T-Shirt<br><small style="color:var(--text3)">100% Cotton, 180 GSM, Reactive Dyed</small></td><td class="mono">TJX-2026-447</td><td class="mono">6105.10.10</td><td class="mono" style="color:var(--blue2)">3,000</td><td class="mono">$ 3.50</td><td class="mono" style="color:var(--green)">$ 10,500.00</td></tr>
+          <tr><td>2</td><td>Women's Polo T-Shirt<br><small style="color:var(--text3)">60% Cotton 40% Polyester, Pique</small></td><td class="mono">TJX-2026-448</td><td class="mono">6106.10.00</td><td class="mono" style="color:var(--blue2)">2,400</td><td class="mono">$ 3.50</td><td class="mono" style="color:var(--green)">$ 8,400.00</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="4" style="text-align:right">TOTAL</td><td class="mono" style="color:var(--blue2)">5,400 Pcs</td><td></td><td class="mono" style="color:var(--gold)">$ 18,900.00</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="info-box" style="margin:0"><b>Terms:</b> FOB Mumbai &nbsp;|&nbsp; <b>Payment:</b> L/C at Sight &nbsp;|&nbsp; <b>Bank:</b> HDFC Bank Ltd., Export Branch, Mumbai &nbsp;|&nbsp; <b>SWIFT:</b> HDFCINBBXXX</div>
+  </div>
+
+  <div class="sec-title">📦 PACKING LIST</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Carton Range</th><th>Description</th><th>Style</th><th>Size Ratio</th><th>Qty/Ctn</th><th>Ctns</th><th>Total Pcs</th><th>Net Wt</th><th>Gross Wt</th><th>Measurement</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">C01–C100</td><td>Men's T-Shirt</td><td>TJX-MT-001</td><td>S:M:L:XL = 1:2:2:1</td><td class="mono">30</td><td class="mono" style="color:var(--blue2)">100</td><td class="mono" style="color:var(--green)">3,000</td><td class="mono">210 kg</td><td class="mono">225 kg</td><td class="mono">60×40×35 cm</td></tr>
+        <tr><td class="mono">C101–C180</td><td>Women's Polo</td><td>TJX-WP-001</td><td>XS:S:M:L = 1:2:2:1</td><td class="mono">30</td><td class="mono" style="color:var(--blue2)">80</td><td class="mono" style="color:var(--green)">2,400</td><td class="mono">168 kg</td><td class="mono">180 kg</td><td class="mono">60×40×35 cm</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right">TOTALS</td><td class="mono" style="color:var(--blue2)">180</td><td class="mono" style="color:var(--gold)">5,400 Pcs</td><td class="mono">378 kg</td><td class="mono">405 kg</td><td>CBM: 8.75 m³</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ POST-SHIPMENT ══════════════ -->
+<div class="screen" id="sc-post-doc">
+  <div class="sec-title">📦 POST-SHIPMENT DOCUMENTS</div>
+  <div class="info-box"><div class="info-title">ℹ️ Post-Shipment Documents</div>
+    Shipment ke BAAD — bank mein negotiate karne ke liye aur payment realize karne ke liye zaroori hain.</div>
+  <div class="doc-grid">
+    <div class="doc-card" onclick="openDocModal('bl')"><div class="doc-icon">🚢</div><div class="doc-name">Bill of Lading</div><div class="doc-desc">Shipping line ka cargo receipt</div><div class="doc-status ds-pend">⏳ AWAITED</div></div>
+    <div class="doc-card" onclick="openDocModal('ep-copy')"><div class="doc-icon">📋</div><div class="doc-name">EP Copy (Shipping Bill)</div><div class="doc-desc">Customs attest karta hai</div><div class="doc-status ds-pend">⏳ PENDING</div></div>
+    <div class="doc-card" onclick="openDocModal('brc')"><div class="doc-icon">🏦</div><div class="doc-name">BRC / FIRC</div><div class="doc-desc">Forex receipt proof</div><div class="doc-status ds-pend">⏳ PENDING</div></div>
+    <div class="doc-card" onclick="openDocModal('ebrc')"><div class="doc-icon">💻</div><div class="doc-name">e-BRC (DGFT)</div><div class="doc-desc">30 din ke andar file karo</div><div class="doc-status ds-pend">⏳ PENDING</div></div>
+    <div class="doc-card" onclick="openDocModal('drawback-claim')"><div class="doc-icon">💸</div><div class="doc-name">Drawback Claim</div><div class="doc-desc">ICEGATE pe file karo</div><div class="doc-status ds-pend">⏳ POST-SB</div></div>
+    <div class="doc-card" onclick="openDocModal('rodtep-scrip')"><div class="doc-icon">📒</div><div class="doc-name">RODTEP Scrip</div><div class="doc-desc">Duty remission benefit</div><div class="doc-status ds-pend">⏳ POST-SB</div></div>
+  </div>
+  <div class="sec-title">✅ POST-SHIPMENT CHECKLIST</div>
+  <div class="checklist">
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">Bill of Lading received from Maersk</div><div class="check-note">Original 3 copies — 1 keep, 2 to bank</div><div class="check-resp">Responsible: Logistics Team</div></div><div class="check-due mono" style="color:var(--red);font-size:10px">Due: 20-May</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">Shipping Bill EP Copy from Customs</div><div class="check-note">ICEGATE attest copy milegi after vessel departure</div><div class="check-resp">Responsible: CHA</div></div><div class="check-due mono" style="font-size:10px;color:var(--gold)">Due: 22-May</div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">RODTEP / Drawback applied on ICEGATE</div><div class="check-note">SB number se apply karo</div><div class="check-resp">Responsible: Accounts</div></div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">Document set submitted to bank</div><div class="check-note">BL + CI + PL + COO + GSP Form A = Full Set</div><div class="check-resp">Responsible: Merchandiser</div></div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">Payment realized — FIRC/BRC received</div><div class="check-note">Bank se Inward Remittance Certificate lena hai</div><div class="check-resp">Responsible: Accounts</div></div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">e-BRC filed on DGFT Portal</div><div class="check-note">Payment aane ke 30 din ke andar COMPULSORY</div><div class="check-resp">Responsible: Accounts / DGFT Consultant</div></div><div class="check-due mono" style="font-size:10px;color:var(--red)">⚠ 30-Day Rule</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ SHIPPING BILL ══════════════ -->
+<div class="screen" id="sc-shipping-bill">
+  <div class="sec-title">🚢 SHIPPING BILL — CUSTOMS FILING</div>
+  <div class="info-box gold"><div class="info-title">📌 Shipping Bill</div>
+    India se export ke time ICEGATE portal pe electronically file karna COMPULSORY hai. CHA (Customs House Agent) file karta hai.</div>
+  <div class="form-grid">
+    <div class="form-group"><div class="form-label">SB Number</div><input class="form-input mono" value="SB/2026/001234" readonly></div>
+    <div class="form-group"><div class="form-label">SB Date</div><input class="form-input" type="date" value="2026-05-15"></div>
+    <div class="form-group"><div class="form-label">SB Type</div><select class="form-input"><option>Drawback + RODTEP</option><option>Free Shipping Bill</option><option>ROSCTL</option></select></div>
+    <div class="form-group"><div class="form-label">Port of Export</div><input class="form-input" value="INJAV4 — JNPT Nhava Sheva"></div>
+    <div class="form-group"><div class="form-label">Destination Port</div><input class="form-input" value="Los Angeles, USA (USLAX)"></div>
+    <div class="form-group"><div class="form-label">Shipping Line</div><input class="form-input" value="Maersk Line"></div>
+    <div class="form-group"><div class="form-label">Container No.</div><input class="form-input mono" value="MSKU1234567/8"></div>
+    <div class="form-group"><div class="form-label">Vessel / Voyage</div><input class="form-input" value="MAERSK EXETER / 001E"></div>
+    <div class="form-group"><div class="form-label">ETD</div><input class="form-input" type="date" value="2026-05-17"></div>
+    <div class="form-group"><div class="form-label">CHA Name</div><input class="form-input" value="Bharat CHA Services, Mumbai"></div>
+    <div class="form-group"><div class="form-label">CHA License No.</div><input class="form-input mono" value="CHA/MUM/2024/1567"></div>
+    <div class="form-group"><div class="form-label">Customs Appraiser</div><input class="form-input" value="JNPT-EXP-2026-SA"></div>
+  </div>
+  <div class="sec-title">📦 GOODS DETAIL</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Description</th><th>HSN Code</th><th>Qty</th><th>Unit</th><th>Unit Price ($)</th><th>FOB Value ($)</th><th>Drawback %</th><th>RODTEP %</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Men's Cotton T-Shirt</td><td class="mono">6105.10.10</td><td class="mono" style="color:var(--blue2)">3,000</td><td>PCS</td><td class="mono">$ 3.50</td><td class="mono" style="color:var(--green)">$ 10,500.00</td><td class="mono" style="color:var(--gold)">2.00%</td><td class="mono" style="color:var(--cyan)">0.60%</td></tr>
+        <tr><td>2</td><td>Women's Polo T-Shirt</td><td class="mono">6106.10.00</td><td class="mono" style="color:var(--blue2)">2,400</td><td>PCS</td><td class="mono">$ 3.50</td><td class="mono" style="color:var(--green)">$ 8,400.00</td><td class="mono" style="color:var(--gold)">2.00%</td><td class="mono" style="color:var(--cyan)">0.60%</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="3">TOTAL FOB</td><td class="mono" style="color:var(--blue2)">5,400</td><td></td><td></td><td class="mono" style="color:var(--gold)">$ 18,900.00</td><td class="mono" style="color:var(--gold)">₹ 34,020</td><td class="mono" style="color:var(--cyan)">₹ 10,206</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="info-box green"><div class="info-title">💰 Benefit Summary</div>
+    <b>Drawback (2%):</b> $ 378 = ₹ 34,020 &nbsp;|&nbsp; <b>RODTEP (0.60%):</b> $ 113.40 = ₹ 10,206 &nbsp;|&nbsp; <b>Total Benefit: ₹ 44,226</b><br>
+    <a onclick="switchTab('drawback')" style="color:var(--blue2);cursor:pointer">→ Detailed Drawback Calculator</a></div>
+</div>
+
+<!-- ══════════════ L/C DISCREPANCY CHECKER ══════════════ -->
+<div class="screen" id="sc-lc-check">
+  <div class="sec-title">🏦 L/C DISCREPANCY CHECKER</div>
+  <div class="info-box red"><div class="info-title">⚠️ 3 Discrepancies Found — Fix Before Submission!</div>
+    L/C mein likhi conditions aur aapke documents match nahi kar rahe. Ye discrepancies bank reject kar sakta hai.</div>
+
+  <div style="margin-bottom:16px">
+    <div class="disc-row">
+      <div class="disc-icon">❌</div>
+      <div style="flex:1">
+        <div class="disc-label">Invoice Date — L/C Expiry Conflict</div>
+        <div class="disc-detail"><b>L/C Condition:</b> Latest shipment date: 15-May-2026<br><b>Document:</b> Invoice date: 10-May-2026 ✅ but SB date: 16-May-2026 ❌</div>
+        <div class="disc-suggest">💡 Fix: SB date ko 15-May se pehle karo ya buyer se L/C amendment lo</div>
+      </div>
+      <span class="chip chip-red">HIGH RISK</span>
+    </div>
+    <div class="disc-row">
+      <div class="disc-icon">❌</div>
+      <div style="flex:1">
+        <div class="disc-label">GSP Form A Not Mentioned in Document Set</div>
+        <div class="disc-detail"><b>L/C Condition:</b> "Beneficiary to present GSP Form A issued by AEPC"<br><b>Status:</b> GSP Form A abhi apply nahi kiya — document set incomplete rahega</div>
+        <div class="disc-suggest">💡 Fix: AEPC portal pe turant apply karo — 2-3 din lagte hain</div>
+      </div>
+      <span class="chip chip-red">HIGH RISK</span>
+    </div>
+    <div class="disc-row">
+      <div class="disc-icon">⚠️</div>
+      <div style="flex:1">
+        <div class="disc-label">Port of Discharge — Minor Mismatch</div>
+        <div class="disc-detail"><b>L/C Condition:</b> "Any port in USA"<br><b>SB Draft:</b> "Los Angeles (USLAX)" — technically correct but verify</div>
+        <div class="disc-suggest">💡 Fix: Confirm with buyer's bank that USLAX is acceptable</div>
+      </div>
+      <span class="chip chip-gold">MEDIUM</span>
+    </div>
+    <div class="disc-row ok">
+      <div class="disc-icon">✅</div>
+      <div style="flex:1">
+        <div class="disc-label">Invoice Amount — Matches L/C</div>
+        <div class="disc-detail"><b>L/C Amount:</b> USD 18,900.00 &nbsp;|&nbsp; <b>Invoice:</b> USD 18,900.00 — MATCH</div>
+      </div>
+      <span class="chip chip-green">OK</span>
+    </div>
+    <div class="disc-row ok">
+      <div class="disc-icon">✅</div>
+      <div style="flex:1">
+        <div class="disc-label">Quantity — Matches L/C</div>
+        <div class="disc-detail"><b>L/C:</b> 5,400 Pcs &nbsp;|&nbsp; <b>Invoice:</b> 5,400 Pcs — MATCH</div>
+      </div>
+      <span class="chip chip-green">OK</span>
+    </div>
+    <div class="disc-row ok">
+      <div class="disc-icon">✅</div>
+      <div style="flex:1">
+        <div class="disc-label">Buyer / Consignee Details — Match</div>
+        <div class="disc-detail"><b>L/C:</b> TJX Companies Inc. &nbsp;|&nbsp; <b>Invoice:</b> TJX Companies Inc. — MATCH</div>
+      </div>
+      <span class="chip chip-green">OK</span>
+    </div>
+  </div>
+
+  <div class="sec-title">📋 L/C KEY TERMS</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>L/C Field</th><th>L/C Condition</th><th>Document Status</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>L/C No.</td><td class="mono">BOA/2026/LC-1234</td><td class="mono">Referenced in Invoice ✅</td><td><span class="chip chip-green">OK</span></td></tr>
+        <tr><td>Issuing Bank</td><td>Bank of America, NY</td><td>Confirmed ✅</td><td><span class="chip chip-green">OK</span></td></tr>
+        <tr><td>Expiry Date</td><td>31-May-2026</td><td>SB date: 16-May ❌</td><td><span class="chip chip-red">RISK</span></td></tr>
+        <tr><td>Latest Shipment</td><td>15-May-2026</td><td>ETD: 17-May ❌</td><td><span class="chip chip-red">RISK</span></td></tr>
+        <tr><td>Presentation Period</td><td>21 days from B/L</td><td>Tracking ✅</td><td><span class="chip chip-green">OK</span></td></tr>
+        <tr><td>Partial Shipment</td><td>Not Allowed</td><td>1 container — Full ✅</td><td><span class="chip chip-green">OK</span></td></tr>
+        <tr><td>Transhipment</td><td>Not Allowed</td><td>Direct vessel confirmed ✅</td><td><span class="chip chip-green">OK</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="flex no-print">
+    <button class="tbtn red" onclick="showToast('📧','Amendment request draft ready')">📧 Request L/C Amendment</button>
+    <button class="tbtn" onclick="showToast('📋','Discrepancy report copied')">📋 Copy Report</button>
+    <button class="tbtn green" onclick="generatePDF('lc')">📄 PDF Report</button>
+  </div>
+</div>
+
+<!-- ══════════════ DRAWBACK CALCULATOR ══════════════ -->
+<div class="screen" id="sc-drawback">
+  <div class="sec-title">💰 DRAWBACK & RODTEP CALCULATOR</div>
+  <div class="calc-box">
+    <div class="form-grid">
+      <div class="form-group"><div class="form-label">FOB Value ($)</div><input class="form-input mono" id="fob-val" value="18900" oninput="calcDrawback()"></div>
+      <div class="form-group"><div class="form-label">Exchange Rate (₹/$)</div><input class="form-input mono" id="exch-rate" value="90" oninput="calcDrawback()"></div>
+      <div class="form-group"><div class="form-label">Drawback Rate (%)</div><input class="form-input mono" id="db-rate" value="2.00" oninput="calcDrawback()"></div>
+      <div class="form-group"><div class="form-label">RODTEP Rate (%)</div><input class="form-input mono" id="rt-rate" value="0.60" oninput="calcDrawback()"></div>
+      <div class="form-group"><div class="form-label">ROSCTL Rate (%)</div><input class="form-input mono" id="rosctl-rate" value="0" oninput="calcDrawback()"></div>
+      <div class="form-group"><div class="form-label">GST Refund (₹)</div><input class="form-input mono" id="gst-refund" value="0" oninput="calcDrawback()"></div>
+    </div>
+    <div class="calc-result" id="calc-result">
+      <div class="calc-item"><div class="calc-item-val" id="r-fob">₹ 17,01,000</div><div class="calc-item-lbl">FOB (INR)</div></div>
+      <div class="calc-item"><div class="calc-item-val" id="r-db">₹ 34,020</div><div class="calc-item-lbl">Drawback</div></div>
+      <div class="calc-item"><div class="calc-item-val" id="r-rt">₹ 10,206</div><div class="calc-item-lbl">RODTEP</div></div>
+      <div class="calc-item"><div class="calc-item-val" id="r-rosctl">₹ 0</div><div class="calc-item-lbl">ROSCTL</div></div>
+      <div class="calc-item" style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2)"><div class="calc-item-val" id="r-total" style="color:var(--green)">₹ 44,226</div><div class="calc-item-lbl">TOTAL BENEFIT</div></div>
+    </div>
+  </div>
+
+  <div class="sec-title">📊 HSN-WISE DRAWBACK RATES (Knitted Garments)</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>HSN Code</th><th>Description</th><th>Drawback %</th><th>RODTEP %</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">6105.10</td><td>Men's knitted shirts — Cotton</td><td class="mono" style="color:var(--gold)">2.00%</td><td class="mono" style="color:var(--cyan)">0.60%</td><td>Standard rate FY 2025-26</td></tr>
+        <tr><td class="mono">6105.20</td><td>Men's knitted shirts — MMF</td><td class="mono" style="color:var(--gold)">1.80%</td><td class="mono" style="color:var(--cyan)">0.50%</td><td></td></tr>
+        <tr><td class="mono">6106.10</td><td>Women's blouses — Cotton</td><td class="mono" style="color:var(--gold)">2.00%</td><td class="mono" style="color:var(--cyan)">0.60%</td><td></td></tr>
+        <tr><td class="mono">6109.10</td><td>T-shirts — Cotton</td><td class="mono" style="color:var(--gold)">2.00%</td><td class="mono" style="color:var(--cyan)">0.60%</td><td></td></tr>
+        <tr><td class="mono">6203.42</td><td>Men's trousers — Cotton</td><td class="mono" style="color:var(--gold)">1.70%</td><td class="mono" style="color:var(--cyan)">0.55%</td><td></td></tr>
+        <tr><td class="mono">6204.62</td><td>Women's trousers — Cotton</td><td class="mono" style="color:var(--gold)">1.70%</td><td class="mono" style="color:var(--cyan)">0.55%</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec-title">📋 FILING STATUS</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Scheme</th><th>SB Number</th><th>Filed Date</th><th>Claim Amount</th><th>Status</th><th>Expected Credit</th></tr></thead>
+      <tbody>
+        <tr><td>Drawback</td><td class="mono">SB/2026/001234</td><td>—</td><td class="mono" style="color:var(--gold)">₹ 34,020</td><td><span class="chip chip-gold">⏳ Post ETD</span></td><td>7-10 working days</td></tr>
+        <tr><td>RODTEP</td><td class="mono">SB/2026/001234</td><td>—</td><td class="mono" style="color:var(--cyan)">₹ 10,206</td><td><span class="chip chip-gold">⏳ Post ETD</span></td><td>ICEGATE scrip — 30 days</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ GOVT DOCS ══════════════ -->
+<div class="screen" id="sc-govt-docs">
+  <div class="sec-title">🏛️ GOVERNMENT & REGULATORY DOCUMENTS</div>
+  <div class="doc-grid">
+    <div class="doc-card" onclick="openDocModal('iec')"><div class="doc-icon">🔑</div><div class="doc-name">IEC Certificate</div><div class="doc-desc">DGFT — Import Export Code</div><div class="doc-status ds-done">✅ VALID</div></div>
+    <div class="doc-card" onclick="openDocModal('rcmc')"><div class="doc-icon">🏅</div><div class="doc-name">RCMC — AEPC</div><div class="doc-desc">Registration cum Membership Certificate</div><div class="doc-status ds-done">✅ VALID</div></div>
+    <div class="doc-card" onclick="openDocModal('lut')"><div class="doc-icon">📜</div><div class="doc-name">GST LUT</div><div class="doc-desc">Letter of Undertaking — zero GST export</div><div class="doc-status ds-done">✅ VALID</div></div>
+    <div class="doc-card" onclick="openDocModal('coo-govt')"><div class="doc-icon">🌏</div><div class="doc-name">COO — Non Preferential</div><div class="doc-desc">AEPC / Chamber of Commerce</div><div class="doc-status ds-done">✅ APPLIED</div></div>
+    <div class="doc-card" onclick="openDocModal('gsp-cert')"><div class="doc-icon">🇺🇸</div><div class="doc-name">GSP Form A (USA)</div><div class="doc-desc">Duty concession — USA market</div><div class="doc-status ds-req">❌ PENDING</div></div>
+    <div class="doc-card" onclick="openDocModal('fumigation')"><div class="doc-icon">🧯</div><div class="doc-name">Fumigation Certificate</div><div class="doc-desc">Wooden packing — ISPM 15</div><div class="doc-status ds-req">❌ PENDING</div></div>
+    <div class="doc-card" onclick="openDocModal('epcg')"><div class="doc-icon">🏭</div><div class="doc-name">EPCG License</div><div class="doc-desc">Export Promotion Capital Goods</div><div class="doc-status ds-opt">N/A</div></div>
+    <div class="doc-card" onclick="openDocModal('advance-auth')"><div class="doc-icon">📒</div><div class="doc-name">Advance Authorization</div><div class="doc-desc">Duty-free input import — DGFT</div><div class="doc-status ds-opt">N/A</div></div>
+  </div>
+  <div class="sec-title">📋 REGISTRATION DETAILS</div>
+  <div class="form-grid">
+    <div class="form-group"><div class="form-label">IEC Code</div><input class="form-input mono" value="AABCT1234F" readonly></div>
+    <div class="form-group"><div class="form-label">GSTIN</div><input class="form-input mono" value="09AABCT1234F1ZX" readonly></div>
+    <div class="form-group"><div class="form-label">LUT No.</div><input class="form-input mono" value="LUT/2026-27/001234"></div>
+    <div class="form-group"><div class="form-label">LUT Valid Till</div><input class="form-input" value="31-Mar-2027"></div>
+    <div class="form-group"><div class="form-label">RCMC No.</div><input class="form-input mono" value="AEPC/RCMC/2026/5678"></div>
+    <div class="form-group"><div class="form-label">RCMC Valid Till</div><input class="form-input" value="31-Mar-2027"></div>
+    <div class="form-group"><div class="form-label">AD Code</div><input class="form-input mono" value="1234567 — HDFC Bank Export Branch"></div>
+    <div class="form-group"><div class="form-label">CHA License</div><input class="form-input mono" value="CHA/MUM/2024/1567 — Bharat CHA"></div>
+  </div>
+</div>
+
+<!-- ══════════════ BUYER DOCS ══════════════ -->
+<div class="screen" id="sc-buyer-docs">
+  <div class="sec-title">🤝 BUYER-REQUIRED DOCUMENTS</div>
+  <div class="doc-grid">
+    <div class="doc-card"><div class="doc-icon">🛒</div><div class="doc-name">Purchase Order</div><div class="doc-desc">TJX-PO-2026-447/448</div><div class="doc-status ds-done">✅ RECEIVED</div></div>
+    <div class="doc-card"><div class="doc-icon">🏦</div><div class="doc-name">Letter of Credit</div><div class="doc-desc">BOA/2026/LC-1234</div><div class="doc-status ds-done">✅ RECEIVED</div></div>
+    <div class="doc-card"><div class="doc-icon">📋</div><div class="doc-name">Compliance Cert (WRAP)</div><div class="doc-desc">Factory audit — 4 pillar</div><div class="doc-status ds-done">✅ VALID</div></div>
+    <div class="doc-card"><div class="doc-icon">🧪</div><div class="doc-name">Lab Test Reports</div><div class="doc-desc">SGS India — partial</div><div class="doc-status ds-pend">🔄 SEND PENDING</div></div>
+    <div class="doc-card"><div class="doc-icon">📦</div><div class="doc-name">Packing Approval</div><div class="doc-desc">Buyer confirmation awaited</div><div class="doc-status ds-req">⏳ AWAITED</div></div>
+  </div>
+  <div class="sec-title">🧪 LAB TEST REPORT STATUS</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Test</th><th>Standard</th><th>Requirement</th><th>Result</th><th>Status</th><th>Lab</th><th>Report No.</th></tr></thead>
+      <tbody>
+        <tr><td>Azo Dye Test</td><td>EN 14362-1</td><td>ND</td><td>ND</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/AZ-001</td></tr>
+        <tr><td>pH Test</td><td>ISO 3071</td><td>4.0–7.5</td><td>6.8</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/pH-001</td></tr>
+        <tr><td>Colour Fastness Wash</td><td>ISO 105-C06</td><td>Min 4</td><td>4-5</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/CF-001</td></tr>
+        <tr><td>Shrinkage</td><td>ISO 6330</td><td>±5%</td><td>-3%</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/SH-001</td></tr>
+        <tr><td>Tensile Strength</td><td>ASTM D5034</td><td>Min 200N</td><td>—</td><td><span class="chip chip-gold">⏳ Pending</span></td><td>Intertek</td><td class="mono">—</td></tr>
+        <tr><td>Formaldehyde</td><td>ISO 14184-1</td><td>&lt;75 ppm</td><td>12 ppm</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/FM-001</td></tr>
+        <tr><td>Pilling Test</td><td>ISO 12945-2</td><td>Min Grade 3</td><td>3-4</td><td><span class="chip chip-green">✅ Pass</span></td><td>SGS India</td><td class="mono">SGS/2026/PL-001</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <button class="tbtn purple no-print" onclick="logDispatch('Lab Test Reports — SGS Bundle','TJX QC Department')">📤 Send to Buyer</button>
+</div>
+
+<!-- ══════════════ NORMS ══════════════ -->
+<div class="screen" id="sc-norms">
+  <div class="sec-title">📐 NORMS, STANDARDS & COMPLIANCE</div>
+  <div class="cards-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+    <div class="info-box" style="margin:0"><div class="info-title">🇺🇸 USA Norms</div>
+      • 16 CFR Part 1610 — Flammability<br>• CA Prop 65 — Chemicals<br>• CPSIA — Children's garments<br>• FTC Labeling — Fabric content, care instructions<br>• GSP Form A for duty benefit</div>
+    <div class="info-box" style="margin:0"><div class="info-title">🇬🇧 UK / EU Norms</div>
+      • REACH — Restricted substances<br>• EN 14362 — Azo free standard<br>• GPSR 2024 — Product safety<br>• UK PIMS import system<br>• REX system for GSP benefit</div>
+    <div class="info-box green" style="margin:0"><div class="info-title">🇮🇳 India Export Norms</div>
+      • IEC mandatory — DGFT<br>• RCMC from AEPC / FIEO<br>• GST LUT — zero rated export<br>• Shipping Bill — ICEGATE<br>• RODTEP on all garment exports<br>• e-BRC — 30 days compulsory</div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec-title">🏭 COMPLIANCE CHECKLIST</div>
+  <div class="checklist">
+    <div class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" checked><div style="flex:1"><div class="check-name">WRAP Certification — Active</div><div class="check-note">Cert No: WRAP/2026/4521 | Valid: Mar 2027</div></div></div>
+    <div class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" checked><div style="flex:1"><div class="check-name">SEDEX SMETA 4-Pillar Audit</div><div class="check-note">Labour, Health & Safety, Environment, Business Ethics</div></div></div>
+    <div class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" checked><div style="flex:1"><div class="check-name">ISO 9001:2015 — Quality Management</div><div class="check-note">Valid Dec 2026</div></div></div>
+    <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div style="flex:1"><div class="check-name">OEKO-TEX Standard 100 — Renewal Pending</div><div class="check-note">Apply before next season</div></div></div>
+    <div class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" checked><div style="flex:1"><div class="check-name">Child Labour Policy — Posted at Factory</div></div></div>
+    <div class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" checked><div style="flex:1"><div class="check-name">Minimum Wage Compliance — UP State Rates</div></div></div>
+  </div>
+
+  <div class="sec-title">📏 MEASUREMENT SPEC SHEET</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Measurement Point</th><th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th><th>Tolerance</th></tr></thead>
+      <tbody>
+        <tr><td>Chest (cm)</td><td class="mono">84</td><td class="mono">88</td><td class="mono">92</td><td class="mono">96</td><td class="mono">100</td><td class="mono" style="color:var(--gold)">±1.5</td></tr>
+        <tr><td>Body Length (cm)</td><td class="mono">66</td><td class="mono">68</td><td class="mono">70</td><td class="mono">72</td><td class="mono">74</td><td class="mono" style="color:var(--gold)">±1.0</td></tr>
+        <tr><td>Shoulder (cm)</td><td class="mono">40</td><td class="mono">42</td><td class="mono">44</td><td class="mono">46</td><td class="mono">48</td><td class="mono" style="color:var(--gold)">±1.0</td></tr>
+        <tr><td>Sleeve (cm)</td><td class="mono">19</td><td class="mono">20</td><td class="mono">21</td><td class="mono">22</td><td class="mono">23</td><td class="mono" style="color:var(--gold)">±0.5</td></tr>
+        <tr><td>Neck Rib (cm)</td><td class="mono">2.5</td><td class="mono">2.5</td><td class="mono">2.5</td><td class="mono">2.5</td><td class="mono">2.5</td><td class="mono" style="color:var(--gold)">±0.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════ TIMELINE ══════════════ -->
+<div class="screen" id="sc-timeline">
+  <div class="sec-title">📅 SHIPMENT TIMELINE</div>
+  <div style="position:relative;padding-left:28px" id="timeline-wrap"></div>
+</div>
+
+<!-- ══════════════ COUNTRY GUIDELINES ══════════════ -->
+<div class="screen" id="sc-guidelines">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+    <div>
+      <div style="font-family:var(--fm);font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:1px">🌍 COUNTRY-WISE EXPORT GUIDELINES</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">Har desh ke liye alag documents, regulations aur self-declarations required hoti hain</div>
+    </div>
+    <button class="tbtn green no-print" onclick="generatePDF('guidelines')">📄 PDF Export</button>
+  </div>
+
+  <!-- FILTER PILLS -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px" class="no-print" id="filter-pills">
+    <button class="tbtn" style="border-color:var(--cyan);color:var(--cyan)" onclick="filterCountry('all')">🌐 All</button>
+    <button class="tbtn" onclick="filterCountry('usa')">🇺🇸 USA</button>
+    <button class="tbtn" onclick="filterCountry('eu')">🇪🇺 EU</button>
+    <button class="tbtn" onclick="filterCountry('uk')">🇬🇧 UK</button>
+    <button class="tbtn" onclick="filterCountry('arabic')">🌙 GCC / Arabic</button>
+    <button class="tbtn" onclick="filterCountry('australia')">🇦🇺 Australia</button>
+    <button class="tbtn" onclick="filterCountry('japan')">🇯🇵 Japan</button>
+    <button class="tbtn" onclick="filterCountry('canada')">🇨🇦 Canada</button>
+    <button class="tbtn" style="border-color:var(--purple);color:var(--purple)" onclick="filterCountry('self-decl')">📝 Self Declarations</button>
+  </div>
+
+  <!-- USA -->
+  <div class="g-section" data-country="usa">
+    <div class="sec-title">🇺🇸 USA — UNITED STATES OF AMERICA</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading / AWB</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 Certificate of Origin</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🇺🇸 GSP Form A (Duty Benefit)</td><td style="text-align:right"><span class="chip chip-gold">IF GSP</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧪 Test Reports (CPSC/AATCC)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🏷️ FTC Care Label</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">📋 ISF Filing (24hr before)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ CPSIA General Conformity Cert.</td><td style="text-align:right"><span class="chip chip-red">Children wear</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ CA Prop 65 Declaration</td><td style="text-align:right"><span class="chip chip-red">California</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ UFLPA — Forced Labour Free</td><td style="text-align:right"><span class="chip chip-red">ALL</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Fabric Content Declaration (FTC)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Country of Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box red" style="margin:0">
+        <div class="info-title">⚠️ USA RESTRICTIONS</div>
+        • <b>UFLPA</b> — No Xinjiang cotton/fabric<br>
+        • <b>Azo dyes</b> banned — 16 CFR Part 1610<br>
+        • <b>Lead</b> — max 100 ppm (children's wear)<br>
+        • <b>Flammability</b> — 16 CFR 1610 mandatory<br>
+        • <b>CPSC Registration</b> — children's products<br>
+        • <b>Phthalates</b> — CPSIA restricted
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 FTC LABELING</div>
+        • Fiber % composition (e.g. 100% Cotton)<br>
+        • Care instructions — symbols + words<br>
+        • Country of Origin: "Made in India"<br>
+        • RN Number (US Importer registered)<br>
+        • Size: US Standard (S, M, L, XL)
+      </div>
+      <div class="info-box" style="margin:0;border-color:rgba(6,214,160,0.3)">
+        <div class="info-title">💰 DUTY & TARIFF</div>
+        • <b>MFN Rate:</b> 12–32% (garments)<br>
+        • <b>GSP:</b> 0% duty with Form A<br>
+        • <b>HTS Code</b> required for CBP filing<br>
+        • <b>ISF</b> — 24 hrs before vessel loading<br>
+        • CBP Continuous Bond required
+      </div>
+      <div class="info-box purple" style="margin:0">
+        <div class="info-title">🏛️ REGULATORY BODIES</div>
+        • CBP — US Customs & Border Protection<br>
+        • CPSC — Consumer Product Safety<br>
+        • FTC — Federal Trade Commission<br>
+        • ACE Portal — Electronic filing<br>
+        • EPA — if chemical treatments
+      </div>
+    </div>
+  </div>
+
+  <!-- EU -->
+  <div class="g-section" data-country="eu">
+    <div class="divider"></div>
+    <div class="sec-title">🇪🇺 EUROPEAN UNION (27 Countries)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 EUR.1 / REX Statement</td><td style="text-align:right"><span class="chip chip-gold">GSP EU</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧪 REACH Test Reports</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">📋 EU Declaration of Conformity</td><td style="text-align:right"><span class="chip chip-red">GPSR 2024</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ EU Declaration of Conformity (DoC)</td><td style="text-align:right"><span class="chip chip-red">GPSR</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ REACH SVHC Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ REX Self-Certification (Origin)</td><td style="text-align:right"><span class="chip chip-gold">GSP EU</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Sustainability Declaration (CSRD)</td><td style="text-align:right"><span class="chip chip-gold">2025+</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Due Diligence Decl. (CSDDD)</td><td style="text-align:right"><span class="chip chip-red">2026</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box red" style="margin:0">
+        <div class="info-title">⚠️ EU RESTRICTIONS (REACH)</div>
+        • <b>REACH SVHC</b> — restricted substances list<br>
+        • <b>Azo dyes</b> — EN 14362 — ND required<br>
+        • <b>Nickel release</b> — EN 12472 (metal parts)<br>
+        • <b>Formaldehyde</b> — max 75 ppm (adult)<br>
+        • <b>PFAS</b> — Fluorochemicals ban (water repellent)<br>
+        • <b>GPSR 2024</b> — Product safety mandatory
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 EU LABELING</div>
+        • Fiber % in local language of sale country<br>
+        • Care symbols — GINETEX / ISO 3758<br>
+        • "Made in India" on label<br>
+        • EU Responsible Person name + address<br>
+        • Digital Product Passport (DPP) — 2026+
+      </div>
+      <div class="info-box purple" style="margin:0">
+        <div class="info-title">🌿 NEW SUSTAINABILITY (2024-26)</div>
+        • CSRD — Corporate Sustainability Reporting<br>
+        • CSDDD — Supply chain due diligence<br>
+        • EU Green Claims — verified eco labels only<br>
+        • DPP — Digital Product Passport (pilot)<br>
+        • Ecodesign Regulation — durability rules
+      </div>
+      <div class="info-box" style="margin:0;border-color:rgba(6,214,160,0.3)">
+        <div class="info-title">💰 DUTY & GSP</div>
+        • MFN Rate: 12% (cotton knit)<br>
+        • GSP EU: 9.6% with EUR.1 / REX<br>
+        • CN Code needed (Combined Nomenclature)<br>
+        • ICS2 — Advanced cargo filing system
+      </div>
+    </div>
+  </div>
+
+  <!-- UK -->
+  <div class="g-section" data-country="uk">
+    <div class="divider"></div>
+    <div class="sec-title">🇬🇧 UK — POST-BREXIT</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 UK DCTS Origin Statement</td><td style="text-align:right"><span class="chip chip-gold">DCTS</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📋 UK Customs Declaration (CDS)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">🧪 UK REACH Test Reports</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ UK REACH SVHC Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ UK CoO Self-Declaration</td><td style="text-align:right"><span class="chip chip-red">DCTS</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Modern Slavery Act Statement</td><td style="text-align:right"><span class="chip chip-red">Annual</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ UKCA Product Safety Declaration</td><td style="text-align:right"><span class="chip chip-gold">Some products</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box red" style="margin:0">
+        <div class="info-title">⚠️ UK-SPECIFIC RULES</div>
+        • <b>UK REACH</b> — separate from EU post-Brexit<br>
+        • <b>Modern Slavery Act 2015</b> — annual statement<br>
+        • <b>DCTS</b> — replaces GSP for UK market<br>
+        • <b>CDS System</b> — Customs Declaration Service<br>
+        • <b>UKCA mark</b> — replacing CE mark
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 UK LABELING</div>
+        • English language required<br>
+        • Care symbols + English words<br>
+        • "Made in India" on main label<br>
+        • UK responsible person address<br>
+        • UK sizing: 8, 10, 12... or XS-XXL
+      </div>
+    </div>
+  </div>
+
+  <!-- ARABIC / GCC -->
+  <div class="g-section" data-country="arabic">
+    <div class="divider"></div>
+    <div class="sec-title">🌙 ARABIC / GCC (UAE, Saudi, Qatar, Kuwait, Bahrain, Oman)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(240,180,41,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice (Attested)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List (Attested)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 COO — Chamber + MEA + Embassy</td><td style="text-align:right"><span class="chip chip-red">ATTESTED</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🏛️ Embassy Attestation</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧪 GSO Quality Certificate</td><td style="text-align:right"><span class="chip chip-gold">Some items</span></td></tr>
+          <tr><td style="padding:5px 0">📋 SASO Certificate (Saudi)</td><td style="text-align:right"><span class="chip chip-red">Saudi Only</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Non-Israeli Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">ALL GCC</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ No Boycott Declaration</td><td style="text-align:right"><span class="chip chip-red">UAE/Saudi</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Country of Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Quality Conformity Declaration</td><td style="text-align:right"><span class="chip chip-gold">GSO standard</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Manufacturer Declaration</td><td style="text-align:right"><span class="chip chip-gold">Attested</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box red" style="margin:0">
+        <div class="info-title">⚠️ GCC SPECIAL REQUIREMENTS</div>
+        • <b>Attestation Chain:</b> Chamber of Commerce → MEA India → Country Embassy<br>
+        • <b>Arab Boycott</b> — Negative declaration mandatory<br>
+        • <b>Arabic Label</b> — COMPULSORY on product<br>
+        • <b>GSO Standards</b> — Gulf Standard norms<br>
+        • <b>SASO</b> — Saudi conformity mark<br>
+        • <b>ESMA</b> — UAE textile conformity
+      </div>
+      <div class="info-box" style="margin:0;border-color:rgba(240,180,41,0.4)">
+        <div class="info-title">📏 ARABIC LABELING (MANDATORY)</div>
+        • <b>Arabic language compulsory</b><br>
+        • Fabric in Arabic: قطن ١٠٠٪ = 100% Cotton<br>
+        • Country: "صنع في الهند" (Made in India)<br>
+        • Care instructions in Arabic<br>
+        • Importer name in Arabic<br>
+        • Size — Arabic numerals acceptable
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">🏛️ COUNTRY PORTALS</div>
+        • <b>UAE:</b> Dubai Trade / MIRSAL 2<br>
+        • <b>Saudi:</b> FASAH Portal<br>
+        • <b>Qatar:</b> ASYCUDA system<br>
+        • <b>Kuwait:</b> Kuwait Customs electronic<br>
+        • <b>Oman:</b> Bayan system<br>
+        • <b>Bahrain:</b> National Trade Portal
+      </div>
+      <div class="info-box purple" style="margin:0">
+        <div class="info-title">💰 GCC DUTY</div>
+        • GCC Common External Tariff: <b>5%</b><br>
+        • Garments: 5% standard duty<br>
+        • Saudi VAT: 15% (domestic sale)<br>
+        • UAE Free Zones — 0% if re-exported<br>
+        • Jebel Ali — major re-export hub
+      </div>
+    </div>
+  </div>
+
+  <!-- AUSTRALIA -->
+  <div class="g-section" data-country="australia">
+    <div class="divider"></div>
+    <div class="sec-title">🇦🇺 AUSTRALIA & NEW ZEALAND</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 COO / AIFTA Form</td><td style="text-align:right"><span class="chip chip-gold">FTA benefit</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">📋 ABF Import Declaration</td><td style="text-align:right"><span class="chip chip-gold">Importer does</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Country of Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Modern Slavery Declaration</td><td style="text-align:right"><span class="chip chip-red">MSA 2018</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Product Safety Compliance</td><td style="text-align:right"><span class="chip chip-gold">ACL</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 AUSTRALIA LABELING + DUTY</div>
+        • English — fiber + care + origin<br>
+        • AS/NZS 1249 — children's nightwear flammability<br>
+        • MFN Rate: 10% | AIFTA reduced rates<br>
+        • GST 10% (importer pays)<br>
+        • LVT: AUD 1000 threshold
+      </div>
+    </div>
+  </div>
+
+  <!-- JAPAN -->
+  <div class="g-section" data-country="japan">
+    <div class="divider"></div>
+    <div class="sec-title">🇯🇵 JAPAN</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🌏 COO — IJCEPA Form</td><td style="text-align:right"><span class="chip chip-gold">FTA</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧪 Formaldehyde Test (JIS)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">🏷️ JIS Label (Japanese)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Formaldehyde-Free Declaration</td><td style="text-align:right"><span class="chip chip-red">PSC Law</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Country of Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Azo-Free Declaration</td><td style="text-align:right"><span class="chip chip-gold">Buyer req</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box red" style="margin:0">
+        <div class="info-title">⚠️ JAPAN STRICT REQUIREMENTS</div>
+        • <b>Formaldehyde</b> — 0 ppm babies, 75 ppm infants, 300 ppm adults (PSC Law)<br>
+        • <b>JIS L 0217</b> — Japanese care symbols mandatory<br>
+        • Japanese language label COMPULSORY<br>
+        • <b>IJCEPA</b> — India-Japan FTA for duty benefit
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 JAPANESE LABELING</div>
+        • Japanese text mandatory<br>
+        • Cotton = 棉, Polyester = ポリエステル<br>
+        • Origin: インド製 (Made in India)<br>
+        • JIS care symbols (Japanese style)<br>
+        • JP sizing: S=36-38, M=38-40...
+      </div>
+    </div>
+  </div>
+
+  <!-- CANADA -->
+  <div class="g-section" data-country="canada">
+    <div class="divider"></div>
+    <div class="sec-title">🇨🇦 CANADA</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:18px">
+      <div class="info-box" style="margin:0;border-color:rgba(30,111,220,0.4)">
+        <div class="info-title">📋 MANDATORY DOCUMENTS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🧾 Commercial Invoice (CBSA format)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">📦 Packing List</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">🚢 Bill of Lading</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">🏷️ Bilingual Label (EN + French)</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box gold" style="margin:0">
+        <div class="info-title">📝 SELF-DECLARATIONS</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Textile Labelling Act Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 0">✍️ Country of Origin Declaration</td><td style="text-align:right"><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td style="padding:5px 0">✍️ Canada Consumer Product Safety</td><td style="text-align:right"><span class="chip chip-gold">CCPSA</span></td></tr>
+        </table>
+      </div>
+      <div class="info-box green" style="margin:0">
+        <div class="info-title">📏 CANADA LABELING + DUTY</div>
+        • <b>English + French bilingual mandatory</b><br>
+        • "Made in India" / "Fabriqué en Inde"<br>
+        • Canadian dealer name + address<br>
+        • MFN Rate: 18% (garments)<br>
+        • CPTPP — if applicable
+      </div>
+    </div>
+  </div>
+
+  <!-- SELF-DECLARATIONS MASTER TABLE -->
+  <div class="g-section" data-country="self-decl">
+    <div class="divider"></div>
+    <div class="sec-title" style="color:var(--purple)">📝 SELF-DECLARATIONS — COMPLETE MASTER TABLE</div>
+    <div class="info-box purple" style="margin-bottom:14px">
+      <div class="info-title">Self-Declaration kya hoti hai?</div>
+      Exporter / manufacturer ki taraf se likhit bayan — kisi independent authority se certified nahi, lekin exporter khud sign karta hai. Buyer ya customs ko submit karna hota hai. Kuch cases mein chamber attestation bhi zaroori hoti hai.
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Declaration Type</th><th>Market</th><th>Content</th><th>Who Signs</th><th>Notary / Attest</th><th>Validity</th></tr></thead>
+        <tbody>
+          <tr><td><b>Fabric / Fiber Content Declaration</b></td><td><span class="chip chip-purple">ALL</span></td><td>Exact fiber % composition</td><td>Exporter</td><td>No</td><td>Per shipment</td></tr>
+          <tr><td><b>Country of Origin Declaration</b></td><td><span class="chip chip-purple">ALL MARKETS</span></td><td>"Goods manufactured in India..."</td><td>Exporter / MD</td><td>Optional</td><td>Per shipment</td></tr>
+          <tr><td><b>Azo-Free / Chemical-Free Decl.</b></td><td><span class="chip chip-blue">EU</span> <span class="chip chip-green">UK</span> <span class="chip chip-gold">USA</span></td><td>"No azo dyes, REACH compliant..."</td><td>Exporter</td><td>No</td><td>Per lot</td></tr>
+          <tr><td><b>CPSIA General Conformity Cert.</b></td><td><span class="chip chip-gold">USA Children's</span></td><td>Lead, phthalates, flammability compliance</td><td>Manufacturer</td><td>No</td><td>Per product line</td></tr>
+          <tr><td><b>CA Prop 65 Compliance Decl.</b></td><td><span class="chip chip-gold">USA — California</span></td><td>"No Prop 65 chemicals above safe limits"</td><td>Manufacturer</td><td>Recommended</td><td>Annual</td></tr>
+          <tr><td><b>UFLPA Forced Labour Free Decl.</b></td><td><span class="chip chip-gold">USA</span></td><td>"No Xinjiang cotton / forced labour in supply chain"</td><td>Exporter + Supplier</td><td>Preferred</td><td>Annual</td></tr>
+          <tr><td><b>Non-Israeli Origin Declaration</b></td><td><span class="chip chip-red" style="background:rgba(240,180,41,0.15);color:var(--gold);border-color:rgba(240,180,41,0.3)">ALL GCC</span></td><td>"Goods are not of Israeli origin"</td><td>Exporter</td><td>Chamber + Embassy</td><td>Per shipment</td></tr>
+          <tr><td><b>Arab Boycott (No Boycott) Decl.</b></td><td><span class="chip chip-red" style="background:rgba(240,180,41,0.15);color:var(--gold);border-color:rgba(240,180,41,0.3)">UAE / Saudi</span></td><td>"Company not on Israel boycott list"</td><td>MD / Director</td><td>Chamber + Embassy</td><td>Per shipment</td></tr>
+          <tr><td><b>Formaldehyde-Free Declaration</b></td><td><span class="chip chip-blue">Japan</span> <span class="chip chip-green">EU</span></td><td>Below PSC Law limits</td><td>Manufacturer</td><td>No</td><td>Per lot</td></tr>
+          <tr><td><b>REACH SVHC Declaration</b></td><td><span class="chip chip-blue">EU</span> <span class="chip chip-green">UK</span></td><td>"No SVHC above 0.1% w/w"</td><td>Exporter</td><td>No</td><td>Annual</td></tr>
+          <tr><td><b>EU Declaration of Conformity (DoC)</b></td><td><span class="chip chip-blue">EU GPSR 2024</span></td><td>Meets EU Product Safety Regulation</td><td>EU Responsible Person</td><td>No</td><td>Product life</td></tr>
+          <tr><td><b>Modern Slavery Statement</b></td><td><span class="chip chip-green">UK</span> <span class="chip chip-purple">Australia</span></td><td>Steps to prevent modern slavery</td><td>CEO / Board</td><td>No</td><td>Annual</td></tr>
+          <tr><td><b>Textile Labelling Act Decl. (Canada)</b></td><td><span class="chip chip-purple">Canada</span></td><td>Fiber content per Textile Labelling Act</td><td>Exporter</td><td>No</td><td>Per product</td></tr>
+          <tr><td><b>Sustainable Cotton / GOTS Decl.</b></td><td><span class="chip chip-blue">EU</span> <span class="chip chip-purple">Buyer</span></td><td>Organic / BCI / recycled traceability</td><td>Exporter + Mill</td><td>3rd Party</td><td>Annual</td></tr>
+          <tr><td><b>Quality/Manufacturer Decl. (GCC)</b></td><td><span class="chip chip-red" style="background:rgba(240,180,41,0.15);color:var(--gold);border-color:rgba(240,180,41,0.3)">GCC</span></td><td>Factory quality standards for GSO compliance</td><td>Manufacturer</td><td>Chamber Attestation</td><td>Per shipment</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-title" style="margin-top:20px">📄 SAMPLE SELF-DECLARATION TEMPLATE</div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:20px;font-size:12px;line-height:2.2;color:var(--text2)">
+      <div style="font-family:var(--fm);font-size:15px;font-weight:700;color:#fff;margin-bottom:14px;text-align:center;letter-spacing:2px;text-decoration:underline">EXPORTER'S SELF-DECLARATION / MANUFACTURER'S DECLARATION</div>
+      <div style="text-align:right;color:var(--text3);margin-bottom:10px">Date: _______________&nbsp;&nbsp;&nbsp;&nbsp;Ref No.: _______________</div>
+      <b style="color:#fff">To Whom It May Concern / To The Buyer / To Customs Authorities</b><br><br>
+      We, <span style="color:var(--cyan)"><b>M/s ________________________ [Company Name]</b></span>, having IEC No. <span style="color:var(--cyan)">_____________</span>, located at <span style="color:var(--cyan)">_______________________________</span>, India — hereby declare and certify that:<br><br>
+      <b style="color:#fff">1. Origin:</b> The goods described as <span style="color:var(--gold)">_________________</span>, covered under Invoice No. <span style="color:var(--gold)">_____________</span> dated <span style="color:var(--gold)">_____________</span>, are wholly manufactured in India and are of <b>Indian Origin</b>.<br><br>
+      <b style="color:#fff">2. Chemical Compliance:</b> The goods <b>do not</b> contain any Azo dyes, restricted substances, heavy metals, formaldehyde above permissible limits, or any other prohibited chemicals as per applicable regulations of the destination country.<br><br>
+      <b style="color:#fff">3. Labour Standards:</b> These goods are manufactured in full compliance with applicable labour laws. No child labour, forced labour, or bonded labour is used anywhere in our supply chain.<br><br>
+      <b style="color:#fff">4. Quality:</b> The goods meet all applicable quality and safety standards required by the importing country.<br><br>
+      <b style="color:#fff">5. Accuracy:</b> The information given in this declaration is true, complete and correct to the best of our knowledge and belief.<br><br>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-top:20px;border-top:1px solid var(--border2);padding-top:16px">
+        <div>Signature: _________________________<br>Name: _________________________<br>Designation: Director / MD / Authorized Signatory<br>Company: _________________________<br>Place: _________________, India</div>
+        <div style="text-align:center">Company Seal<br><br><br><br>(Official Stamp)</div>
+      </div>
+    </div>
+    <div class="flex no-print" style="margin-top:12px">
+      <button class="tbtn primary" onclick="generatePDF('self-decl')">📄 Download PDF Template</button>
+    </div>
+  </div>
+
+  <!-- QUICK COMPARISON -->
+  <div>
+    <div class="divider"></div>
+    <div class="sec-title">📊 QUICK COMPARISON — ALL MARKETS AT A GLANCE</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Requirement</th><th>🇺🇸 USA</th><th>🇪🇺 EU</th><th>🇬🇧 UK</th><th>🌙 GCC</th><th>🇦🇺 AUS</th><th>🇯🇵 Japan</th><th>🇨🇦 Canada</th></tr></thead>
+        <tbody>
+          <tr><td><b>Commercial Invoice</b></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td></tr>
+          <tr><td><b>Certificate of Origin</b></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">ATTESTED</span></td><td><span class="chip chip-gold">FTA</span></td><td><span class="chip chip-gold">FTA</span></td><td><span class="chip chip-gold">FTA</span></td></tr>
+          <tr><td><b>GSP / FTA Certificate</b></td><td><span class="chip chip-gold">Form A</span></td><td><span class="chip chip-gold">EUR.1/REX</span></td><td><span class="chip chip-gold">DCTS</span></td><td>❌</td><td><span class="chip chip-gold">AIFTA</span></td><td><span class="chip chip-gold">IJCEPA</span></td><td>❌</td></tr>
+          <tr><td><b>Azo-Free Test</b></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-gold">Buyer</span></td><td><span class="chip chip-gold">Buyer</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-gold">Buyer</span></td></tr>
+          <tr><td><b>Arabic Label</b></td><td>❌</td><td>❌</td><td>❌</td><td><span class="chip chip-red">MANDATORY</span></td><td>❌</td><td>❌</td><td>❌</td></tr>
+          <tr><td><b>Bilingual Label</b></td><td>❌</td><td><span class="chip chip-red">Local lang</span></td><td>❌</td><td>❌</td><td>❌</td><td><span class="chip chip-red">Japanese</span></td><td><span class="chip chip-red">EN+French</span></td></tr>
+          <tr><td><b>Embassy Attestation</b></td><td>❌</td><td>❌</td><td>❌</td><td><span class="chip chip-red">MANDATORY</span></td><td>❌</td><td>❌</td><td>❌</td></tr>
+          <tr><td><b>UFLPA / Forced Labour</b></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-gold">CSDDD</span></td><td><span class="chip chip-red">MSA</span></td><td>❌</td><td><span class="chip chip-red">MSA</span></td><td>❌</td><td>❌</td></tr>
+          <tr><td><b>Formaldehyde Test</b></td><td><span class="chip chip-gold">Children</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-red">MUST</span></td><td><span class="chip chip-gold">Buyer</span></td><td><span class="chip chip-gold">Buyer</span></td><td><span class="chip chip-red">STRICT</span></td><td><span class="chip chip-gold">Buyer</span></td></tr>
+          <tr><td><b>Fumigation Cert.</b></td><td><span class="chip chip-gold">Wood pkg</span></td><td><span class="chip chip-gold">Wood pkg</span></td><td><span class="chip chip-gold">Wood pkg</span></td><td><span class="chip chip-gold">Wood pkg</span></td><td><span class="chip chip-red">STRICT ISPM</span></td><td><span class="chip chip-gold">Wood pkg</span></td><td><span class="chip chip-gold">Wood pkg</span></td></tr>
+          <tr><td><b>Self-Declarations</b></td><td><span class="chip chip-red">Multiple</span></td><td><span class="chip chip-red">DoC+REACH</span></td><td><span class="chip chip-red">REACH+MSA</span></td><td><span class="chip chip-red">Anti-Boycott</span></td><td><span class="chip chip-gold">MSA+Safety</span></td><td><span class="chip chip-gold">Formald.</span></td><td><span class="chip chip-gold">Textile Act</span></td></tr>
+          <tr><td><b>Approx MFN Duty</b></td><td class="mono" style="color:var(--gold)">12–32%</td><td class="mono" style="color:var(--gold)">12%</td><td class="mono" style="color:var(--gold)">12%</td><td class="mono" style="color:var(--gold)">5%</td><td class="mono" style="color:var(--gold)">10%</td><td class="mono" style="color:var(--gold)">9–14%</td><td class="mono" style="color:var(--gold)">18%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- end sc-guidelines -->
+
+</div><!-- /app -->
+
+<!-- ══════════ ANALYTICS MODAL ══════════ -->
+<div class="modal-bg" id="analytics-modal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">📊 Export Analytics Dashboard</div><button class="modal-close" onclick="closeModal('analytics-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="cards-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="card" style="text-align:center"><div class="card-lbl">Total Shipments</div><div class="card-val" style="font-size:2rem">2</div><div class="card-sub">FY 2026-27</div></div>
+        <div class="card" style="text-align:center"><div class="card-lbl">Total Export Value</div><div class="card-val" style="font-size:1.4rem;color:var(--green)">$ 40,950</div><div class="card-sub">₹ 36,85,500</div></div>
+        <div class="card" style="text-align:center"><div class="card-lbl">Total Benefit</div><div class="card-val" style="font-size:1.4rem;color:var(--gold)">₹ 88,452</div><div class="card-sub">Drawback + RODTEP</div></div>
+      </div>
+      <div class="sec-title">📈 BUYER-WISE EXPORT VALUE</div>
+      <div class="chart-box">
+        <div class="chart-bar-wrap">
+          <div class="chart-bar-col"><div class="chart-bar" style="height:80%;background:linear-gradient(var(--blue),var(--cyan))"></div><div class="chart-bar-val">$18,900</div><div class="chart-bar-lbl">TJX / USA</div></div>
+          <div class="chart-bar-col"><div class="chart-bar" style="height:100%;background:linear-gradient(var(--purple),#c4b5fd)"></div><div class="chart-bar-val">£22,050</div><div class="chart-bar-lbl">M&S / UK</div></div>
+        </div>
+      </div>
+      <div class="sec-title">📦 PRODUCT-WISE BREAKDOWN</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Product</th><th>Total Qty</th><th>Shipments</th><th>Value</th><th>Buyer</th></tr></thead>
+          <tbody>
+            <tr><td>Men's T-Shirt (Cotton)</td><td class="mono">3,000</td><td>1</td><td class="mono" style="color:var(--green)">$ 10,500</td><td>TJX USA</td></tr>
+            <tr><td>Women's Polo (CVC)</td><td class="mono">2,400</td><td>1</td><td class="mono" style="color:var(--green)">$ 8,400</td><td>TJX USA</td></tr>
+            <tr><td>M&S Knit Collection</td><td class="mono">4,200</td><td>1</td><td class="mono" style="color:var(--green)">£ 22,050</td><td>M&S UK</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DISPATCH LOG MODAL ══════════ -->
+<div class="modal-bg" id="dispatch-modal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">📤 Document Dispatch Log</div><button class="modal-close" onclick="closeModal('dispatch-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="flex" style="margin-bottom:14px">
+        <button class="tbtn primary" onclick="openModal('send-modal')">+ Log Dispatch</button>
+        <button class="tbtn" onclick="exportExcel('dispatch')">📥 Export Log</button>
+      </div>
+      <div id="dispatch-log-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SEND DOCUMENT MODAL ══════════ -->
+<div class="modal-bg" id="send-modal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head"><div class="modal-title">📤 Log Document Dispatch</div><button class="modal-close" onclick="closeModal('send-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group"><div class="form-label">Document Name</div><input class="form-input" id="send-doc" placeholder="e.g. Commercial Invoice INV-2026-001"></div>
+        <div class="form-group"><div class="form-label">Sent To</div><input class="form-input" id="send-to" placeholder="e.g. HDFC Bank Export Branch"></div>
+        <div class="form-group"><div class="form-label">Via</div><select class="form-input" id="send-via"><option>Email</option><option>WhatsApp</option><option>Courier</option><option>Hand Delivery</option><option>Bank Submission</option></select></div>
+        <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="send-notes" placeholder="Any remarks..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="tbtn" onclick="closeModal('send-modal')">Cancel</button>
+      <button class="tbtn primary" onclick="saveDispatch()">💾 Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DOC VIEW MODAL ══════════ -->
+<div class="modal-bg" id="doc-modal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title" id="doc-modal-title">Document</div><button class="modal-close" onclick="closeModal('doc-modal')">✕</button></div>
+    <div class="modal-body" id="doc-modal-body"></div>
+    <div class="modal-foot"><button class="tbtn" onclick="closeModal('doc-modal')">Close</button><button class="tbtn primary" onclick="generatePDF()">📄 PDF</button></div>
+  </div>
+</div>
+
+<!-- ══════════ NEW SHIPMENT MODAL ══════════ -->
+<div class="modal-bg" id="new-modal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ NEW SHIPMENT</div><button class="modal-close" onclick="closeModal('new-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><div class="form-label">Shipment ID</div><input class="form-input mono" id="n-id" value="SHP-2026-003"></div>
+        <div class="form-group"><div class="form-label">Buyer</div><input class="form-input" id="n-buyer" placeholder="H&M, Zara, Walmart..."></div>
+        <div class="form-group"><div class="form-label">Country</div><input class="form-input" id="n-country" placeholder="USA / UK / Germany"></div>
+        <div class="form-group"><div class="form-label">Shipment Date</div><input class="form-input" type="date" id="n-date"></div>
+        <div class="form-group"><div class="form-label">Total Qty (Pcs)</div><input class="form-input mono" id="n-qty" type="number"></div>
+        <div class="form-group"><div class="form-label">FOB Value ($)</div><input class="form-input mono" id="n-val" type="number"></div>
+        <div class="form-group"><div class="form-label">Container No.</div><input class="form-input mono" id="n-container"></div>
+        <div class="form-group"><div class="form-label">Port of Loading</div><select class="form-input"><option>JNPT Nhava Sheva</option><option>Chennai Port</option><option>Mundra Port</option><option>Kolkata Port</option><option>Air — Mumbai</option></select></div>
+        <div class="form-group"><div class="form-label">Incoterms</div><select class="form-input"><option>FOB</option><option>CIF</option><option>EXW</option><option>DAP</option></select></div>
+        <div class="form-group"><div class="form-label">Payment Terms</div><select class="form-input"><option>L/C at Sight</option><option>30 Days from BL</option><option>60 Days from BL</option><option>T/T Advance</option></select></div>
+        <div class="form-group"><div class="form-label">Buyer Template</div><select class="form-input"><option>TJX — USA Standard</option><option>M&S — UK Standard</option><option>Custom</option></select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="tbtn" onclick="closeModal('new-modal')">Cancel</button>
+      <button class="tbtn primary" onclick="saveNewShipment()">💾 Create Shipment</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span></div>
+<div class="devby">Developed by: Dhiraj Kumar &nbsp;|&nbsp; +91 00000 00000 &nbsp;|&nbsp; ShipDoc Pro v2.0 — Advanced Garment Export Documentation System</div>
+
+<script>
+// ══════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════
+const SHIPMENTS={
+  1:{id:'SHP-2026-001',buyer:'TJX Companies Inc.',country:'🇺🇸 USA',qty:'5,400 Pcs',cartons:'180 Cartons',
+     value:'$ 18,900.00',inr:'₹ 17,01,000 (@ ₹90)',pol:'JNPT Mumbai',vessel:'MAERSK EXETER',
+     date:'17-May-2026',eta:'ETA: 10-Jun-2026',status:'ready',preDone:7,preTotal:9,postDone:3,postTotal:6},
+  2:{id:'SHP-2026-002',buyer:'Marks & Spencer',country:'🇬🇧 UK',qty:'4,200 Pcs',cartons:'140 Cartons',
+     value:'£ 22,050.00',inr:'₹ 23,15,250 (@ ₹90)',pol:'JNPT Mumbai',vessel:'CMA CGM VOLTAIRE',
+     date:'20-May-2026',eta:'ETA: 25-Jun-2026',status:'draft',preDone:5,preTotal:9,postDone:0,postTotal:6}
+};
+
+const ALERTS=[
+  {icon:'🔴',title:'GSP Form A Not Applied',msg:'L/C requires GSP Form A — deadline in 3 days',urgency:'au-high',time:'Today'},
+  {icon:'🔴',title:'L/C Expiry Risk',msg:'Latest shipment date 15-May conflicts with SB draft 16-May',urgency:'au-high',time:'Today'},
+  {icon:'🟡',title:'Fumigation Certificate Pending',msg:'ETD in 3 days — contact fumigator today',urgency:'au-med',time:'Today'},
+  {icon:'🟡',title:'Lab Report Pending',msg:'Tensile Strength report — Intertek se awaited',urgency:'au-med',time:'2 days ago'},
+  {icon:'🟢',title:'e-BRC Filing Reminder',msg:'After payment: 30 days deadline for e-BRC — set reminder',urgency:'au-low',time:'Info'},
+];
+
+const TIMELINE=[
+  {date:'01-Apr-2026',event:'PO Received from TJX',status:'done',detail:'PO-447/448 | 5,400 Pcs'},
+  {date:'05-Apr-2026',event:'Proforma Invoice Sent',status:'done',detail:'PI-2026-001 | $ 18,900'},
+  {date:'08-Apr-2026',event:'L/C Opened by Buyer Bank',status:'done',detail:'BOA/2026/LC-1234'},
+  {date:'10-Apr-2026',event:'Fabric Purchase Order Placed',status:'done',detail:'Cotton + CVC fabric'},
+  {date:'22-Apr-2026',event:'Fabric In-House',status:'done',detail:'440 mtr cotton + 310 mtr CVC'},
+  {date:'25-Apr-2026',event:'Production Start',status:'done',detail:'Line 3 & 4 — TDD Factory'},
+  {date:'02-May-2026',event:'Inline QC Inspection',status:'done',detail:'Pass — stitching & measurement'},
+  {date:'08-May-2026',event:'Lab Reports Received (Partial)',status:'done',detail:'SGS — Azo, pH, CF, Shrinkage pass'},
+  {date:'10-May-2026',event:'Buyer / Third Party Inspection',status:'current',detail:'Scheduled — Intertek Inspector'},
+  {date:'12-May-2026',event:'Packing & Cartonning',status:'pending',detail:'180 cartons — 5,400 pcs'},
+  {date:'13-May-2026',event:'Commercial Invoice & PL Final',status:'pending',detail:'Bank document set ready'},
+  {date:'14-May-2026',event:'Shipping Bill Filing (ICEGATE)',status:'pending',detail:'SB: Drawback + RODTEP'},
+  {date:'15-May-2026',event:'Cargo Stuffing in Container',status:'pending',detail:'MSKU1234567 — JNPT'},
+  {date:'17-May-2026',event:'Vessel Departure (ETD)',status:'pending',detail:'MAERSK EXETER — JNPT'},
+  {date:'20-May-2026',event:'B/L Received from Maersk',status:'pending',detail:'3 Original copies'},
+  {date:'22-May-2026',event:'Documents to Bank',status:'pending',detail:'Full set negotiation — HDFC'},
+  {date:'30-May-2026',event:'Payment Expected',status:'pending',detail:'L/C at sight — 7-10 days'},
+  {date:'10-Jun-2026',event:'ETA — Los Angeles',status:'pending',detail:'Buyer customs clearance'},
+  {date:'15-Jun-2026',event:'e-BRC Filing (Compulsory)',status:'pending',detail:'DGFT portal after forex'},
+];
+
+const DISPATCH_LOG=[];
+
+// ══════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════
+const TAB_NAMES=['dashboard','pre-doc','post-doc','shipping-bill','lc-check','drawback','govt-docs','buyer-docs','norms','timeline','guidelines'];
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const idx=TAB_NAMES.indexOf(name);
+  if(idx>=0){document.querySelectorAll('.tab')[idx].classList.add('active');}
+  const sc=document.getElementById('sc-'+name);
+  if(sc) sc.classList.add('active');
+  if(name==='timeline') renderTimeline();
+}
+
+// ══════════════════════════════════════
+//  LOAD SHIPMENT
+// ══════════════════════════════════════
+function loadShipment(id){
+  if(!id||id==='0') return;
+  const s=SHIPMENTS[id]; if(!s) return;
+  document.getElementById('db-id').textContent=s.id;
+  document.getElementById('db-buyer').textContent=s.buyer;
+  document.getElementById('db-country').textContent=s.country;
+  document.getElementById('db-qty').textContent=s.qty;
+  document.getElementById('db-cartons').textContent=s.cartons;
+  document.getElementById('db-value').textContent=s.value;
+  document.getElementById('db-inr').textContent=s.inr;
+  document.getElementById('db-pol').textContent=s.pol;
+  document.getElementById('db-vessel').textContent=s.vessel;
+  document.getElementById('db-date').textContent=s.date;
+  document.getElementById('db-eta').textContent=s.eta;
+  const sb=document.getElementById('ship-status-badge');
+  const labels={draft:'⚫ DRAFT',ready:'🟡 READY TO SHIP',shipped:'🟢 SHIPPED',complete:'🔵 COMPLETE'};
+  const classes={draft:'sp-draft',ready:'sp-ready',shipped:'sp-shipped',complete:'sp-complete'};
+  sb.className='status-pill '+classes[s.status];
+  sb.textContent=labels[s.status];
+  const pp=Math.round((s.preDone/s.preTotal)*100);
+  const psp=Math.round((s.postDone/s.postTotal)*100);
+  document.getElementById('pre-prog-lbl').textContent=s.preDone+' / '+s.preTotal;
+  document.getElementById('post-prog-lbl').textContent=s.postDone+' / '+s.postTotal;
+  document.getElementById('pre-prog').style.width=pp+'%';
+  document.getElementById('post-prog').style.width=psp+'%';
+  showToast('📦','Shipment '+s.id+' loaded');
+}
+
+// ══════════════════════════════════════
+//  ALERTS
+// ══════════════════════════════════════
+function renderAlerts(){
+  const list=document.getElementById('alert-list');
+  list.innerHTML=ALERTS.map(a=>`
+    <div class="alert-item">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-msg"><b>${a.title}</b>${a.msg}<div class="alert-time">${a.time}</div></div>
+      <span class="alert-urgency ${a.urgency}">${a.urgency==='au-high'?'HIGH':a.urgency==='au-med'?'MED':'LOW'}</span>
+    </div>`).join('');
+  document.getElementById('alert-count').textContent=ALERTS.length;
+}
+function toggleAlerts(){
+  document.getElementById('alert-panel').classList.toggle('open');
+}
+
+// ══════════════════════════════════════
+//  L/C COUNTDOWN
+// ══════════════════════════════════════
+function updateCountdown(){
+  const lcExpiry=new Date('2026-05-31T23:59:59');
+  const now=new Date();
+  const diff=lcExpiry-now;
+  if(diff<=0){document.getElementById('lc-countdown').textContent='EXPIRED';document.getElementById('lc-countdown').className='countdown urgent';return;}
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  document.getElementById('lc-countdown').textContent=`${String(d).padStart(2,'0')}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  document.getElementById('lc-countdown').className=d<7?'countdown urgent':'countdown';
+}
+setInterval(updateCountdown,1000);
+updateCountdown();
+
+// ══════════════════════════════════════
+//  DRAWBACK CALCULATOR
+// ══════════════════════════════════════
+function calcDrawback(){
+  const fob=parseFloat(document.getElementById('fob-val').value)||0;
+  const exch=parseFloat(document.getElementById('exch-rate').value)||90;
+  const dbRate=parseFloat(document.getElementById('db-rate').value)||0;
+  const rtRate=parseFloat(document.getElementById('rt-rate').value)||0;
+  const rosctlRate=parseFloat(document.getElementById('rosctl-rate').value)||0;
+  const gst=parseFloat(document.getElementById('gst-refund').value)||0;
+  const fobInr=fob*exch;
+  const db=fobInr*(dbRate/100);
+  const rt=fobInr*(rtRate/100);
+  const rosctl=fobInr*(rosctlRate/100);
+  const total=db+rt+rosctl+gst;
+  const fmt=v=>'₹ '+Math.round(v).toLocaleString('en-IN');
+  document.getElementById('r-fob').textContent=fmt(fobInr);
+  document.getElementById('r-db').textContent=fmt(db);
+  document.getElementById('r-rt').textContent=fmt(rt);
+  document.getElementById('r-rosctl').textContent=fmt(rosctl);
+  document.getElementById('r-total').textContent=fmt(total);
+}
+
+// ══════════════════════════════════════
+//  TIMELINE
+// ══════════════════════════════════════
+function renderTimeline(){
+  const wrap=document.getElementById('timeline-wrap');
+  const colors={done:'var(--green)',current:'var(--gold)',pending:'var(--text3)'};
+  const icons={done:'✅',current:'⏳',pending:'◯'};
+  wrap.innerHTML=TIMELINE.map(t=>`
+    <div style="display:flex;gap:14px;margin-bottom:16px;position:relative">
+      <div style="position:absolute;left:-22px;top:2px;width:18px;height:18px;border-radius:50%;
+        background:${colors[t.status]};display:flex;align-items:center;justify-content:center;
+        font-size:9px;z-index:1;flex-shrink:0;box-shadow:0 0 8px ${colors[t.status]}55;">${icons[t.status]}</div>
+      <div style="flex:1;background:var(--surface);border:1px solid ${t.status==='current'?'rgba(240,180,41,0.4)':'var(--border)'};
+        border-radius:8px;padding:9px 13px;${t.status==='current'?'background:rgba(240,180,41,0.05)':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+          <div style="font-family:var(--fm);font-weight:700;font-size:12px;color:${colors[t.status]}">${t.event}</div>
+          <div style="font-family:var(--fmono);font-size:10px;color:var(--text3)">${t.date}</div>
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">${t.detail}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+//  DISPATCH LOG
+// ══════════════════════════════════════
+function logDispatch(doc,to,via='Email'){
+  const now=new Date();
+  const timeStr=now.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  DISPATCH_LOG.unshift({doc,to,via,time:timeStr});
+  renderDispatchLog();
+  showToast('📤','Dispatched: '+doc);
+}
+function renderDispatchLog(){
+  const list=document.getElementById('dispatch-log-list');
+  if(!list) return;
+  list.innerHTML=DISPATCH_LOG.length===0?
+    '<div class="info-box" style="text-align:center">No dispatch logs yet. Use "Mark Sent" or "Send to Buyer" buttons.</div>':
+    DISPATCH_LOG.map(l=>`
+      <div class="log-item">
+        <div class="log-icon">📤</div>
+        <div style="flex:1"><div class="log-msg"><b>${l.doc}</b>Sent to: ${l.to} &nbsp;|&nbsp; Via: ${l.via}</div>
+        <div class="log-time">${l.time}</div></div>
+      </div>`).join('');
+}
+function saveDispatch(){
+  const doc=document.getElementById('send-doc').value.trim();
+  const to=document.getElementById('send-to').value.trim();
+  const via=document.getElementById('send-via').value;
+  if(!doc||!to){showToast('⚠️','Document name aur recipient zaroori hai');return;}
+  logDispatch(doc,to,via);
+  closeModal('send-modal');
+  document.getElementById('send-doc').value='';
+  document.getElementById('send-to').value='';
+  document.getElementById('send-notes').value='';
+}
+
+// ══════════════════════════════════════
+//  DOCUMENT MODAL CONTENT
+// ══════════════════════════════════════
+const DOC_CONTENT={
+  proforma:{title:'📄 Proforma Invoice',html:`<div class="info-box"><div class="info-title">Proforma Invoice</div>Buyer ko order confirm karne ke liye bheja jaata hai. Yeh commercial invoice ka draft hota hai.</div><div class="form-grid"><div class="form-group"><div class="form-label">PI Number</div><input class="form-input mono" value="PI-2026-001"></div><div class="form-group"><div class="form-label">PI Date</div><input class="form-input" value="05-Apr-2026"></div><div class="form-group"><div class="form-label">Valid Till</div><input class="form-input" value="30-Apr-2026"></div><div class="form-group"><div class="form-label">Value</div><input class="form-input mono" value="$ 18,900.00"></div></div><div class="info-box green">Status: Sent to buyer on 05-Apr-2026 via email | Buyer acknowledged</div>`},
+  bl:{title:'🚢 Bill of Lading',html:`<div class="info-box gold"><div class="info-title">Bill of Lading (B/L)</div>Shipping line ka sabse important document. Cargo ka title B/L se transfer hota hai. Original B/L bank ko submit karna zaroori hai.</div><div class="form-grid"><div class="form-group"><div class="form-label">B/L Number</div><input class="form-input mono" placeholder="Maersk se milega post-ETD"></div><div class="form-group"><div class="form-label">B/L Date</div><input class="form-input" type="date"></div><div class="form-group"><div class="form-label">Type</div><select class="form-input"><option>Full Set Original</option><option>Telex Release</option><option>Sea Waybill</option></select></div><div class="form-group"><div class="form-label">Copies</div><select class="form-input"><option>3 Originals + 3 Copies</option><option>2 Originals</option></select></div></div><div class="info-box red">⚠️ B/L abhi pending hai — vessel departure ke baad milega</div>`},
+  iec:{title:'🔑 IEC Certificate',html:`<div class="info-box green"><div class="info-title">IEC: AABCT1234F — Active & Valid</div>TDD Garments Pvt. Ltd. | Issued by DGFT, New Delhi | Issued: 2005</div><div class="info-box"><b>IEC Compulsory hai:</b><br>• Har export/import transaction ke liye<br>• Bank mein forex transaction ke liye<br>• Customs clearance ke liye<br>• RCMC ke liye (IEC base document)</div>`},
+  gsp:{title:'🇺🇸 GSP Form A',html:`<div class="info-box red"><div class="info-title">❌ GSP Form A — PENDING — APPLY NOW!</div>USA ke liye duty benefit milta hai GSP (Generalised System of Preferences) ke through. AEPC ya Chamber of Commerce se milta hai.</div><div class="info-box gold"><b>Apply Karo:</b> aepcindia.com portal pe<br><b>Documents needed:</b> Invoice copy, packing list, IEC, RCMC<br><b>Time:</b> 2-3 working days<br><b>Cost:</b> ~₹ 500-1000 per certificate</div>`},
+  fumigation:{title:'🧯 Fumigation Certificate',html:`<div class="info-box red"><div class="info-title">❌ Fumigation Certificate — PENDING</div>Wooden packing ke saath export karne par ISPM 15 standard ke according fumigation certificate zaroori hai.</div><div class="info-box"><b>Contact:</b> Approved fumigation agency — Mumbai<br><b>Time:</b> 1-2 days before stuffing<br><b>Standard:</b> ISPM 15 — Heat Treatment or Methyl Bromide<br><b>Required for:</b> Wooden pallets, wooden frames</div>`},
+};
+function openDocModal(type){
+  const info=DOC_CONTENT[type]||{title:'Document',html:`<div class="info-box">Yeh document aapki requirement ke hisaab se customize karo.</div>`};
+  document.getElementById('doc-modal-title').textContent=info.title;
+  document.getElementById('doc-modal-body').innerHTML=info.html;
+  openModal('doc-modal');
+}
+
+// ══════════════════════════════════════
+//  PDF GENERATION
+// ══════════════════════════════════════
+function generatePDF(type){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const pageW=doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFillColor(26,35,126);
+  doc.rect(0,0,pageW,30,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text('TDD GARMENTS PVT. LTD.',14,12);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.text('Plot 47, Garment Export Zone, Sector 5, Noida, UP 201301',14,19);
+  doc.text('IEC: AABCT1234F | GSTIN: 09AABCT1234F1ZX | exports@tddgarments.com',14,25);
+
+  // Title
+  doc.setTextColor(26,35,126);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  const title=type==='lc'?'L/C DISCREPANCY REPORT':type==='invoice'?'COMMERCIAL INVOICE':'EXPORT DOCUMENT';
+  doc.text(title,pageW/2,42,{align:'center'});
+
+  // Info block
+  doc.setDrawColor(200,200,200);
+  doc.setFillColor(240,244,255);
+  doc.rect(14,46,pageW-28,22,'FD');
+  doc.setTextColor(50,50,50);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.text('Shipment: SHP-2026-001  |  Buyer: TJX Companies Inc., USA  |  Date: 10-May-2026',16,54);
+  doc.text('Invoice: INV-2026-001  |  Value: USD 18,900.00  |  FOB Mumbai',16,61);
+  doc.text('Container: MSKU1234567  |  Vessel: MAERSK EXETER  |  ETD: 17-May-2026',16,68);
+
+  // Table
+  doc.autoTable({
+    startY:74,
+    head:[['#','Description','HSN Code','Qty (Pcs)','Unit Price ($)','Amount ($)']],
+    body:[
+      ['1','Men\'s Cotton T-Shirt (100% Cotton, 180 GSM)','6105.10.10','3,000','$ 3.50','$ 10,500.00'],
+      ['2','Women\'s Polo T-Shirt (60/40 CVC, Pique)','6106.10.00','2,400','$ 3.50','$ 8,400.00'],
+    ],
+    foot:[['','','TOTAL','5,400 Pcs','','$ 18,900.00']],
+    headStyles:{fillColor:[26,35,126],textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+    footStyles:{fillColor:[232,234,246],textColor:[26,35,126],fontStyle:'bold'},
+    bodyStyles:{fontSize:8,textColor:[50,50,50]},
+    alternateRowStyles:{fillColor:[248,249,255]},
+    margin:{left:14,right:14},
+  });
+
+  const finalY=doc.lastAutoTable.finalY+10;
+
+  // Terms
+  doc.setFillColor(232,245,232);
+  doc.rect(14,finalY,pageW-28,16,'F');
+  doc.setTextColor(30,100,30);
+  doc.setFontSize(8);
+  doc.text('Terms: FOB Mumbai  |  Payment: L/C at Sight  |  Currency: USD',16,finalY+6);
+  doc.text('Bank: HDFC Bank Ltd., Export Branch, Mumbai  |  SWIFT: HDFCINBBXXX',16,finalY+12);
+
+  // Signature boxes
+  const sigY=finalY+30;
+  doc.setTextColor(50,50,50);
+  doc.setDrawColor(150,150,150);
+  ['Prepared By','Checked By','Authorised Signatory'].forEach((label,i)=>{
+    const x=14+i*62;
+    doc.rect(x,sigY,58,18);
+    doc.setFontSize(7);
+    doc.text(label,x+29,sigY+22,{align:'center'});
+  });
+
+  // Footer
+  doc.setFillColor(26,35,126);
+  doc.rect(0,doc.internal.pageSize.getHeight()-12,pageW,12,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(7);
+  doc.text('Generated by ShipDoc Pro v2.0 | Developed by: Dhiraj Kumar | '+new Date().toLocaleDateString('en-IN'),pageW/2,doc.internal.pageSize.getHeight()-4,{align:'center'});
+
+  doc.save('ShipDoc_Export_'+new Date().toISOString().slice(0,10)+'.pdf');
+  showToast('📄','PDF downloaded!');
+}
+
+// ══════════════════════════════════════
+//  EXCEL EXPORT
+// ══════════════════════════════════════
+function exportExcel(type){
+  const wb=XLSX.utils.book_new();
+  // Summary
+  const sumData=[
+    ['SHIPDOC PRO — EXPORT DOCUMENTATION SUMMARY'],[''],
+    ['Company','TDD Garments Pvt. Ltd.'],
+    ['IEC','AABCT1234F'],['GSTIN','09AABCT1234F1ZX'],[''],
+    ['Shipment ID','Buyer','Country','Qty','Value','Status'],
+    ['SHP-2026-001','TJX Companies','USA','5400','$ 18,900','Ready'],
+    ['SHP-2026-002','Marks & Spencer','UK','4200','£ 22,050','Draft'],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumData),'Summary');
+
+  // Drawback
+  const dbData=[
+    ['DRAWBACK & RODTEP CALCULATION'],[''],
+    ['Shipment','FOB ($)','FOB (₹)','Drawback %','Drawback (₹)','RODTEP %','RODTEP (₹)','Total Benefit'],
+    ['SHP-2026-001','18900','1701000','2.00%','34020','0.60%','10206','44226'],
+    ['SHP-2026-002','24500','2205000','2.00%','44100','0.60%','13230','57330'],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dbData),'Drawback Calculator');
+
+  // Dispatch Log
+  const dlData=[['Document','Sent To','Via','Date/Time'],...DISPATCH_LOG.map(l=>[l.doc,l.to,l.via,l.time])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dlData),'Dispatch Log');
+
+  XLSX.writeFile(wb,'ShipDoc_Pro_Export_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  showToast('📥','Excel downloaded!');
+}
+
+// ══════════════════════════════════════
+//  FIREBASE CONFIG
+// ══════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDqG98jDHcsFIWemDDotD_Cyl5ejdVBVGs",
+  authDomain: "shipping-document-678f4.firebaseapp.com",
+  databaseURL: "https://shipping-document-678f4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shipping-document-678f4",
+  storageBucket: "shipping-document-678f4.firebasestorage.app",
+  messagingSenderId: "497539411783",
+  appId: "1:497539411783:web:ab9f2653976c840f8fe662",
+  measurementId: "G-1VTPQHW32V"
+};
+
+function pingFirebase(){
+  const dot=document.getElementById('fb-dot');
+  const badge=document.getElementById('fb-status-badge');
+  const nameEl=document.getElementById('fb-project-name');
+  const urlEl=document.getElementById('fb-url-label');
+  // Show checking state
+  dot.style.background='var(--gold)';
+  dot.style.boxShadow='0 0 0 3px rgba(240,180,41,0.3)';
+  dot.style.animation='none';
+  badge.textContent='CHECKING...';
+  badge.style.background='rgba(240,180,41,0.15)';
+  badge.style.borderColor='rgba(240,180,41,0.35)';
+  badge.style.color='var(--gold)';
+  showToast('🔥','Checking Firebase connection...');
+  // Try fetching Firebase REST API ping
+  fetch('https://'+FIREBASE_CONFIG.projectId+'.firebaseio.com/.json?shallow=true', {method:'GET', signal:AbortSignal.timeout(4000)})
+    .then(res=>{
+      const ok=res.ok||res.status===401||res.status===403; // 401/403 means Firebase responded
+      setFbStatus(ok);
+    })
+    .catch(()=>{
+      // Fallback to navigator.onLine
+      setFbStatus(navigator.onLine);
+    });
+}
+
+function setFbStatus(connected){
+  const dot=document.getElementById('fb-dot');
+  const badge=document.getElementById('fb-status-badge');
+  if(connected){
+    dot.style.background='#22c55e';
+    dot.style.boxShadow='0 0 0 3px rgba(34,197,94,0.3)';
+    dot.style.animation='pulse 2s infinite';
+    badge.textContent='CONNECTED';
+    badge.style.background='rgba(34,197,94,0.15)';
+    badge.style.borderColor='rgba(34,197,94,0.35)';
+    badge.style.color='#22c55e';
+    showToast('🔥','Firebase Connected ✅');
+  } else {
+    dot.style.background='#ef4444';
+    dot.style.boxShadow='0 0 0 3px rgba(239,68,68,0.3)';
+    dot.style.animation='none';
+    badge.textContent='OFFLINE';
+    badge.style.background='rgba(239,68,68,0.15)';
+    badge.style.borderColor='rgba(239,68,68,0.35)';
+    badge.style.color='#ef4444';
+    showToast('🔴','Firebase Offline');
+  }
+}
+
+// ══════════════════════════════════════
+//  CONNECTIVITY
+// ══════════════════════════════════════
+function pingServer(){
+  const dot=document.getElementById('conn-dot');
+  const label=document.getElementById('conn-label');
+  dot.className='dot';label.textContent='Checking...';label.style.color='var(--gold)';
+  setTimeout(()=>{
+    const online=navigator.onLine;
+    dot.className='dot '+(online?'online':'offline');
+    label.textContent=online?'Online':'Offline';
+    label.style.color=online?'#22c55e':'#ef4444';
+    showToast(online?'🟢':'🔴',online?'Connection OK':'Offline mode');
+  },800);
+}
+window.addEventListener('online',()=>{document.getElementById('conn-dot').className='dot online';document.getElementById('conn-label').textContent='Online';document.getElementById('conn-label').style.color='#22c55e';setFbStatus(true);});
+window.addEventListener('offline',()=>{document.getElementById('conn-dot').className='dot offline';document.getElementById('conn-label').textContent='Offline';document.getElementById('conn-label').style.color='#ef4444';setFbStatus(false);});
+
+// ══════════════════════════════════════
+//  MODALS / TOAST / CHECKLIST
+// ══════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+function toggleCheck(el){
+  const cb=el.querySelector('input[type=checkbox]');
+  cb.checked=!cb.checked;
+  el.classList.toggle('checked',cb.checked);
+  showToast(cb.checked?'✅':'◯',cb.checked?'Completed!':'Marked pending');
+}
+function saveNewShipment(){
+  const buyer=document.getElementById('n-buyer').value.trim();
+  if(!buyer){showToast('⚠️','Buyer name required');return;}
+  closeModal('new-modal');
+  showToast('✅','Shipment created: '+document.getElementById('n-id').value);
+}
+function showToast(icon,msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=icon+' <span>'+msg+'</span>';
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════
+//  COUNTRY FILTER
+// ══════════════════════════════════════
+function filterCountry(country){
+  // Update pill styles
+  document.querySelectorAll('#filter-pills .tbtn').forEach(btn=>{
+    btn.style.borderColor='';btn.style.color='';
+  });
+  const active=event?.target;
+  if(active){active.style.borderColor='var(--cyan)';active.style.color='var(--cyan)';}
+
+  document.querySelectorAll('.g-section').forEach(sec=>{
+    if(country==='all'){
+      sec.style.display='block';
+    } else {
+      sec.dataset.country===country ? sec.style.display='block' : sec.style.display='none';
+    }
+  });
+  showToast('🌍', country==='all'?'All countries shown':'Filtered: '+country.toUpperCase());
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+loadShipment(1);
+renderAlerts();
+renderDispatchLog();
+renderTimeline();
+calcDrawback();
+</script>
+</body>
+</html>

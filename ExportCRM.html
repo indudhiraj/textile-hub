@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Export Manifest CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --navy:#122036; --navy2:#0d1826; --border:#2a3d5c; --paper:#F3EEE2;
+    --brass:#B8912F; --thread:#A63D40; --muted:#8494ad; --ink:#c9d2e0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--navy);color:var(--paper);font-family:Segoe UI,Arial,sans-serif;}
+  h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0;}
+  header{display:flex;align-items:center;gap:12px;padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+  header .ship{font-size:26px;color:var(--brass);}
+  header p{margin:2px 0 0;font-size:12px;color:var(--muted);}
+  main{max-width:640px;margin:0 auto;padding:16px;padding-bottom:96px;}
+  nav{position:fixed;bottom:0;left:0;right:0;background:var(--navy2);border-top:1px solid var(--border);
+      display:flex;max-width:640px;margin:0 auto;}
+  nav button{flex:1;background:none;border:none;color:var(--muted);font-size:10px;padding:10px 4px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:4px;}
+  nav button.active{color:var(--brass);}
+  nav button .ic{font-size:18px;}
+  .card{background:var(--navy2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .btn{background:var(--brass);color:var(--navy);border:none;border-radius:8px;padding:10px 14px;font-weight:600;
+       cursor:pointer;font-size:14px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-outline{background:none;border:1px solid var(--brass);color:var(--brass);border-radius:8px;padding:8px 12px;
+       cursor:pointer;font-size:13px;}
+  .btn-small{font-size:12px;padding:5px 10px;border-radius:6px;}
+  .link{background:none;border:none;color:var(--brass);cursor:pointer;font-size:13px;padding:0;}
+  .site-link{color:var(--brass);text-decoration:none;font-size:12px;word-break:break-all;}
+  .site-link:hover{text-decoration:underline;}
+  .danger{color:#c0555a;background:none;border:none;cursor:pointer;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--brass);margin-bottom:4px;}
+  input,select,textarea{width:100%;background:#0a1420;border:1px solid #3a4d6b;color:var(--paper);border-radius:6px;
+      padding:8px 10px;font-size:14px;margin-bottom:10px;font-family:inherit;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;}
+  .muted{color:var(--muted);font-size:12px;}
+  .ink{color:var(--ink);font-size:13px;}
+  .tag{display:inline-block;background:var(--border);padding:2px 8px;border-radius:10px;font-size:10px;}
+  .tag.high{background:var(--thread);}
+  .section-title{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .divider{border-top:1px solid var(--border);margin-top:18px;padding-top:16px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal{background:var(--navy2);width:100%;max-width:560px;max-height:88vh;overflow-y:auto;border-radius:16px 16px 0 0;
+       border:1px solid var(--border);}
+  @media(min-width:640px){.modal-bg{align-items:center;}.modal{border-radius:12px;}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border);
+       position:sticky;top:0;background:var(--navy2);}
+  .modal-body{padding:16px 18px;}
+  .close-x{background:none;border:none;color:var(--paper);font-size:18px;cursor:pointer;opacity:.7;}
+  .hidden{display:none !important;}
+  .stamp{width:90px;height:90px;border-radius:50%;border:2px solid var(--brass);color:var(--brass);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-8deg);
+      flex-shrink:0;text-align:center;padding:4px;}
+  .stamp .v{font-size:19px;font-weight:bold;}
+  .stamp .l{font-size:8px;text-transform:uppercase;letter-spacing:.03em;}
+  .stamps{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;}
+  .list-ul{margin:0;padding-left:18px;font-size:12px;color:var(--ink);}
+  .list-ul li{margin-bottom:6px;}
+  .whitespace{white-space:pre-wrap;font-size:13px;}
+  .flex-gap{display:flex;gap:8px;}
+  .flex-1{flex:1;}
+  textarea{resize:vertical;min-height:50px;}
+  .status-msg{font-size:12px;color:var(--brass);margin-bottom:8px;}
+  .error-msg{font-size:12px;color:#c0555a;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------- storage: works inside Claude.ai (window.storage) and standalone (localStorage) ---------- */
+const storage = {
+  async get(key) {
+    if (window.storage && typeof window.storage.get === "function") {
+      try { const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }
+      catch (e) { return null; }
+    }
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch (e) { return null; }
+  },
+  async set(key, value) {
+    if (window.storage && typeof window.storage.set === "function") {
+      try { await window.storage.set(key, JSON.stringify(value), false); return; }
+      catch (e) { /* fall through to localStorage as backup */ }
+    }
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.error(e); }
+  }
+};
+
+/* ---------- Firebase (Realtime Database) cloud sync ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBOjYZDPGGV-Lk5wOhAY9i-MZX2DAjoXTY",
+  authDomain: "export-crm-6eb67.firebaseapp.com",
+  databaseURL: "https://export-crm-6eb67-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "export-crm-6eb67",
+  storageBucket: "export-crm-6eb67.firebasestorage.app",
+  messagingSenderId: "244987705934",
+  appId: "1:244987705934:web:8d7254194467615a24e11f",
+  measurementId: "G-ZC5MX24YDM"
+};
+
+let fbDb = null, fbReady = false;
+try {
+  const fbApp = firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.database(fbApp);
+  fbReady = true;
+} catch (e) {
+  console.error("Firebase init failed:", e);
+  fbReady = false;
+}
+
+const FB_ROOT = "export_crm";
+
+// Live connection indicator — Firebase's special ".info/connected" path pushes
+// true/false the moment socket status changes, so the dot in the header stays accurate.
+if (fbReady) {
+  fbDb.ref(".info/connected").on("value", (snap) => {
+    state.cloudStatus = snap.val() === true ? "online" : "offline";
+    render();
+  });
+} else {
+  state.cloudStatus = "offline";
+}
+
+// Fire-and-forget write to cloud; never blocks the UI, errors are just logged.
+async function fbSave(key, value, ts) {
+  if (!fbReady || !fbDb) return;
+  try {
+    await fbDb.ref(`${FB_ROOT}/${key}`).set({ data: value, updatedAt: ts || Date.now() });
+  } catch (e) {
+    console.error("Firebase save error [" + key + "]:", e);
+  }
+}
+
+// Runs in the background after local (fast) load. Only overwrites local/state
+// if the cloud copy is strictly newer, so a stale cloud read never clobbers
+// fresh local edits (same pattern used across the other factory tools).
+async function fbAutoLoad(key, arrName) {
+  if (!fbReady || !fbDb) return;
+  try {
+    const snap = await fbDb.ref(`${FB_ROOT}/${key}`).once("value");
+    if (!snap.exists()) return;
+    const cloud = snap.val();
+    if (!cloud || !Array.isArray(cloud.data)) return;
+    const localTs = Number((await storage.get(key + "-ts")) || 0);
+    if (cloud.updatedAt && cloud.updatedAt > localTs) {
+      state[arrName] = cloud.data;
+      await storage.set(key, state[arrName]);
+      await storage.set(key + "-ts", cloud.updatedAt);
+      render();
+    }
+  } catch (e) {
+    console.error("Firebase load error [" + key + "]:", e);
+  }
+}
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function websiteLink(url, companyName) {
+  const raw = String(url ?? "").trim();
+  const looksLikeDomain = /^(https?:\/\/)?([\w-]+\.)+[a-z]{2,}([\/?#].*)?$/i.test(raw) && !/\s/.test(raw);
+  if (raw && looksLikeDomain) {
+    const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" class="site-link" onclick="event.stopPropagation()">🔗 ${esc(raw)}</a>`;
+  }
+  // Website missing or not a valid-looking domain — fall back to a Google search so it's still clickable
+  const q = encodeURIComponent(companyName || raw || "");
+  if (!q) return "";
+  return `<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener noreferrer" class="site-link" onclick="event.stopPropagation()">🔎 Google par dhundhein${raw ? ` (${esc(raw)} — link valid nahi laga)` : ""}</a>`;
+}
+
+const emptyBuyer = () => ({ id: uid(), name: "", company: "", country: "", website: "", email: "", phone: "", linkedin: "", category: "", moq: "", annualImport: "", priority: "B" });
+const emptyContact = () => ({ id: uid(), buyerId: "", emailDate: todayISO(), replyReceived: "No", replyNotes: "", nextFollowup: "", meetingNotes: "", sampleSent: "No", quotationSent: "No", orderStatus: "None" });
+const emptyProduct = () => ({ id: uid(), name: "", specs: "", price: "", currency: "USD", incoterms: "FOB", moq: "", catalog: "", certificates: "", photoDesc: "" });
+const emptyTask = () => ({ id: uid(), type: "Follow-up", buyerId: "", dueDate: todayISO(), note: "", done: false });
+
+const TRADE_FAIRS = [
+  { name: "IHGF Delhi Fair — Autumn (62nd edition)", location: "India Expo Centre & Mart, Greater Noida", dates: "13–17 Oct 2026", date: "2026-10-13", focus: "Home, furnishings, textiles, furniture — global buyers, importers, wholesalers, retail chains" },
+  { name: "Hometex Tech Exhibition", location: "Panipat, India", dates: "27–29 Nov (annual, check latest)", date: "2026-11-27", focus: "Home textile machinery, fabrics, yarn — local to Panipat, good for supplier/buyer networking" },
+  { name: "Home Textiles Sourcing Expo — NYC (East Coast)", location: "Jacob K. Javits Center, New York, USA", dates: "20–22 Jan 2026", date: "2026-01-20", focus: "North America's only trade show dedicated to home textile sourcing" },
+  { name: "NY NOW — Winter", location: "Jacob K. Javits Center, New York, USA", dates: "1–3 Feb 2026", date: "2026-02-01", focus: "Large US wholesale gift/home/lifestyle marketplace" },
+  { name: "Ambiente", location: "Messe Frankfurt, Germany", dates: "29 Jan – 2 Feb 2027", date: "2027-01-29", focus: "Europe's largest consumer goods fair — Living section covers home furnishing & décor" },
+  { name: "Heimtextil", location: "Messe Frankfurt, Germany", dates: "12–15 Jan 2027", date: "2027-01-12", focus: "World's largest home & contract textiles fair — ~48,000 buyers from 140+ countries" },
+  { name: "Maison & Objet Paris — Premier (Winter)", location: "Paris Nord Villepinte, France", dates: "14–18 Jan 2027", date: "2027-01-14", focus: "High-end home décor and textiles — premium European buyers" },
+  { name: "Home Textiles Sourcing Expo — NYC (Summer)", location: "Jacob K. Javits Center, New York, USA", dates: "29–31 Jul 2026", date: "2026-07-29", focus: "Second annual NY edition of home textile sourcing" },
+  { name: "NY NOW — Summer", location: "Jacob K. Javits Center, New York, USA", dates: "2–4 Aug 2026", date: "2026-08-02", focus: "Summer edition of the US wholesale home/gift/lifestyle market" },
+  { name: "Maison & Objet Paris — Pulse (Autumn)", location: "Paris Nord Villepinte, France", dates: "10–14 Sep 2026", date: "2026-09-10", focus: "Autumn edition — home decor, textiles, design-forward buyers" },
+  { name: "IHGF Delhi Fair — Spring", location: "India Expo Centre & Mart, Greater Noida", dates: "Feb (annual, check latest dates)", date: "2027-02-14", focus: "Spring sourcing cycle for global buyers" },
+  { name: "Domotex Hannover", location: "Hannover, Germany", dates: "17–20 Jan 2028 (check yearly)", date: "2028-01-17", focus: "Carpets, rugs, flooring — strong fit for Panipat rug/carpet exporters" },
+];
+
+/* ---------- AI helpers (only work when run inside a Claude.ai artifact) ---------- */
+async function callClaude(prompt, maxTokens = 900) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+  });
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+  return text || "Response nahi mil paaya.";
+}
+async function callClaudeWithSearch(prompt, maxTokens = 1200) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }], tools: [{ type: "web_search_20250305", name: "web_search" }] })
+  });
+  const data = await res.json();
+  if (data?.error) throw new Error(data.error.message || "API error");
+  const blocks = (data.content || []).filter(b => b.type === "text").map(b => b.text);
+  return blocks.length ? blocks[blocks.length - 1] : "";
+}
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* ---------- app state ---------- */
+let state = {
+  loaded: false, tab: "dashboard",
+  buyers: [], contacts: [], products: [], tasks: [],
+  editBuyer: null, editContact: null, editProduct: null, editTask: null,
+  emailForm: { buyerId: "", type: "Introduction", context: "" }, emailResult: "", emailLoading: false,
+  insightResult: "", insightLoading: false,
+  searchCountry: "", searchCategory: "",
+  importStatus: "",
+  lookupName: "", lookupLoading: false, lookupResult: null, lookupError: "",
+  discoverResults: null, discoverLoading: false, discoverError: "", discoverProgress: "",
+  buyerDupWarning: "", buyerDupConfirmed: false,
+  quickFindOpen: false, quickFindQuery: "",
+  settingsOpen: false, restorePending: null, restoreStatus: "", backupStatus: "",
+  pin: null, unlocked: false, pinEntry: "", pinError: "", pinSetupValue: "", pinSetupStatus: "",
+  cloudStatus: "connecting", cloudSaveStatus: "", cloudUploadStatus: "", cloudUploadPending: false,
+};
+
+async function loadAll() {
+  state.buyers = (await storage.get("buyers-list")) || [];
+  state.contacts = (await storage.get("contacts-list")) || [];
+  state.products = (await storage.get("products-list")) || [];
+  state.tasks = (await storage.get("tasks-list")) || [];
+  state.pin = await storage.get("app-pin");
+  state.unlocked = !state.pin;
+  state.loaded = true;
+  render();
+
+  // Cloud check happens after the instant local render — if Firebase has a
+  // newer copy (e.g. edited on another device), it replaces local silently.
+  fbAutoLoad("buyers-list", "buyers");
+  fbAutoLoad("contacts-list", "contacts");
+  fbAutoLoad("products-list", "products");
+  fbAutoLoad("tasks-list", "tasks");
+}
+async function persist(key, arrName) {
+  const ts = Date.now();
+  await storage.set(key, state[arrName]);
+  await storage.set(key + "-ts", ts);
+  fbSave(key, state[arrName], ts); // don't await — keep UI snappy
+}
+
+function buyerName(id) { const b = state.buyers.find(x => x.id === id); return b ? esc(b.name) + " (" + esc(b.company) + ")" : "—"; }
+
+/* ---------- cloud status indicator + manual save/upload ---------- */
+function cloudIndicator() {
+  const map = {
+    online:     { dot: "🟢", label: "Cloud Sync ON" },
+    offline:    { dot: "🔴", label: "Offline" },
+    connecting: { dot: "🟡", label: "Connecting…" },
+  };
+  const s = map[state.cloudStatus] || map.connecting;
+  return `<span title="${esc(s.label)}" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;white-space:nowrap;">
+    <span style="font-size:9px;">${s.dot}</span>${esc(s.label)}
+  </span>`;
+}
+
+const CLOUD_KEYS = [["buyers-list","buyers"],["contacts-list","contacts"],["products-list","products"],["tasks-list","tasks"]];
+
+// Manual "Save" — force-pushes current local data to Firebase right now,
+// regardless of auto-sync, and reports success/failure back to the user.
+async function cloudPushAll() {
+  if (!fbReady) { state.cloudSaveStatus = "Firebase connect nahi hai — internet check karein."; render(); return; }
+  state.cloudSaveStatus = "Cloud par save ho raha hai..."; render();
+  try {
+    const ts = Date.now();
+    for (const [key, arrName] of CLOUD_KEYS) {
+      await storage.set(key + "-ts", ts);
+      await fbDb.ref(`${FB_ROOT}/${key}`).set({ data: state[arrName], updatedAt: ts });
+    }
+    state.cloudSaveStatus = "Cloud par save ho gaya ✓";
+  } catch (e) {
+    console.error("Cloud save error:", e);
+    state.cloudSaveStatus = "Save mein error aayi — Firebase rules ya connection check karein.";
+  }
+  render();
+  setTimeout(() => { state.cloudSaveStatus = ""; render(); }, 4000);
+}
+
+// Manual "Upload" (pull) — fetches latest cloud copy and shows a confirm step
+// before overwriting local data, same safety pattern as JSON restore.
+async function cloudPullAll() {
+  if (!fbReady) { state.cloudUploadStatus = "Firebase connect nahi hai — internet check karein."; render(); return; }
+  state.cloudUploadStatus = "Cloud se data laaya ja raha hai..."; render();
+  try {
+    const result = {};
+    for (const [key, arrName] of CLOUD_KEYS) {
+      const snap = await fbDb.ref(`${FB_ROOT}/${key}`).once("value");
+      result[arrName] = snap.exists() && Array.isArray(snap.val().data) ? snap.val().data : [];
+    }
+    state.cloudUploadPending = result;
+    state.cloudUploadStatus = "";
+  } catch (e) {
+    console.error("Cloud pull error:", e);
+    state.cloudUploadStatus = "Load mein error aayi — Firebase rules ya connection check karein.";
+  }
+  render();
+}
+async function confirmCloudPull() {
+  const d = state.cloudUploadPending;
+  if (!d) return;
+  const ts = Date.now();
+  for (const [key, arrName] of CLOUD_KEYS) {
+    state[arrName] = d[arrName] || [];
+    await storage.set(key, state[arrName]);
+    await storage.set(key + "-ts", ts);
+  }
+  state.cloudUploadPending = null;
+  state.cloudUploadStatus = "Cloud se data upload ho gaya ✓";
+  render();
+  setTimeout(() => { state.cloudUploadStatus = ""; render(); }, 4000);
+}
+
+/* ---------- render ---------- */
+function render() {
+  const app = document.getElementById("app");
+  const active = document.activeElement;
+  const activeId = active && active.id ? active.id : null;
+  const selStart = active && typeof active.selectionStart === "number" ? active.selectionStart : null;
+  const selEnd = active && typeof active.selectionEnd === "number" ? active.selectionEnd : null;
+
+  if (!state.loaded) { app.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#B8912F;">Loading…</div>'; return; }
+
+  if (state.pin && !state.unlocked) {
+    app.innerHTML = renderLockScreen();
+    attachLockHandlers();
+    const el = activeId && document.getElementById(activeId);
+    if (el) el.focus();
+    return;
+  }
+
+  app.innerHTML = `
+    <header>
+      <span class="ship">⛴</span>
+      <div style="flex:1;"><h1>Export Manifest CRM</h1><p>Home Furnishing Buyer Ledger — Panipat</p></div>
+      ${cloudIndicator()}
+      <button class="close-x" data-action="open-quickfind" title="Quick Find" style="font-size:20px;">🔎</button>
+      <button class="close-x" data-action="open-settings" title="Settings" style="font-size:20px;">⚙️</button>
+    </header>
+    <main>${renderTab()}</main>
+    <nav>
+      ${navBtn("dashboard","📊","Dashboard")}${navBtn("buyers","👥","Buyers")}${navBtn("crm","💬","CRM")}
+      ${navBtn("email","✉️","Email AI")}${navBtn("products","📦","Products")}${navBtn("search","🔍","Search")}
+      ${navBtn("tasks","🔔","Tasks")}${navBtn("insights","✨","Insights")}
+    </nav>
+    ${renderModals()}
+  `;
+  attachHandlers();
+
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) {
+      el.focus();
+      if (selStart !== null && typeof el.setSelectionRange === "function") {
+        try { el.setSelectionRange(selStart, selEnd); } catch (e) { /* not a text-selectable input */ }
+      }
+    }
+  }
+}
+
+function renderLockScreen() {
+  return `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div class="card" style="max-width:320px;width:100%;text-align:center;">
+        <div style="font-size:32px;margin-bottom:8px;">🔒</div>
+        <h2 style="margin-bottom:14px;">Export Manifest CRM</h2>
+        <label>PIN Daalein</label>
+        <input id="pinEntryInput" type="password" inputmode="numeric" value="${esc(state.pinEntry)}" placeholder="••••" style="text-align:center;letter-spacing:4px;font-size:18px;" />
+        ${state.pinError ? `<p class="error-msg">${esc(state.pinError)}</p>` : ""}
+        <button class="btn" style="width:100%;" data-action="unlock-app">Unlock</button>
+      </div>
+    </div>`;
+}
+function attachLockHandlers() {
+  const inp = document.getElementById("pinEntryInput");
+  if (inp) inp.addEventListener("input", () => { state.pinEntry = inp.value; state.pinError = ""; });
+  bind("unlock-app", () => {
+    if (state.pinEntry === state.pin) { state.unlocked = true; state.pinEntry = ""; state.pinError = ""; render(); }
+    else { state.pinError = "Galat PIN, dobara try karein."; render(); }
+  });
+}
+function navBtn(id, icon, label) {
+  return `<button data-tab="${id}" class="${state.tab===id?"active":""}"><span class="ic">${icon}</span>${label}</button>`;
+}
+
+function renderTab() {
+  switch (state.tab) {
+    case "dashboard": return dashboardTab();
+    case "buyers": return buyersTab();
+    case "crm": return crmTab();
+    case "email": return emailTab();
+    case "products": return productsTab();
+    case "search": return searchTab();
+    case "tasks": return tasksTab();
+    case "insights": return insightsTab();
+    default: return "";
+  }
+}
+
+function dashboardTab() {
+  const totalContacted = new Set(state.contacts.map(c => c.buyerId)).size;
+  const totalReplied = new Set(state.contacts.filter(c => c.replyReceived === "Yes").map(c => c.buyerId)).size;
+  const totalSamples = state.contacts.filter(c => c.sampleSent === "Yes").length;
+  const totalOrders = state.contacts.filter(c => c.orderStatus === "Order Received").length;
+  const conv = totalContacted ? Math.round((totalOrders / totalContacted) * 100) : 0;
+  const upcoming = state.tasks.filter(t => !t.done).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
+
+  const countryCounts = {};
+  state.buyers.forEach(b => { const c = b.country.trim() || "Unknown"; countryCounts[c] = (countryCounts[c]||0)+1; });
+  const topCountries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([label,value])=>({label,value}));
+
+  const priorityCounts = { A: 0, B: 0, C: 0 };
+  state.buyers.forEach(b => { if (priorityCounts[b.priority] !== undefined) priorityCounts[b.priority]++; });
+  const priorityItems = [
+    { label: "Priority A", value: priorityCounts.A, color: "var(--thread)" },
+    { label: "Priority B", value: priorityCounts.B, color: "var(--brass)" },
+    { label: "Priority C", value: priorityCounts.C, color: "var(--border)" },
+  ];
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); months.push(d.toISOString().slice(0,7)); }
+  const monthLabel = (ym) => { const [y,m] = ym.split("-"); return new Date(+y, +m-1, 1).toLocaleString("en", { month: "short", year: "2-digit" }); };
+  const monthlyItems = [];
+  months.forEach(ym => {
+    const contactedCount = state.contacts.filter(c => (c.emailDate||"").slice(0,7) === ym).length;
+    const orderCount = state.contacts.filter(c => (c.emailDate||"").slice(0,7) === ym && c.orderStatus === "Order Received").length;
+    monthlyItems.push({ label: monthLabel(ym) + " · Contacted", value: contactedCount, color: "var(--brass)" });
+    monthlyItems.push({ label: monthLabel(ym) + " · Orders", value: orderCount, color: "var(--thread)" });
+  });
+
+  return `
+    <div class="stamps">
+      ${stamp(totalContacted,"Contacted")}${stamp(totalReplied,"Replied")}${stamp(totalSamples,"Samples Sent")}${stamp(totalOrders,"Orders")}${stamp(conv+"%","Conversion")}
+    </div>
+    <div class="card">
+      <h3 class="section-title" style="color:var(--brass);">Upcoming Follow-ups</h3>
+      ${upcoming.length===0 ? '<p class="muted">Koi pending task nahi hai.</p>' :
+        upcoming.map(t=>`<div class="row" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px;">
+          <span class="ink">${esc(t.type)} — ${buyerName(t.buyerId)} <span class="muted">(${t.dueDate})</span></span>
+          <button class="btn btn-small" data-action="task-done" data-id="${t.id}">Done</button>
+        </div>`).join("")}
+    </div>
+    <button class="btn" style="width:100%;margin-bottom:14px;" data-tab="insights">✨ AI Insights Dekhein</button>
+
+    ${state.buyers.length>0 ? barChart("Buyers by Country (Top 5)", topCountries) : ""}
+    ${state.buyers.length>0 ? barChart("Priority Breakdown", priorityItems) : ""}
+    ${state.contacts.length>0 ? barChart("Monthly Activity (Last 6 Months)", monthlyItems) : ""}
+  `;
+}
+function barChart(title, items) {
+  const max = Math.max(1, ...items.map(i=>i.value));
+  return `<div class="card">
+    <h3 class="section-title" style="color:var(--brass);">${esc(title)}</h3>
+    ${items.map(i=>`
+      <div style="margin-bottom:10px;">
+        <div class="row" style="margin-bottom:3px;"><span class="ink">${esc(i.label)}</span><span class="muted">${i.value}</span></div>
+        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden;">
+          <div style="width:${Math.round(i.value/max*100)}%;height:100%;background:${i.color||"var(--brass)"};"></div>
+        </div>
+      </div>`).join("")}
+  </div>`;
+}
+function stamp(v,l){ return `<div class="stamp"><div class="v">${v}</div><div class="l">${l}</div></div>`; }
+
+function buyersTab() {
+  return `
+    <div class="row">
+      <h2 class="section-title">Buyer Database</h2>
+      <div class="flex-gap">
+        <button class="btn-outline" data-action="excel-trigger">⬆ Excel</button>
+        <button class="btn" data-action="add-buyer">+ Add</button>
+      </div>
+    </div>
+    <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" class="hidden" />
+    ${state.importStatus ? `<p class="status-msg">${esc(state.importStatus)}</p>` : ""}
+    <p class="muted">Excel/CSV columns: Buyer Name, Company, Country, Website, Email, Phone, LinkedIn, Product Category, MOQ, Annual Import Data, Priority.</p>
+    ${state.buyers.length===0 ? '<p class="muted">Abhi koi buyer add nahi kiya gaya.</p>' : ""}
+    ${state.buyers.map(b=>`
+      <div class="card">
+        <div class="row">
+          <div>
+            <div><b>${esc(b.name)}</b> <span class="muted">· ${esc(b.company)}</span></div>
+            <div class="muted">${esc(b.country)} · ${esc(b.category)} · MOQ ${esc(b.moq)}</div>
+            ${b.website ? `<div class="muted" style="margin-top:2px;">${websiteLink(b.website, b.company)}</div>` : ""}
+            <div style="margin-top:4px;"><span class="tag ${b.priority==='A'?'high':''}">Priority ${esc(b.priority)}</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+            <button class="link" data-action="edit-buyer" data-id="${b.id}">Edit</button>
+            ${b.phone ? `<a class="btn btn-small" style="text-decoration:none;" target="_blank" rel="noopener" href="https://wa.me/${b.phone.replace(/[^0-9]/g,"")}?text=${encodeURIComponent("Hello "+b.name+", this is regarding our home furnishing export products. Hope you are doing well!")}">💬 WhatsApp</a>` : ""}
+            <button class="danger" data-action="delete-buyer" data-id="${b.id}">🗑</button>
+          </div>
+        </div>
+      </div>`).join("")}
+  `;
+}
+
+function crmTab() {
+  return `
+    <div class="row">
+      <h2 class="section-title">Contact History</h2>
+      <button class="btn" ${state.buyers.length===0?"disabled":""} data-action="add-contact">+ Add</button>
+    </div>
+    ${state.buyers.length===0 ? '<p class="muted">Pehle Buyer Database mein buyer add karein.</p>' : ""}
+    ${state.contacts.map(c=>`
+      <div class="card">
+        <div class="row">
+          <div>
+            <div><b>${buyerName(c.buyerId)}</b></div>
+            <div class="muted">Email: ${c.emailDate} · Reply: ${c.replyReceived} · Next follow-up: ${c.nextFollowup||"—"}</div>
+            <div class="muted">Sample: ${c.sampleSent} · Quotation: ${c.quotationSent} · Status: ${esc(c.orderStatus)}</div>
+            ${c.meetingNotes ? `<div class="ink" style="font-style:italic;margin-top:4px;">"${esc(c.meetingNotes).slice(0,90)}"</div>` : ""}
+          </div>
+          <button class="link" data-action="edit-contact" data-id="${c.id}">Edit</button>
+        </div>
+      </div>`).join("")}
+  `;
+}
+
+function emailTab() {
+  const ef = state.emailForm;
+  const selectedBuyer = state.buyers.find(b => b.id === ef.buyerId);
+  return `
+    <h2 class="section-title">AI Email Assistant</h2>
+    <label>Buyer</label>
+    <select id="emailBuyer">
+      <option value="">-- Select buyer --</option>
+      ${state.buyers.map(b=>`<option value="${b.id}" ${ef.buyerId===b.id?"selected":""}>${esc(b.name)} (${esc(b.company)})</option>`).join("")}
+    </select>
+    <label>Email Type</label>
+    <select id="emailType">
+      ${["Introduction","Follow-up","Sample Offer","Quotation Sharing","Order Confirmation"].map(o=>`<option ${ef.type===o?"selected":""}>${o}</option>`).join("")}
+    </select>
+    <label>Extra Context (optional)</label>
+    <textarea id="emailContext" placeholder="Koi specific detail...">${esc(ef.context)}</textarea>
+    <button class="btn" style="width:100%;" ${(!ef.buyerId||state.emailLoading)?"disabled":""} data-action="gen-email">
+      ${state.emailLoading?"Generating…":"✉ Email Draft Karein"}
+    </button>
+    ${state.emailResult ? `
+      <div class="card whitespace" style="margin-top:12px;">${esc(state.emailResult)}</div>
+      <button class="btn" style="width:100%;margin-top:8px;" data-action="open-mail-app">📧 Open in Email App${selectedBuyer && selectedBuyer.email ? "" : " (buyer email missing)"}</button>
+    ` : ""}
+  `;
+}
+function parseEmailResult(text) {
+  const lines = text.split("\n");
+  let subject = ""; let bodyStart = 0;
+  for (let i=0;i<lines.length;i++){
+    const m = lines[i].match(/^\s*Subject:\s*(.*)$/i);
+    if (m) { subject = m[1].trim(); bodyStart = i+1; break; }
+  }
+  const body = lines.slice(bodyStart).join("\n").trim();
+  return { subject: subject || "Regarding our home furnishing products", body: body || text };
+}
+
+function productsTab() {
+  return `
+    <div class="row">
+      <h2 class="section-title">Product Library</h2>
+      <button class="btn" data-action="add-product">+ Add</button>
+    </div>
+    ${state.products.length===0 ? '<p class="muted">Abhi koi product add nahi kiya gaya.</p>' : ""}
+    ${state.products.map(p=>`
+      <div class="card">
+        <div class="row">
+          <div>
+            <div><b>${esc(p.name)}</b></div>
+            <div class="muted">${esc(p.specs)}</div>
+            <div class="muted">Price: ${esc(p.price)} ${esc(p.currency||"")} (${esc(p.incoterms||"")}) · MOQ: ${esc(p.moq)}</div>
+            ${p.certificates?`<div class="muted">Certificates: ${esc(p.certificates)}</div>`:""}
+          </div>
+          <button class="link" data-action="edit-product" data-id="${p.id}">Edit</button>
+        </div>
+      </div>`).join("")}
+  `;
+}
+
+function searchTab() {
+  const filtered = state.buyers.filter(b =>
+    (!state.searchCountry || b.country.toLowerCase().includes(state.searchCountry.toLowerCase())) &&
+    (!state.searchCategory || b.category.toLowerCase().includes(state.searchCategory.toLowerCase())));
+  return `
+    <h2 class="section-title">Buyer Search</h2>
+    <p class="muted">Yeh filter aapki apni Buyer Database mein search karta hai — agar database khaali hai to neeche "Discover Buyers" se naye buyers dhundhein.</p>
+    <div class="grid2" style="margin-top:8px;">
+      <div><label>Country</label><input id="searchCountry" value="${esc(state.searchCountry)}" placeholder="e.g. USA" /></div>
+      <div><label>Category</label><input id="searchCategory" value="${esc(state.searchCategory)}" placeholder="e.g. Rugs" /></div>
+    </div>
+    ${filtered.length>0 ? filtered.map(b=>`<div class="card"><b>${esc(b.name)}</b> — ${esc(b.company)}<div class="muted">${esc(b.country)} · ${esc(b.category)} · Priority ${esc(b.priority)}</div>${b.website ? `<div class="muted" style="margin-top:2px;">${websiteLink(b.website, b.company)}</div>` : ""}</div>`).join("") :
+      `<p class="muted">Apni database mein abhi koi match nahi mila.</p>`}
+
+    <div class="divider">
+      <h3 class="section-title" style="color:var(--brass);">🌐 Discover Buyers (AI Search)</h3>
+      <p class="muted" style="margin-bottom:8px;">Upar diye Country aur/ya Category ke hisaab se live web search karke real importer/wholesaler companies dhundhein — har ek ko review karke Add ya Skip karein.</p>
+      <button class="btn" style="width:100%;" ${(state.discoverLoading||(!state.searchCountry.trim()&&!state.searchCategory.trim()))?"disabled":""} data-action="run-discover">
+        ${state.discoverLoading?"Dhundh rahe hain…":"🔍 Naye Buyers Dhundhein (min. 50)"}
+      </button>
+      ${state.discoverLoading && state.discoverProgress ? `<p class="muted" style="margin-top:6px;">${esc(state.discoverProgress)}</p>` : ""}
+      ${(!state.searchCountry.trim()&&!state.searchCategory.trim()) ? '<p class="muted" style="margin-top:6px;">Country ya Category upar mein se kam se kam ek bharein.</p>' : ""}
+      ${state.discoverError ? `<p class="error-msg" style="margin-top:8px;">${esc(state.discoverError)}</p>` : ""}
+      ${state.discoverResults ? (state.discoverResults.length===0 ? '<p class="muted" style="margin-top:8px;">Koi reliable result nahi mila, dusra country/category try karein.</p>' :
+        state.discoverResults.map(r=>`
+          <div class="card">
+            <div class="row">
+              <div>
+                <b>${esc(r.company||"—")}</b>
+                <div class="muted">${esc(r.country||"—")} · ${esc(r.category||"—")}</div>
+                ${r.website?`<div class="muted">${websiteLink(r.website, r.company)}</div>`:""}
+                ${r.notes?`<div class="ink" style="margin-top:4px;font-style:italic;">${esc(r.notes)}</div>`:""}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                ${r.added ? '<span class="tag">✓ Added</span>' :
+                  `<button class="btn btn-small" data-action="discover-add" data-id="${r.__id}">+ Add</button>
+                   <button class="btn-outline btn-small" data-action="discover-skip" data-id="${r.__id}">Skip</button>`}
+              </div>
+            </div>
+          </div>`).join("")) : ""}
+    </div>
+
+    <div class="divider">
+      <h3 class="section-title" style="color:var(--brass);">🔍 Company / Buyer Name Lookup</h3>
+      <p class="muted" style="margin-bottom:8px;">Kisi specific company ka naam pata hai? Live web search karke public details laayein aur database mein add karein.</p>
+      <div class="flex-gap">
+        <input id="lookupName" class="flex-1" style="margin-bottom:0;" value="${esc(state.lookupName)}" placeholder="e.g. Home Fashion Imports LLC" />
+        <button class="btn" ${(state.lookupLoading||!state.lookupName.trim())?"disabled":""} data-action="run-lookup">${state.lookupLoading?"…":"Search"}</button>
+      </div>
+      ${state.lookupError?`<p class="error-msg" style="margin-top:8px;">${esc(state.lookupError)}</p>`:""}
+      ${state.lookupResult ? `
+        <div class="card" style="margin-top:12px;">
+          <p class="ink"><span class="muted">Company:</span> ${esc(state.lookupResult.company||"—")}</p>
+          <p class="ink"><span class="muted">Country:</span> ${esc(state.lookupResult.country||"—")}</p>
+          <p class="ink"><span class="muted">Website:</span> ${state.lookupResult.website ? websiteLink(state.lookupResult.website, state.lookupResult.company) : "—"}</p>
+          <p class="ink"><span class="muted">Category:</span> ${esc(state.lookupResult.category||"—")}</p>
+          <p class="muted" style="font-style:italic;">${esc(state.lookupResult.notes||"")}</p>
+          <button class="btn" style="width:100%;margin-top:8px;" data-action="add-lookup">Buyer Database mein Add karein</button>
+        </div>` : ""}
+    </div>
+
+    <div class="divider">
+      <h3 class="section-title" style="color:var(--brass);">📅 Home Furnishing Trade Fairs</h3>
+      <p class="muted" style="margin-bottom:8px;">Naye buyers milte hain exhibit karke ya "Hosted Buyer" list access lekar. Dates confirm karne ke liye organizer site check karein.</p>
+      ${TRADE_FAIRS.map((f,i)=>`
+        <div class="card">
+          <div class="row">
+            <div><b style="font-size:13px;">${esc(f.name)}</b><div class="muted">${esc(f.location)} · ${esc(f.dates)}</div><div class="ink" style="margin-top:4px;">${esc(f.focus)}</div></div>
+            <button class="btn btn-small" data-action="fair-reminder" data-idx="${i}">+ Reminder</button>
+          </div>
+        </div>`).join("")}
+    </div>
+
+    <div class="divider">
+      <h3 class="section-title" style="color:var(--brass);">Bina Fair ke Buyers Kaise Dhundhein</h3>
+      <ul class="list-ul">
+        <li><b>Volza / Seair Exim / Trademo</b> — India export shipment data se pata chalta hai kaun se foreign buyers already import kar rahe hain</li>
+        <li><b>ImportGenius / Panjiva (S&P Global)</b> — US customs bill-of-lading data</li>
+        <li><b>IndiaMART / TradeIndia / Alibaba</b> — direct buyer inquiries</li>
+        <li><b>EPCH Buyer-Seller Meets</b> — Export Promotion Council for Handicrafts</li>
+        <li><b>LinkedIn Sales Navigator</b> — "Import Manager", "Buyer Home Textiles" titles se search karein</li>
+        <li><b>Kompass / Global Sources</b> — company directories by country & category</li>
+      </ul>
+    </div>
+  `;
+}
+
+function tasksTab() {
+  const sorted = [...state.tasks].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+  return `
+    <div class="row">
+      <h2 class="section-title">Task & Reminders</h2>
+      <button class="btn" data-action="add-task">+ Add</button>
+    </div>
+    ${sorted.length===0?'<p class="muted">Koi task nahi hai.</p>':""}
+    ${sorted.map(t=>`
+      <div class="card">
+        <div class="row">
+          <div>
+            <div style="${t.done?'text-decoration:line-through;color:var(--muted);':''}">${esc(t.type)} — ${buyerName(t.buyerId)}</div>
+            <div class="muted">${t.dueDate}${t.note?` · ${esc(t.note)}`:""}</div>
+          </div>
+          <div class="flex-gap">
+            <button class="btn btn-small" data-action="toggle-task" data-id="${t.id}" style="${t.done?'background:var(--border);color:var(--paper);':''}">${t.done?"Undo":"Done"}</button>
+            <button class="danger" data-action="delete-task" data-id="${t.id}">🗑</button>
+          </div>
+        </div>
+      </div>`).join("")}
+  `;
+}
+
+function insightsTab() {
+  return `
+    <h2 class="section-title">AI Insights</h2>
+    <button class="btn" style="width:100%;" ${state.insightLoading?"disabled":""} data-action="gen-insights">
+      ${state.insightLoading?"Generating…":"✨ Insights Generate Karein"}
+    </button>
+    ${state.insightResult ? `<div class="card whitespace" style="margin-top:12px;">${esc(state.insightResult)}</div>` : ""}
+  `;
+}
+
+/* ---------- modals ---------- */
+function renderModals() {
+  let out = "";
+  if (state.editBuyer) {
+    const b = state.editBuyer;
+    const isEdit = state.buyers.some(x=>x.id===b.id);
+    out += `<div class="modal-bg" data-action="close-modal" data-which="buyer">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>${isEdit?"Edit Buyer":"Add Buyer"}</h3><button class="close-x" data-action="close-modal" data-which="buyer">✕</button></div>
+        <div class="modal-body">
+          <div class="grid2">
+            <div><label>Buyer Name</label><input id="f_name" value="${esc(b.name)}" /></div>
+            <div><label>Company</label><input id="f_company" value="${esc(b.company)}" /></div>
+            <div><label>Country</label><input id="f_country" value="${esc(b.country)}" /></div>
+            <div><label>Website</label><input id="f_website" value="${esc(b.website)}" /></div>
+            <div><label>Email</label><input id="f_email" value="${esc(b.email)}" /></div>
+            <div><label>Phone</label><input id="f_phone" value="${esc(b.phone)}" /></div>
+            <div><label>LinkedIn</label><input id="f_linkedin" value="${esc(b.linkedin)}" /></div>
+            <div><label>Product Category</label><input id="f_category" value="${esc(b.category)}" /></div>
+            <div><label>MOQ</label><input id="f_moq" value="${esc(b.moq)}" /></div>
+            <div><label>Annual Import Data</label><input id="f_annualImport" value="${esc(b.annualImport)}" /></div>
+            <div><label>Priority</label>
+              <select id="f_priority"><option ${b.priority==='A'?'selected':''}>A</option><option ${b.priority==='B'?'selected':''}>B</option><option ${b.priority==='C'?'selected':''}>C</option></select>
+            </div>
+          </div>
+          <button class="btn" style="width:100%;" data-action="save-buyer">${state.buyerDupWarning ? "Confirm & Add Anyway" : "Save"}</button>
+          ${state.buyerDupWarning ? `<p class="error-msg" style="margin-top:8px;">${esc(state.buyerDupWarning)}</p>` : ""}
+        </div>
+      </div></div>`;
+  }
+  if (state.editContact) {
+    const c = state.editContact;
+    out += `<div class="modal-bg" data-action="close-modal" data-which="contact">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>${state.contacts.some(x=>x.id===c.id)?"Edit Contact":"Add Contact"}</h3><button class="close-x" data-action="close-modal" data-which="contact">✕</button></div>
+        <div class="modal-body">
+          <label>Buyer</label>
+          <select id="c_buyerId"><option value="">-- Select --</option>${state.buyers.map(b=>`<option value="${b.id}" ${c.buyerId===b.id?"selected":""}>${esc(b.name)} (${esc(b.company)})</option>`).join("")}</select>
+          <div class="grid2">
+            <div><label>Email Bheja Gaya</label><input type="date" id="c_emailDate" value="${c.emailDate}" /></div>
+            <div><label>Reply Aaya?</label><select id="c_replyReceived"><option ${c.replyReceived==='No'?'selected':''}>No</option><option ${c.replyReceived==='Yes'?'selected':''}>Yes</option></select></div>
+            <div><label>Next Follow-up</label><input type="date" id="c_nextFollowup" value="${c.nextFollowup}" /></div>
+            <div><label>Sample Bheja?</label><select id="c_sampleSent"><option ${c.sampleSent==='No'?'selected':''}>No</option><option ${c.sampleSent==='Yes'?'selected':''}>Yes</option></select></div>
+            <div><label>Quotation Bheji?</label><select id="c_quotationSent"><option ${c.quotationSent==='No'?'selected':''}>No</option><option ${c.quotationSent==='Yes'?'selected':''}>Yes</option></select></div>
+            <div><label>Order Status</label><select id="c_orderStatus">${["None","Negotiating","Order Received","Lost"].map(o=>`<option ${c.orderStatus===o?'selected':''}>${o}</option>`).join("")}</select></div>
+          </div>
+          <label>Reply Notes</label><textarea id="c_replyNotes">${esc(c.replyNotes)}</textarea>
+          <label>Meeting Notes</label><textarea id="c_meetingNotes">${esc(c.meetingNotes)}</textarea>
+          <button class="btn" style="width:100%;" ${!c.buyerId?"disabled":""} data-action="save-contact">Save</button>
+        </div>
+      </div></div>`;
+  }
+  if (state.editProduct) {
+    const p = state.editProduct;
+    out += `<div class="modal-bg" data-action="close-modal" data-which="product">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>${state.products.some(x=>x.id===p.id)?"Edit Product":"Add Product"}</h3><button class="close-x" data-action="close-modal" data-which="product">✕</button></div>
+        <div class="modal-body">
+          <div class="grid2">
+            <div><label>Product Name</label><input id="p_name" value="${esc(p.name)}" /></div>
+            <div><label>Price</label><input id="p_price" value="${esc(p.price)}" /></div>
+            <div><label>Currency</label>
+              <select id="p_currency">${["USD","EUR","GBP","INR"].map(c=>`<option ${p.currency===c?"selected":""}>${c}</option>`).join("")}</select>
+            </div>
+            <div><label>Incoterms</label>
+              <select id="p_incoterms">${["FOB","CIF","EXW","DDP","CPT","FCA"].map(t=>`<option ${p.incoterms===t?"selected":""}>${t}</option>`).join("")}</select>
+            </div>
+            <div><label>MOQ</label><input id="p_moq" value="${esc(p.moq)}" /></div>
+            <div><label>Catalog Link</label><input id="p_catalog" value="${esc(p.catalog)}" /></div>
+            <div><label>Certificates</label><input id="p_certificates" value="${esc(p.certificates)}" /></div>
+            <div><label>Photo Description</label><input id="p_photoDesc" value="${esc(p.photoDesc)}" /></div>
+          </div>
+          <label>Specifications</label><textarea id="p_specs">${esc(p.specs)}</textarea>
+          <button class="btn" style="width:100%;" data-action="save-product">Save</button>
+        </div>
+      </div></div>`;
+  }
+  if (state.editTask) {
+    const t = state.editTask;
+    out += `<div class="modal-bg" data-action="close-modal" data-which="task">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>${state.tasks.some(x=>x.id===t.id)?"Edit Task":"Add Task"}</h3><button class="close-x" data-action="close-modal" data-which="task">✕</button></div>
+        <div class="modal-body">
+          <label>Type</label><select id="t_type">${["Follow-up","Sample Dispatch","Shipment"].map(o=>`<option ${t.type===o?'selected':''}>${o}</option>`).join("")}</select>
+          <label>Buyer</label><select id="t_buyerId"><option value="">-- Select --</option>${state.buyers.map(b=>`<option value="${b.id}" ${t.buyerId===b.id?"selected":""}>${esc(b.name)} (${esc(b.company)})</option>`).join("")}</select>
+          <label>Due Date</label><input type="date" id="t_dueDate" value="${t.dueDate}" />
+          <label>Note</label><textarea id="t_note">${esc(t.note)}</textarea>
+          <button class="btn" style="width:100%;" data-action="save-task">Save</button>
+        </div>
+      </div></div>`;
+  }
+  if (state.quickFindOpen) {
+    const q = state.quickFindQuery.trim().toLowerCase();
+    let results = [];
+    if (q) {
+      state.buyers.forEach(b => { if ((b.name+" "+b.company+" "+b.email+" "+b.country).toLowerCase().includes(q)) results.push({ type:"Buyer", label:`${b.name} — ${b.company}`, tab:"buyers" }); });
+      state.products.forEach(p => { if (p.name.toLowerCase().includes(q)) results.push({ type:"Product", label:p.name, tab:"products" }); });
+      state.tasks.forEach(t => { if ((t.type+" "+t.note).toLowerCase().includes(q)) results.push({ type:"Task", label:`${t.type} — ${buyerName(t.buyerId)}`, tab:"tasks" }); });
+      state.contacts.forEach(c => { if ((c.meetingNotes+" "+c.replyNotes).toLowerCase().includes(q)) results.push({ type:"Contact", label:buyerName(c.buyerId), tab:"crm" }); });
+    }
+    out += `<div class="modal-bg" data-action="close-quickfind">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>🔎 Quick Find</h3><button class="close-x" data-action="close-quickfind">✕</button></div>
+        <div class="modal-body">
+          <input id="quickFindInput" value="${esc(state.quickFindQuery)}" placeholder="Naam, company, product, task se search karein..." autofocus />
+          ${q && results.length===0 ? '<p class="muted">Koi match nahi mila.</p>' : ""}
+          ${results.slice(0,20).map(r=>`
+            <div class="card" data-action="quickfind-goto" data-tab="${r.tab}" style="cursor:pointer;">
+              <span class="tag">${r.type}</span> <span class="ink">${esc(r.label)}</span>
+            </div>`).join("")}
+        </div>
+      </div></div>`;
+  }
+
+  if (state.settingsOpen) {
+    out += `<div class="modal-bg" data-action="close-settings">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>⚙️ Settings</h3><button class="close-x" data-action="close-settings">✕</button></div>
+        <div class="modal-body">
+          <h3 class="section-title" style="color:var(--brass);">☁ Cloud Sync</h3>
+          <p class="muted" style="margin-bottom:8px;">Status: ${cloudIndicator()}. Data har edit ke saath khud-b-khud cloud mein save hota hai — neeche wale buttons sirf manual save/upload ke liye hain (dusre device se data laane ya turant force-save karne ke liye).</p>
+          <button class="btn" style="width:100%;margin-bottom:8px;" data-action="cloud-save">☁ Save (Cloud Par Bhejein)</button>
+          ${state.cloudSaveStatus ? `<p class="status-msg">${esc(state.cloudSaveStatus)}</p>` : ""}
+          <button class="btn-outline" style="width:100%;" data-action="cloud-upload">⬆ Upload (Cloud Se Layein)</button>
+          ${state.cloudUploadStatus ? `<p class="${state.cloudUploadStatus.includes('✓') ? 'status-msg' : 'error-msg'}">${esc(state.cloudUploadStatus)}</p>` : ""}
+          ${state.cloudUploadPending ? `
+            <div class="card" style="margin-top:10px;">
+              <p class="ink">Cloud mein ${state.cloudUploadPending.buyers.length} buyers, ${state.cloudUploadPending.contacts.length} contacts, ${state.cloudUploadPending.products.length} products, ${state.cloudUploadPending.tasks.length} tasks mile.</p>
+              <p class="error-msg">Upload karne se current local data cloud wale se replace ho jayega. Confirm karein?</p>
+              <div class="flex-gap">
+                <button class="btn flex-1" data-action="confirm-cloud-upload">Confirm Upload</button>
+                <button class="btn-outline flex-1" data-action="cancel-cloud-upload">Cancel</button>
+              </div>
+            </div>` : ""}
+
+          <div class="divider"></div>
+          <h3 class="section-title" style="color:var(--brass);">Backup & Restore</h3>
+          <p class="muted" style="margin-bottom:8px;">Pura data (buyers, contacts, products, tasks) ek JSON file mein save karein — device kho jaaye ya browser data clear ho to yeh file se sab wapas aa jayega.</p>
+          <button class="btn" style="width:100%;margin-bottom:8px;" data-action="download-backup">⬇ Backup Download Karein</button>
+          ${state.backupStatus ? `<p class="status-msg">${esc(state.backupStatus)}</p>` : ""}
+          <input type="file" id="restoreInput" accept=".json" class="hidden" />
+          <button class="btn-outline" style="width:100%;" data-action="restore-trigger">⬆ Backup File se Restore Karein</button>
+          ${state.restoreStatus ? `<p class="status-msg">${esc(state.restoreStatus)}</p>` : ""}
+          ${state.restorePending ? `
+            <div class="card" style="margin-top:10px;">
+              <p class="ink">File mein ${state.restorePending.buyers.length} buyers, ${state.restorePending.contacts.length} contacts, ${state.restorePending.products.length} products, ${state.restorePending.tasks.length} tasks hain.</p>
+              <p class="error-msg">Restore karne se current data replace ho jayega. Confirm karein?</p>
+              <div class="flex-gap">
+                <button class="btn flex-1" data-action="confirm-restore">Confirm Restore</button>
+                <button class="btn-outline flex-1" data-action="cancel-restore">Cancel</button>
+              </div>
+            </div>` : ""}
+
+          <div class="divider">
+            <h3 class="section-title" style="color:var(--brass);">PIN Lock</h3>
+            <p class="muted" style="margin-bottom:8px;">${state.pin ? "PIN abhi set hai — app kholte waqt PIN maanga jayega." : "Koi PIN set nahi hai."}</p>
+            <label>${state.pin ? "Naya PIN (badalne ke liye)" : "Naya PIN Set Karein (4-6 digit)"}</label>
+            <input id="pinSetupInput" type="password" inputmode="numeric" value="${esc(state.pinSetupValue)}" placeholder="e.g. 1234" />
+            ${state.pinSetupStatus ? `<p class="status-msg">${esc(state.pinSetupStatus)}</p>` : ""}
+            <div class="flex-gap">
+              <button class="btn flex-1" data-action="save-pin">${state.pin?"PIN Update Karein":"PIN Set Karein"}</button>
+              ${state.pin ? `<button class="btn-outline flex-1" data-action="remove-pin">PIN Hataayein</button>` : ""}
+            </div>
+          </div>
+
+          <button class="btn-outline" style="width:100%;margin-top:18px;" data-action="close-settings">⬅ Back</button>
+        </div>
+      </div></div>`;
+  }
+
+  return out;
+}
+
+/* ---------- excel import ---------- */
+async function parseExcelFile(file) {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  const pick = (row, ...keys) => {
+    const rowKeys = Object.keys(row);
+    for (const k of keys) { const m = rowKeys.find(rk => norm(rk) === norm(k)); if (m) return String(row[m] ?? "").trim(); }
+    return "";
+  };
+  return rows.map(row => ({
+    id: uid(),
+    name: pick(row,"buyername","name","buyer"), company: pick(row,"company","companyname"),
+    country: pick(row,"country"), website: pick(row,"website","site"), email: pick(row,"email"),
+    phone: pick(row,"phone","mobile","contact"), linkedin: pick(row,"linkedin"),
+    category: pick(row,"productcategory","category"), moq: pick(row,"moq"),
+    annualImport: pick(row,"annualimportdata","annualimport","importvolume"),
+    priority: (pick(row,"priority")||"B").toUpperCase().charAt(0) || "B",
+  })).filter(b => b.name || b.company);
+}
+
+/* ---------- event delegation ---------- */
+function attachHandlers() {
+  const app = document.getElementById("app");
+
+  app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => { state.tab = el.dataset.tab; render(); }));
+
+  app.querySelectorAll("[data-action]").forEach(el => {
+    const act = el.dataset.action;
+    if (act === "close-modal") {
+      el.addEventListener("click", (e) => {
+        if (e.target !== el) return; // only close on background click, not modal content
+        const which = el.dataset.which;
+        if (which==="buyer") { state.editBuyer=null; state.buyerDupWarning=""; state.buyerDupConfirmed=false; }
+        if (which==="contact") state.editContact=null;
+        if (which==="product") state.editProduct=null; if (which==="task") state.editTask=null;
+        render();
+      });
+    }
+  });
+  app.querySelectorAll(".modal").forEach(el => el.addEventListener("click", e => e.stopPropagation()));
+
+  bind("add-buyer", () => { state.editBuyer = emptyBuyer(); state.buyerDupWarning = ""; state.buyerDupConfirmed = false; render(); });
+  bind("edit-buyer", (el) => { state.editBuyer = state.buyers.find(b=>b.id===el.dataset.id); state.buyerDupWarning = ""; state.buyerDupConfirmed = false; render(); });
+  bind("delete-buyer", (el) => {
+    state.buyers = state.buyers.filter(b=>b.id!==el.dataset.id);
+    state.contacts = state.contacts.filter(c=>c.buyerId!==el.dataset.id);
+    persist("buyers-list","buyers"); persist("contacts-list","contacts"); render();
+  });
+  bind("save-buyer", () => {
+    const b = state.editBuyer;
+    b.name=val("f_name"); b.company=val("f_company"); b.country=val("f_country"); b.website=val("f_website");
+    b.email=val("f_email"); b.phone=val("f_phone"); b.linkedin=val("f_linkedin"); b.category=val("f_category");
+    b.moq=val("f_moq"); b.annualImport=val("f_annualImport"); b.priority=val("f_priority");
+    const exists = state.buyers.some(x=>x.id===b.id);
+    if (!exists && !state.buyerDupConfirmed) {
+      const dup = state.buyers.find(x =>
+        (b.email.trim() && x.email.trim().toLowerCase() === b.email.trim().toLowerCase()) ||
+        (b.company.trim() && x.company.trim().toLowerCase() === b.company.trim().toLowerCase()));
+      if (dup) {
+        state.buyerDupWarning = `Yeh company/email already database mein hai: "${dup.name} (${dup.company})". Phir bhi add karna hai to button dobara dabayein.`;
+        state.buyerDupConfirmed = true;
+        render();
+        return;
+      }
+    }
+    state.buyerDupWarning = ""; state.buyerDupConfirmed = false;
+    state.buyers = exists ? state.buyers.map(x=>x.id===b.id?b:x) : [...state.buyers, b];
+    state.editBuyer = null; persist("buyers-list","buyers"); render();
+  });
+
+  bind("add-contact", () => { state.editContact = emptyContact(); render(); });
+  bind("edit-contact", (el) => { state.editContact = state.contacts.find(c=>c.id===el.dataset.id); render(); });
+  bind("save-contact", () => {
+    const c = state.editContact;
+    c.buyerId=val("c_buyerId"); c.emailDate=val("c_emailDate"); c.replyReceived=val("c_replyReceived");
+    c.nextFollowup=val("c_nextFollowup"); c.sampleSent=val("c_sampleSent"); c.quotationSent=val("c_quotationSent");
+    c.orderStatus=val("c_orderStatus"); c.replyNotes=val("c_replyNotes"); c.meetingNotes=val("c_meetingNotes");
+    if (!c.buyerId) return;
+    const exists = state.contacts.some(x=>x.id===c.id);
+    state.contacts = exists ? state.contacts.map(x=>x.id===c.id?c:x) : [...state.contacts, c];
+    state.editContact = null; persist("contacts-list","contacts"); render();
+  });
+
+  bind("add-product", () => { state.editProduct = emptyProduct(); render(); });
+  bind("edit-product", (el) => { state.editProduct = state.products.find(p=>p.id===el.dataset.id); render(); });
+  bind("save-product", () => {
+    const p = state.editProduct;
+    p.name=val("p_name"); p.price=val("p_price"); p.currency=val("p_currency"); p.incoterms=val("p_incoterms");
+    p.moq=val("p_moq"); p.catalog=val("p_catalog");
+    p.certificates=val("p_certificates"); p.photoDesc=val("p_photoDesc"); p.specs=val("p_specs");
+    const exists = state.products.some(x=>x.id===p.id);
+    state.products = exists ? state.products.map(x=>x.id===p.id?p:x) : [...state.products, p];
+    state.editProduct = null; persist("products-list","products"); render();
+  });
+
+  bind("add-task", () => { state.editTask = emptyTask(); render(); });
+  bind("save-task", () => {
+    const t = state.editTask;
+    t.type=val("t_type"); t.buyerId=val("t_buyerId"); t.dueDate=val("t_dueDate"); t.note=val("t_note");
+    const exists = state.tasks.some(x=>x.id===t.id);
+    state.tasks = exists ? state.tasks.map(x=>x.id===t.id?t:x) : [...state.tasks, t];
+    state.editTask = null; persist("tasks-list","tasks"); render();
+  });
+  bind("toggle-task", (el) => {
+    state.tasks = state.tasks.map(t=>t.id===el.dataset.id?{...t,done:!t.done}:t);
+    persist("tasks-list","tasks"); render();
+  });
+  bind("task-done", (el) => {
+    state.tasks = state.tasks.map(t=>t.id===el.dataset.id?{...t,done:true}:t);
+    persist("tasks-list","tasks"); render();
+  });
+  bind("delete-task", (el) => {
+    state.tasks = state.tasks.filter(t=>t.id!==el.dataset.id);
+    persist("tasks-list","tasks"); render();
+  });
+  bind("fair-reminder", (el) => {
+    const f = TRADE_FAIRS[+el.dataset.idx];
+    state.tasks = [...state.tasks, { ...emptyTask(), type:"Follow-up", dueDate:f.date, note:`${f.name} — trade fair sourcing/exhibit reminder` }];
+    persist("tasks-list","tasks");
+    state.tab = "tasks"; render();
+  });
+
+  bind("gen-email", async () => {
+    state.emailForm.buyerId = val("emailBuyer"); state.emailForm.type = val("emailType"); state.emailForm.context = val("emailContext");
+    const b = state.buyers.find(x=>x.id===state.emailForm.buyerId);
+    if (!b) return;
+    state.emailLoading = true; state.emailResult = ""; render();
+    const prompt = `Tum ek home furnishing export company ke liye professional B2B email likh rahe ho (Panipat, India based exporter). Buyer details: Name: ${b.name}, Company: ${b.company}, Country: ${b.country}, Product Category interested: ${b.category}, MOQ: ${b.moq}. Email type: ${state.emailForm.type}. Extra context: ${state.emailForm.context || "none"}. Email professional business English mein likho (buyer international hai), concise, persuasive, with clear subject line at top as "Subject: ...". Sirf email content do, koi extra explanation nahi.`;
+    try { state.emailResult = await callClaude(prompt, 700); }
+    catch (e) { state.emailResult = "Email generate nahi ho paaya. Yeh feature sirf Claude.ai ke andar chalta hai — agar file download karke standalone khola hai to yeh kaam nahi karega."; }
+    state.emailLoading = false; render();
+  });
+
+  bind("gen-insights", async () => {
+    state.insightLoading = true; state.insightResult = ""; render();
+    const dataSummary = {
+      buyers: state.buyers.map(b=>({name:b.name,company:b.company,country:b.country,category:b.category,priority:b.priority,annualImport:b.annualImport})),
+      contacts: state.contacts.map(c=>({buyerId:c.buyerId,reply:c.replyReceived,sample:c.sampleSent,quotation:c.quotationSent,orderStatus:c.orderStatus})),
+    };
+    const prompt = `Tum ek home furnishing export business ke liye AI sales analyst ho (India, Panipat based). Neeche diya gaya buyer aur contact data dekho aur Hinglish mein short insights do teen headings ke saath:\n1) Kaun se buyers ki order milne ki sambhavna sabse zyada hai aur kyun\n2) Kis country mein sabse zyada opportunity dikh rahi hai\n3) Kaun sa product category sabse zyada demand mein hai\nData: ${JSON.stringify(dataSummary)}\nAgar data bahut kam hai to woh bhi bata dena. Concise rakhna, bullet points use karo.`;
+    try { state.insightResult = await callClaude(prompt, 800); }
+    catch (e) { state.insightResult = "Insights generate nahi ho paaye. Yeh feature sirf Claude.ai ke andar chalta hai."; }
+    state.insightLoading = false; render();
+  });
+
+  bind("run-discover", async () => {
+    state.discoverLoading = true; state.discoverResults = null; state.discoverError = ""; state.discoverProgress = ""; render();
+    const country = state.searchCountry.trim(); const category = state.searchCategory.trim();
+    const criteria = [country ? `country: ${country}` : "", category ? `product category: ${category}` : ""].filter(Boolean).join(", ");
+    const TARGET = 50;
+    const MAX_BATCHES = 7;
+    const collected = [];
+    const seen = new Set();
+    let lastRawError = "";
+    for (let batch = 0; batch < MAX_BATCHES && collected.length < TARGET; batch++) {
+      state.discoverProgress = `Batch ${batch + 1}/${MAX_BATCHES} search kar rahe hain… (ab tak ${collected.length} buyers mile)`;
+      render();
+      const excludeList = collected.map(c => c.company).filter(Boolean).slice(-40).join("; ");
+      const prompt = `Web search karke home furnishing / home textile import, wholesale, ya retail business mein active REAL companies dhundo jo in criteria se match karti hain — ${criteria}. Is batch mein kam se kam 10-15 NAYI companies do jo pehle list nahi ki gayi hain${excludeList ? ` (yeh already list mein hain, inhe repeat mat karna: ${excludeList})` : ""}. Har company ke liye pata karo: company ka pura naam, desh, official website (agar mile), product category, aur ek chhoti note. SIRF real, verifiable, publicly known companies do — agar pakka confirm na ho to woh company list mein mat daalo. Research ke baad SIRF neeche diya JSON array format return karo, koi aur text pehle ya baad mein nahi:\n[{"company":"","country":"","website":"","category":"","notes":""}]`;
+      let raw = "";
+      try {
+        raw = await callClaudeWithSearch(prompt, 3800);
+      } catch (e) {
+        // transient/rate-limit error — thoda ruk kar ek baar aur try karein
+        await sleep(1500);
+        try { raw = await callClaudeWithSearch(prompt, 3800); }
+        catch (e2) { lastRawError = e2.message || String(e2); await sleep(800); continue; }
+      }
+      try {
+        const clean = raw.replace(/```json|```/g, "").trim();
+        const m = clean.match(/\[[\s\S]*\]/);
+        if (!m) { lastRawError = "JSON format nahi mila is batch mein"; await sleep(800); continue; }
+        const parsed = JSON.parse(m[0]);
+        for (const r of parsed) {
+          const key = (r.company || "").trim().toLowerCase();
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          collected.push(r);
+        }
+      } catch (e) {
+        lastRawError = e.message || String(e);
+        // ek batch fail ho jaaye to poora search mat rokein, agla batch try karein
+        await sleep(800);
+        continue;
+      }
+      await sleep(500); // batches ke beech thoda gap, taaki rapid-fire calls se rate-limit na lage
+    }
+    if (collected.length === 0) {
+      state.discoverError = `Search mein error aayi (yeh feature sirf Claude.ai ke andar chalta hai) — ya country/category thoda specific likhein.${lastRawError ? " [detail: " + lastRawError + "]" : ""}`;
+    } else {
+      state.discoverResults = collected.map(r => ({ ...r, __id: uid(), added: false }));
+      if (collected.length < TARGET) {
+        state.discoverError = `${collected.length} buyers mile (target ${TARGET} tha) — is niche/country mein itni hi verifiable companies mil paayi. Category/country thoda broad kar ke dobara try karein to zyada mil sakte hain.`;
+      }
+    }
+    state.discoverProgress = ""; state.discoverLoading = false; render();
+  });
+  bind("discover-add", (el) => {
+    const r = state.discoverResults.find(x => x.__id === el.dataset.id);
+    if (!r) return;
+    state.buyers = [...state.buyers, { ...emptyBuyer(), name: r.company || "", company: r.company || "", country: r.country || "", website: r.website || "", category: r.category || "" }];
+    persist("buyers-list","buyers");
+    r.added = true; render();
+  });
+  bind("discover-skip", (el) => {
+    state.discoverResults = state.discoverResults.filter(x => x.__id !== el.dataset.id);
+    render();
+  });
+
+  bind("run-lookup", async () => {
+    state.lookupName = val("lookupName");
+    if (!state.lookupName.trim()) return;
+    state.lookupLoading = true; state.lookupResult = null; state.lookupError = ""; render();
+    const prompt = `Web search karke "${state.lookupName}" naam ki company/buyer ke baare mein public jaankari dhundo — yeh home furnishing, home textile, ya import/wholesale business context mein ho sakta hai. Pata karo: company ka pura naam, desh, official website, business/product category, aur ek chhoti si note. Agar reliable public info nahi milti to fields khaali chodo aur note mein likho. Research karne ke baad SIRF neeche diya JSON format return karo, koi aur text nahi:\n{"company":"","country":"","website":"","category":"","notes":""}`;
+    try {
+      const raw = await callClaudeWithSearch(prompt, 1200);
+      const clean = raw.replace(/\`\`\`json|\`\`\`/g, "").trim();
+      const m = clean.match(/\{[\s\S]*\}/);
+      state.lookupResult = JSON.parse(m ? m[0] : clean);
+    } catch (e) {
+      state.lookupError = "Lookup mein error aayi (yeh feature sirf Claude.ai ke andar chalta hai) — ya naam thoda specific likhein.";
+    }
+    state.lookupLoading = false; render();
+  });
+  bind("add-lookup", () => {
+    const r = state.lookupResult;
+    state.editBuyer = { ...emptyBuyer(), name: state.lookupName, company: r.company||state.lookupName, country: r.country||"", website: r.website||"", category: r.category||"" };
+    state.tab = "buyers"; render();
+  });
+
+  bind("open-mail-app", () => {
+    const b = state.buyers.find(x => x.id === state.emailForm.buyerId);
+    const { subject, body } = parseEmailResult(state.emailResult);
+    const to = b && b.email ? b.email : "";
+    const url = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  });
+
+  bind("open-quickfind", () => { state.quickFindOpen = true; state.quickFindQuery = ""; render(); });
+  bind("close-quickfind", () => { state.quickFindOpen = false; render(); });
+  bind("quickfind-goto", (el) => { state.tab = el.dataset.tab; state.quickFindOpen = false; render(); });
+
+  bind("open-settings", () => { state.settingsOpen = true; state.restorePending = null; state.restoreStatus = ""; state.backupStatus = ""; state.pinSetupValue = ""; state.pinSetupStatus = ""; state.cloudSaveStatus = ""; state.cloudUploadStatus = ""; state.cloudUploadPending = null; render(); });
+  bind("close-settings", () => { state.settingsOpen = false; render(); });
+
+  bind("cloud-save", () => { cloudPushAll(); });
+  bind("cloud-upload", () => { cloudPullAll(); });
+  bind("confirm-cloud-upload", () => { confirmCloudPull(); });
+  bind("cancel-cloud-upload", () => { state.cloudUploadPending = null; render(); });
+
+  bind("download-backup", () => {
+    const payload = { buyers: state.buyers, contacts: state.contacts, products: state.products, tasks: state.tasks, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `export-crm-backup-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    state.backupStatus = "Backup download ho gaya ✓"; render();
+    setTimeout(() => { state.backupStatus = ""; render(); }, 4000);
+  });
+
+  bind("restore-trigger", () => { document.getElementById("restoreInput").click(); });
+  bind("confirm-restore", () => {
+    const d = state.restorePending;
+    state.buyers = d.buyers || []; state.contacts = d.contacts || []; state.products = d.products || []; state.tasks = d.tasks || [];
+    persist("buyers-list","buyers"); persist("contacts-list","contacts"); persist("products-list","products"); persist("tasks-list","tasks");
+    state.restorePending = null; state.restoreStatus = "Data restore ho gaya ✓"; render();
+  });
+  bind("cancel-restore", () => { state.restorePending = null; render(); });
+
+  bind("save-pin", () => {
+    const v = val("pinSetupInput").trim();
+    if (!/^[0-9]{4,6}$/.test(v)) { state.pinSetupStatus = "PIN 4-6 digit ka number hona chahiye."; render(); return; }
+    state.pin = v; storage.set("app-pin", v);
+    state.pinSetupStatus = "PIN set ho gaya ✓"; state.pinSetupValue = "";
+    render();
+  });
+  bind("remove-pin", () => {
+    state.pin = null; storage.set("app-pin", null);
+    state.pinSetupStatus = "PIN hata diya gaya."; render();
+  });
+
+  const quickFindInput = document.getElementById("quickFindInput");
+  if (quickFindInput) quickFindInput.addEventListener("input", () => { state.quickFindQuery = quickFindInput.value; render(); });
+  const pinSetupInput = document.getElementById("pinSetupInput");
+  if (pinSetupInput) pinSetupInput.addEventListener("input", () => { state.pinSetupValue = pinSetupInput.value; });
+  const restoreInput = document.getElementById("restoreInput");
+  if (restoreInput) restoreInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed.buyers || !parsed.contacts || !parsed.products || !parsed.tasks) throw new Error("invalid");
+      state.restorePending = parsed; state.restoreStatus = "";
+    } catch (err) { state.restoreStatus = "Yeh valid backup file nahi hai."; }
+    render();
+  });
+
+  bind("excel-trigger", () => { document.getElementById("excelInput").click(); });
+
+  // plain input listeners (search filters + file input) need to be bound after render too
+  const sc = document.getElementById("searchCountry"); if (sc) sc.addEventListener("input", () => { state.searchCountry = sc.value; renderSearchListOnly(); });
+  const scat = document.getElementById("searchCategory"); if (scat) scat.addEventListener("input", () => { state.searchCategory = scat.value; renderSearchListOnly(); });
+  const fi = document.getElementById("excelInput");
+  if (fi) fi.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    state.importStatus = "Padha ja raha hai...";
+    try {
+      const parsed = await parseExcelFile(file);
+      if (parsed.length === 0) state.importStatus = "Koi valid row nahi mili. Columns check karein.";
+      else { state.buyers = [...state.buyers, ...parsed]; persist("buyers-list","buyers"); state.importStatus = parsed.length + " buyers import ho gaye ✓"; }
+    } catch (err) { state.importStatus = "File padhne mein error aayi. .xlsx ya .csv try karein."; }
+    render();
+    setTimeout(() => { state.importStatus = ""; render(); }, 5000);
+  });
+}
+function bind(action, handler) {
+  document.querySelectorAll(`[data-action="${action}"]`).forEach(el => el.addEventListener("click", () => handler(el)));
+}
+function val(id) { const el = document.getElementById(id); return el ? el.value : ""; }
+function renderSearchListOnly() { render(); } // simple full re-render keeps logic simple & correct
+
+loadAll();
+</script>
+</body>
+</html>

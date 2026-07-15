@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report & Mail Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg:#EEF1F6; --card:#FFFFFF; --border:#D9E0EA; --text:#16202E; --dgrey:#5B6B82;
+    --ink:#1C3A5E; --ink2:#2C517F; --hover:#E6EBF4; --accent:#B9793B; --accent-soft:rgba(185,121,59,.14);
+    --green:#1E8F72; --green-soft:rgba(30,143,114,.14); --red:#C1443B; --red-soft:rgba(193,68,59,.13);
+    --brand1:#1C3A5E; --brand2:#2C517F;
+    --shadow:0 1px 2px rgba(20,30,50,.04), 0 4px 14px rgba(20,30,50,.06);
+    color-scheme:light;
+  }
+  body.dark-mode{
+    --bg:#0B121C; --card:#131C29; --border:#233245; --text:#E7ECF3; --dgrey:#8C9BB3;
+    --ink:#7FA8D9; --ink2:#9CBEE6; --hover:#1A2534; --accent:#D79A54; --accent-soft:rgba(215,154,84,.16);
+    --green:#3FBF9B; --green-soft:rgba(63,191,155,.15); --red:#E2665C; --red-soft:rgba(226,102,92,.15);
+    --brand1:#0F1D2E; --brand2:#1C3A5E;
+    --shadow:0 1px 2px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.3); color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+
+  /* ── Topbar ── */
+  .topbar{background:linear-gradient(135deg,var(--brand1) 0%,var(--brand2) 100%);color:#fff;padding:0 18px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+  .topbar-brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .hamburger-btn{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+  .brand-badge{flex-shrink:0;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.32);display:flex;align-items:center;justify-content:center;font-size:19px}
+  .topbar h1{font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:700;margin:0;letter-spacing:-.2px;color:#fff;white-space:nowrap}
+  .topbar-sub{font-size:10.5px;opacity:.8;display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .theme-toggle-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.32);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+  .theme-toggle-btn:hover{background:rgba(255,255,255,.28);transform:rotate(15deg)}
+
+  /* ── Sidebar ── */
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:899}
+  .sidebar-overlay.open{display:block}
+  .layout{display:flex;min-height:calc(100vh - 60px)}
+  .sidebar{width:216px;background:linear-gradient(180deg,var(--brand1),var(--brand2) 140%);color:#fff;padding:14px 0;flex-shrink:0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+  .sidebar-section{padding:14px 16px 6px;font-size:10px;font-weight:700;opacity:.55;letter-spacing:1px;text-transform:uppercase;color:#fff}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:.2s;font-size:13px;border-left:3px solid transparent;color:rgba(255,255,255,.85)}
+  .nav-item:hover{background:rgba(255,255,255,.08)}
+  .nav-item.active{background:rgba(255,255,255,.14);border-left-color:var(--accent);color:#fff;font-weight:600}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+
+  /* ── Main content ── */
+  .main{flex:1;padding:26px 20px 70px;overflow-y:auto;min-width:0}
+  .wrap{max-width:900px;margin:0 auto}
+
+  /* ── Thread strip (inside sidebar): one capsule per factory system ── */
+  .thread-strip{display:flex;flex-wrap:wrap;gap:5px;margin:8px 16px 4px;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:9px}
+  .thread-strip .ts-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;width:100%;margin-bottom:2px}
+  .thread{width:15px;height:7px;border-radius:5px;background:rgba(255,255,255,.25);transition:.25s;cursor:default}
+  .thread.ok{background:var(--green)}
+  .thread.err{background:var(--red)}
+  .thread.local{background:var(--accent)}
+  .thread.loading{background:#9CBEE6;animation:pulse 1s infinite ease-in-out}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .section h2{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin:0 0 14px;color:var(--text);display:flex;align-items:center;gap:10px;scroll-margin-top:74px}
+  .step-num{flex-shrink:0;width:24px;height:24px;border-radius:7px;background:var(--ink);color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .sys-card{border:1px solid var(--border);border-radius:9px;padding:12px;cursor:pointer;transition:.15s;background:var(--card)}
+  .sys-card:hover{background:var(--hover);transform:translateY(-1px);box-shadow:var(--shadow)}
+  .sys-card.selected{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink)}
+  .sys-name{font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .sys-meta{font-size:11px;color:var(--dgrey);margin-top:4px;font-family:'JetBrains Mono',monospace}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .badge.idle{background:var(--hover);color:var(--dgrey)}
+  .badge.ok{background:var(--green-soft);color:var(--green)}
+  .badge.err{background:var(--red-soft);color:var(--red)}
+  .badge.local{background:var(--accent-soft);color:var(--accent)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  button{background:var(--ink);color:#fff;border:none;padding:9px 17px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  button:hover:not(:disabled){background:var(--ink2);transform:translateY(-1px)}
+  button.secondary{background:transparent;color:var(--ink);border:1.5px solid var(--border)}
+  button.secondary:hover:not(:disabled){border-color:var(--ink);background:var(--hover);color:var(--ink)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  input[type=file]{font-size:12px}
+  input[type=text],input[type=email],textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;font-family:'Inter',inherit;transition:.15s}
+  input[type=time]{padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;font-family:'JetBrains Mono',monospace}
+  input:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px var(--accent-soft)}
+  .chk-row{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;cursor:pointer}
+  .chk-row input{cursor:pointer;accent-color:var(--ink)}
+  textarea{min-height:220px;white-space:pre-wrap;resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6}
+  label{font-size:12px;color:var(--dgrey);display:block;margin:10px 0 4px;font-weight:500}
+  .radio-row{display:flex;gap:16px;font-size:13px}
+  .radio-row label{display:flex;align-items:center;gap:6px;margin:0;color:var(--text);cursor:pointer}
+  .radio-row input{accent-color:var(--ink)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 22px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.25);border-left:3px solid var(--accent)}
+  .note{font-size:12px;color:var(--dgrey);background:var(--hover);padding:11px 13px;border-radius:8px;margin-top:10px;line-height:1.55;border-left:3px solid var(--border)}
+  .tab-btn{background:var(--hover);color:var(--text);border:1.5px solid var(--border);padding:6px 13px;border-radius:20px;font-size:12px;cursor:pointer}
+  .tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .picker-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .picker-row:last-child{border-bottom:none}
+  .picker-row .name{flex:1}
+  .picker-row button{padding:5px 11px;font-size:11px}
+  .chat-msg{padding:10px 14px;border-radius:12px;font-size:13px;max-width:85%;white-space:pre-wrap;line-height:1.55}
+  .chat-msg.user{background:var(--ink);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+  .chat-msg.ai{background:var(--hover);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px}
+  .chat-msg.loading{color:var(--dgrey);font-style:italic}
+
+  /* ── Critical Alerts Board — railway departure board style, slow marquee ── */
+  .alert-board{display:none;align-items:center;gap:12px;background:#0A0E14;border-bottom:2px solid #C1443B;padding:0 16px;height:38px;overflow:hidden;position:sticky;top:60px;z-index:998}
+  .alert-board-label{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#E2665C;letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+  .alert-board-label .dot{width:7px;height:7px;border-radius:50%;background:#E2665C;animation:pulse 1.4s infinite}
+  .alert-board-track{flex:1;overflow:hidden;white-space:nowrap;position:relative;height:100%}
+  .alert-board-content{display:inline-flex;gap:0;position:absolute;white-space:nowrap;animation:board-scroll 120s linear infinite;will-change:transform}
+  .alert-board-content span{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#F5A623;padding-right:70px;letter-spacing:.3px;line-height:38px}
+  @keyframes board-scroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* ── OK / Status Board — calm green ribbon for "sab theek chal raha hai" items ── */
+  .ok-board{display:none;align-items:center;gap:12px;background:#081410;border-bottom:2px solid #1E8F72;padding:0 16px;height:34px;overflow:hidden;position:sticky;top:98px;z-index:997}
+  .ok-board .alert-board-label{color:#3FBF9B}
+  .ok-board .alert-board-label .dot{background:#3FBF9B;animation:none}
+  .ok-board .alert-board-content span{color:#4FD8AE;font-size:12px;line-height:34px;padding-right:70px}
+  @media (max-width:860px){
+    .hamburger-btn{display:block}
+    .topbar-sub{display:none}
+    .sidebar{position:fixed;left:0;top:60px;transform:translateX(-100%);transition:transform .25s;z-index:900;box-shadow:4px 0 24px rgba(0,0,0,.35)}
+    .sidebar.open{transform:translateX(0)}
+    .alert-board-label span.label-text{display:none}
+  }  /* ── Factory TV Dashboard Mode — floor pe TV/monitor ke liye full-screen view ── */
+  .tv-dashboard{display:none;position:fixed;inset:0;background:radial-gradient(ellipse at top,#0F1D2E,#050A12);z-index:5000;flex-direction:column;padding:24px 32px;color:#fff;font-family:'Inter',sans-serif}
+  .tv-exit-btn{position:absolute;top:20px;right:28px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;z-index:10}
+  .tv-exit-btn:hover{background:rgba(255,255,255,.2)}
+  .tv-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .tv-brand{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700}
+  .tv-clock{font-family:'JetBrains Mono',monospace;font-size:20px;color:#9CBEE6}
+  .tv-tickers{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .tv-ticker{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border-radius:10px;padding:0 18px;height:46px;overflow:hidden}
+  .tv-ticker.critical{border-left:4px solid #E2665C}
+  .tv-ticker.ok{border-left:4px solid #3FBF9B}
+  .tv-ticker-label{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:1.5px}
+  .tv-ticker.critical .tv-ticker-label{color:#E2665C}
+  .tv-ticker.ok .tv-ticker-label{color:#3FBF9B}
+  .tv-ticker-track{flex:1;overflow:hidden;white-space:nowrap;position:relative;height:100%}
+  .tv-ticker-content{display:inline-flex;position:absolute;white-space:nowrap;animation:board-scroll 60s linear infinite}
+  .tv-ticker-content span{font-family:'JetBrains Mono',monospace;font-size:16px;padding-right:70px;line-height:46px}
+  .tv-ticker.critical .tv-ticker-content span{color:#F5A623}
+  .tv-ticker.ok .tv-ticker-content span{color:#4FD8AE}
+  .tv-main{flex:1;display:flex;align-items:center;justify-content:center;padding-top:20px}
+  .tv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%}
+  .tv-card{background:rgba(255,255,255,.05);border-radius:14px;padding:22px 18px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+  .tv-card-name{font-size:14px;color:rgba(255,255,255,.7);margin-bottom:10px}
+  .tv-card-val{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700}
+  .tv-card.tv-ok .tv-card-val{color:#3FBF9B}
+  .tv-card.tv-err .tv-card-val{color:#E2665C}
+  .tv-card.tv-idle .tv-card-val{color:rgba(255,255,255,.35)}
+  .tv-critical-title{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#E2665C;text-align:center;margin-bottom:24px}
+  .tv-critical-list{display:flex;flex-direction:column;gap:14px;width:100%;max-width:1000px;margin:0 auto}
+  .tv-critical-item{background:rgba(226,102,92,.1);border-left:4px solid #E2665C;border-radius:8px;padding:14px 20px;font-size:18px;font-family:'JetBrains Mono',monospace}
+  .tv-critical-item.tv-clean{border-left-color:#3FBF9B;background:rgba(63,191,155,.1);color:#4FD8AE;text-align:center}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">
+    <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+    <div class="brand-badge">🧵</div>
+    <div>
+      <h1>Report & Mail Agent</h1>
+      <span class="topbar-sub">Sabhi factory systems se data padhiye, report banayiye, aur email/WhatsApp draft karke bhejiye</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleDarkMode()" title="Dark / Light Mode">🌙</button>
+  </div>
+</div>
+<div class="alert-board" id="alertBoard">
+  <div class="alert-board-label"><span class="dot"></span><span class="label-text">CRITICAL</span></div>
+  <div class="alert-board-track"><div class="alert-board-content" id="alertBoardContent"></div></div>
+</div>
+<div class="alert-board ok-board" id="okBoard">
+  <div class="alert-board-label"><span class="dot"></span><span class="label-text">STATUS</span></div>
+  <div class="alert-board-track"><div class="alert-board-content" id="okBoardContent"></div></div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="layout">
+  <div class="sidebar" id="mainSidebar">
+    <div class="sidebar-section">Workflow</div>
+    <div class="nav-item active" onclick="navTo('sec-systems',this)"><span class="icon">☁️</span> 1. Systems</div>
+    <div class="nav-item" onclick="navTo('sec-report',this)"><span class="icon">📝</span> 2. Report</div>
+    <div class="nav-item" onclick="navTo('sec-email',this)"><span class="icon">✉️</span> 3. Email</div>
+    <div class="nav-item" onclick="navTo('sec-ai',this)"><span class="icon">🤖</span> 4. AI Assistant</div>
+    <div class="nav-item" onclick="navTo('sec-reminders',this)"><span class="icon">🔔</span> 5. Reminders</div>
+    <div class="nav-item" onclick="navTo('sec-backup',this)"><span class="icon">📊</span> 6. Sheet Backup</div>
+    <div class="sidebar-section">Live Status</div>
+    <div class="thread-strip" id="threadStrip"><span class="ts-label">17 systems</span></div>
+  </div>
+  <div class="main">
+  <div class="wrap">
+
+  <!-- STEP 1: SYSTEMS -->
+  <div class="section" id="sec-systems">
+    <h2><span class="step-num">1</span> Systems select karein aur data fetch karein</h2>
+    <div class="grid" id="sysGrid"></div>
+    <div class="row">
+      <button class="secondary" onclick="selectAllSystems(true)">☑️ Select All</button>
+      <button class="secondary" onclick="selectAllSystems(false)">⬜ Unselect All</button>
+      <button onclick="fetchAllCloud()">🔄 Fetch all cloud systems</button>
+      <button class="secondary" onclick="enterTvMode()">📺 Factory TV Dashboard</button>
+      <span id="fetchStatus" style="font-size:12px;color:var(--dgrey)"></span>
+    </div>
+    <div class="note">☁️ = seedha cloud se fetch hota hai. 📁 = is system ka data localStorage-only hai; pehle us file se JSON export karke yahan upload karein.</div>
+  </div>
+
+  <!-- STEP 2: REPORT -->
+  <div class="section" id="sec-report">
+    <h2><span class="step-num">2</span> Report banayein</h2>
+    <div class="radio-row">
+      <label><input type="radio" name="mode" value="consolidated" checked onchange="renderPreview()"> Consolidated summary (sab selected systems)</label>
+      <label><input type="radio" name="mode" value="individual" onchange="renderPreview()"> Per-system detailed report</label>
+    </div>
+    <div class="row">
+      <button onclick="renderPreview()">📝 Generate report</button>
+      <span style="font-size:12px;color:var(--dgrey)">(Step 1 mein jo systems ✅ tick hain, unhi ka report banega)</span>
+    </div>
+    <div id="includedChips" class="note" style="display:none"></div>
+    <div class="row" id="previewSwitchRow" style="display:none">
+      <label style="margin:0">Akela dekhna ho to:</label>
+      <select id="previewSwitch" onchange="switchPreview(this.value)" style="width:auto;padding:6px 10px">
+        <option value="__all__">📑 Sab combined (final — email mein ye jayega)</option>
+      </select>
+    </div>
+    <label style="margin-top:14px">Report Preview <span style="color:var(--dgrey);font-weight:400" id="previewLabel">(ye poora report hai jo email mein jayega — scroll kar ke check karein)</span></label>
+    <textarea id="preview" readonly placeholder="Pehle 'Generate report' dabao — report yahan dikhega..."></textarea>
+  </div>
+
+  <!-- STEP 3: EMAIL -->
+  <div class="section" id="sec-email">
+    <h2><span class="step-num">3</span> Email draft aur bhejna</h2>
+    <label>To (comma se alag alag emails)</label>
+    <input type="text" id="toField" placeholder="merchandiser@company.com, buyer@company.com">
+    <label>Subject</label>
+    <input type="text" id="subjectField">
+    <div class="row">
+      <button onclick="prepareEmail()">✉️ Email draft banayein</button>
+      <button class="secondary" onclick="copyReport()">📋 Report copy karein</button>
+    </div>
+
+    <div id="emailPreviewBox" style="display:none;margin-top:16px;border:2px solid var(--ink);border-radius:8px;overflow:hidden">
+      <div style="background:var(--ink);color:#fff;padding:8px 14px;font-size:12px;font-weight:600">📧 FINAL EMAIL PREVIEW — Send se pehle ye zaroor check karein</div>
+      <div style="padding:14px;background:var(--card)">
+        <div style="font-size:12px;margin-bottom:6px"><b>To:</b> <span id="prevTo"></span></div>
+        <div style="font-size:12px;margin-bottom:10px"><b>Subject:</b> <span id="prevSubject"></span></div>
+        <div style="font-size:12px;color:var(--dgrey);margin-bottom:4px"><b>Body:</b></div>
+        <div id="prevBody" style="font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto;background:var(--hover);padding:10px;border-radius:6px"></div>
+      </div>
+    </div>
+
+    <div class="note">Upar wala box hi wo email hai jo jayega. Sahi lage to "Send" dabao — aapka default mail app (Gmail) khulega jisme sab already bhara hoga, wahan final "Send" khud confirm karke dabana hoga. Bina confirm ke koi email nahi jayega.</div>
+    <div class="row">
+      <button id="sendBtn" onclick="confirmAndSend()" disabled>📤 Send (Gmail/Mail App kholein)</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: AI ASSISTANT -->
+  <div class="section" id="sec-ai">
+    <h2><span class="step-num">4</span> 🤖 AI Assistant — apne data se sawaal poochho</h2>
+    <div class="note">Pehle Step 1 mein "Fetch all cloud systems" kar lena — AI usi fetched data se jawaab dega. Jaise: "TJX ke order ka status kya hai?" ya "kis system mein sabse zyada delay hai?"</div>
+    <div id="chatBox" style="max-height:340px;overflow-y:auto;margin:12px 0;display:flex;flex-direction:column;gap:10px"></div>
+    <div class="row">
+      <input type="text" id="chatInput" placeholder="Apna sawaal yahan likho ya 🎤 dabake bolo..." style="flex:1" onkeydown="if(event.key==='Enter') askAI()">
+      <button class="secondary" id="micBtn" onclick="startVoiceQuery()" title="Bolke poochho">🎤</button>
+      <button onclick="askAI()">💬 Poochho</button>
+    </div>
+    <div class="note" id="voiceQueryStatus" style="display:none"></div>
+  </div>
+
+  <!-- STEP 5: REMINDERS, VOICE, WHATSAPP, NOTIFICATIONS -->
+  <div class="section" id="sec-reminders">
+    <h2><span class="step-num">5</span> 🔔 Reminders — Voice, WhatsApp, Notification &amp; Auto-Briefing</h2>
+    <div class="note">⚠️ Ye sab reminders tabhi chalenge jab ye tab/browser khula ho (minimize chalega, but tab/browser band hone ya phone lock hone par background mein nahi chalega — asli push notification ke liye alag server chahiye hota).</div>
+
+    <div class="row">
+      <label class="chk-row"><input type="checkbox" id="chkNotif"> 🖥️ Desktop notification</label>
+      <label class="chk-row"><input type="checkbox" id="chkVoice"> 🔊 Voice reminder</label>
+      <label class="chk-row"><input type="checkbox" id="chkMorning"> 🌅 Morning briefing</label>
+      <label class="chk-row"><input type="checkbox" id="chkEvening"> 🌆 Evening summary</label>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>🌅 Morning briefing time</label>
+        <input type="time" id="morningTime" value="09:00">
+      </div>
+      <div>
+        <label>🌆 Evening summary time</label>
+        <input type="time" id="eveningTime" value="18:00">
+      </div>
+      <div style="flex:1;min-width:220px">
+        <label>📲 WhatsApp number (country code sahit, jaise 91XXXXXXXXXX)</label>
+        <input type="text" id="waNumber" placeholder="91XXXXXXXXXX">
+      </div>
+    </div>
+
+    <div class="row">
+      <button onclick="saveReminderSettings()">💾 Settings save karein</button>
+      <button class="secondary" onclick="requestNotifPermission()">🔔 Notification permission allow karein</button>
+      <button class="secondary" onclick="testNotification()">🔔 Test notification</button>
+      <button class="secondary" onclick="testVoice()">🔊 Test voice</button>
+      <button class="secondary" onclick="sendWhatsApp()">📲 Abhi ka report WhatsApp par bhejein</button>
+    </div>
+    <div id="reminderStatus" class="note"></div>
+  </div>
+
+  <!-- STEP 6: GOOGLE SHEET BACKUP -->
+  <div class="section" id="sec-backup">
+    <h2><span class="step-num">6</span> 📊 Google Sheet Backup</h2>
+    <div class="note">Har fetch ka overview (system, status, records) ek Google Sheet mein history ke roop mein save ho jayega — data safe rahega aur aage trend analysis ke kaam aayega. Setup ek baar karna hai (5 min ka kaam), niche instructions hain.</div>
+    <div class="row">
+      <div style="flex:1;min-width:280px">
+        <label>🔗 Google Apps Script Web App URL</label>
+        <input type="text" id="sheetWebhookUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+    </div>
+    <div class="row">
+      <label class="chk-row"><input type="checkbox" id="chkAutoBackup"> Har morning/evening briefing ke saath auto-backup karein</label>
+    </div>
+    <div class="row">
+      <button onclick="saveReminderSettings()">💾 Save karein</button>
+      <button class="secondary" onclick="backupToGoogleSheet()">📊 Abhi backup karein</button>
+      <button class="tab-btn" onclick="document.getElementById('sheetSetupHelp').style.display = document.getElementById('sheetSetupHelp').style.display==='none'?'block':'none'">❔ Setup kaise karein?</button>
+    </div>
+    <div id="sheetSetupHelp" class="note" style="display:none;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;font-size:11.5px">1. sheets.google.com par jaake ek nayi Sheet banao
+2. Extensions → Apps Script kholo
+3. Purana code hatakar ye paste karo:
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  data.rows.forEach(function(r){
+    sheet.appendRow([data.timestamp, r.system, r.status, r.count]);
+  });
+  return ContentService.createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+4. Upar-right "Deploy" → "New deployment" → gear icon se "Web app" select karo
+5. "Execute as": Me, "Who has access": Anyone — phir Deploy dabao
+6. Jo URL milega (…/exec se khatam hone wala) usse copy karke upar wale box mein paste karo aur Save karo</div>
+  </div>
+
+  </div>
+  </div>
+</div>
+<div class="tv-dashboard" id="tvDashboard">
+  <button class="tv-exit-btn" onclick="exitTvMode()">✕ Exit (Esc)</button>
+  <div class="tv-header">
+    <div class="tv-brand">🧵 Factory Control Room</div>
+    <div class="tv-clock" id="tvClock"></div>
+  </div>
+  <div class="tv-tickers">
+    <div class="tv-ticker critical" id="tvCriticalTicker">
+      <div class="tv-ticker-label">🔴 CRITICAL</div>
+      <div class="tv-ticker-track"><div class="tv-ticker-content" id="tvCriticalContent"></div></div>
+    </div>
+    <div class="tv-ticker ok" id="tvOkTicker">
+      <div class="tv-ticker-label">🟢 STATUS</div>
+      <div class="tv-ticker-track"><div class="tv-ticker-content" id="tvOkContent"></div></div>
+    </div>
+  </div>
+  <div class="tv-main" id="tvMainPanel"></div>
+</div>
+<div id="toastBox"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CRITICAL ALERTS BOARD — railway departure-board style ticker
+// ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// FACTORY TV DASHBOARD MODE — floor pe TV/monitor ke liye full-screen auto-rotating view
+// ══════════════════════════════════════════════════════
+let tvClockTimer=null, tvRotateTimer=null, tvPanelIndex=0;
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent = (s===null||s===undefined)?'':String(s); return d.innerHTML; }
+
+function enterTvMode(){
+  document.getElementById('tvDashboard').style.display = 'flex';
+  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+  tvPanelIndex = 0;
+  updateTvClock();
+  renderTvTickers();
+  renderTvPanel();
+  tvClockTimer = setInterval(updateTvClock, 1000);
+  tvRotateTimer = setInterval(()=>{ tvPanelIndex++; renderTvPanel(); renderTvTickers(); }, 12000);
+}
+function exitTvMode(){
+  document.getElementById('tvDashboard').style.display = 'none';
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  clearInterval(tvClockTimer); clearInterval(tvRotateTimer);
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('tvDashboard').style.display==='flex') exitTvMode(); });
+document.addEventListener('fullscreenchange', ()=>{ if(!document.fullscreenElement && document.getElementById('tvDashboard').style.display==='flex') exitTvMode(); });
+
+function updateTvClock(){
+  const el = document.getElementById('tvClock');
+  if(el) el.textContent = new Date().toLocaleString('en-IN', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+function renderTvTickers(){
+  const critItems = collectCriticalAlerts();
+  const okItems = collectOkStatusItems();
+  renderBoard('tvCriticalTicker', 'tvCriticalContent', critItems.length ? critItems : ['✅ Koi critical alert nahi — sab kuch theek hai'], 26);
+  renderBoard('tvOkTicker', 'tvOkContent', okItems.length ? okItems : ['Systems fetch karke status yahin dikhega'], 32);
+  // TV mode mein ticker hamesha dikhna chahiye chahe list khaali ho
+  document.getElementById('tvCriticalTicker').style.display = 'flex';
+  document.getElementById('tvOkTicker').style.display = 'flex';
+}
+function renderTvPanel(){
+  const panel = document.getElementById('tvMainPanel');
+  const slides = ['grid','critical'];
+  const slide = slides[tvPanelIndex % slides.length];
+  if(slide==='grid'){
+    panel.innerHTML = '<div class="tv-grid">' + SYSTEMS.map(s=>{
+      const st = state[s.key];
+      const cls = st.status==='ok' ? 'tv-ok' : st.status==='err' ? 'tv-err' : 'tv-idle';
+      const val = st.status==='ok' ? st.count : (st.status==='err' ? 'ERROR' : '—');
+      return `<div class="tv-card ${cls}"><div class="tv-card-name">${escapeHtml(s.name)}</div><div class="tv-card-val">${escapeHtml(val)}</div></div>`;
+    }).join('') + '</div>';
+  } else {
+    const alerts = collectCriticalAlerts();
+    panel.innerHTML = `<div class="tv-critical-title">🔴 ${alerts.length} Critical Alert${alerts.length===1?'':'s'}</div>` +
+      '<div class="tv-critical-list">' + (
+        alerts.length
+          ? alerts.slice(0,6).map(a=>`<div class="tv-critical-item">${escapeHtml(a)}</div>`).join('')
+          : '<div class="tv-critical-item tv-clean">✅ Sab kuch theek hai — koi critical alert nahi</div>'
+      ) + '</div>';
+  }
+}
+
+function collectCriticalAlerts(){
+  const alerts = [];
+
+  // 1) Fetch errors — highest priority
+  SYSTEMS.forEach(s=>{
+    if(state[s.key] && state[s.key].status==='err'){
+      alerts.push(`🔴 ${s.name}: fetch fail (${state[s.key].error || 'unknown error'})`);
+    }
+  });
+
+  // 2) PPC — shipment date near/overdue + orders with no production action taken yet
+  try{
+    if(state.ppc && state.ppc.status==='ok'){
+      const raw = tryUnwrap(state.ppc.records['textilePPC/v5']);
+      if(raw){
+        const orders = raw.orders || [];
+        const cutting = raw.cuttingData || [];
+        const production = raw.production || [];
+        const finishing = raw.finishingData || [];
+        const packing = raw.packingData || [];
+        orders.forEach(o=>{
+          const shipDaysLeft = o.ship ? -daysLate(o.ship) : null; // positive = days remaining
+          if(shipDaysLeft!==null){
+            if(shipDaysLeft < 0) alerts.push(`🔴 PPC: PO ${o.po} (${o.buyer}) — shipment date ${Math.abs(shipDaysLeft)} din nikal chuki hai, abhi tak nahi gaya`);
+            else if(shipDaysLeft <= 5) alerts.push(`⏰ PPC: PO ${o.po} (${o.buyer}) — shipment sirf ${shipDaysLeft} din mein hai`);
+          }
+          const orderAge = o.orderDate ? daysLate(o.orderDate) : null;
+          const hasAction = [cutting,production,finishing,packing].some(arr=>arr.some(r=>r.po===o.po));
+          if(orderAge!==null && orderAge > 6 && !hasAction && !(o.dispatch>0)){
+            alerts.push(`⚠️ PPC: PO ${o.po} (${o.buyer}) order ${orderAge} din purana hai — abhi tak koi cutting/production action nahi liya gaya`);
+          }
+          // 🚨 Shipment Readiness Predictor: order ki timeline dekhkar bataye ki abhi tak jitna production
+          // hona chahiye tha usse kam hua hai ya nahi (jaise "Stitching 68% hui, shipment 2 din mein")
+          if(o.ship && o.orderDate && o.qty){
+            const orderD = new Date(o.orderDate), shipD = new Date(o.ship), today = new Date();
+            const totalSpan = (shipD-orderD)/86400000, elapsed = (today-orderD)/86400000, daysLeft = (shipD-today)/86400000;
+            if(totalSpan > 0 && daysLeft >= 0 && daysLeft <= 7){
+              const packedQty = packing.filter(p=>p.po===o.po).reduce((sum,p)=>sum+(Number(p.packedQty)||0),0);
+              const completionPct = Math.round((packedQty/o.qty)*100);
+              const expectedPct = Math.min(100, Math.round((elapsed/totalSpan)*100));
+              if(completionPct < expectedPct - 15){
+                alerts.push(`🚨 PPC: PO ${o.po} (${o.buyer}) — Packing sirf ${completionPct}% hui hai, shipment ${Math.round(daysLeft)} din mein hai (isme kam se kam ${expectedPct}% ho jaana chahiye tha) — LATE HONE KA RISK`);
+              }
+            }
+          }
+        });
+
+        // 🧵 Material Shortage Prediction: fabric/trim jo required hai usse kam receive hua hai,
+        // aur uska matching order jald shipment ke kareeb hai — to short padne ka risk hai
+        const fabricItems = raw.fabricData || [];
+        fabricItems.forEach(f=>{
+          const shortfall = (Number(f.req)||0) - (Number(f.recd)||0);
+          if(shortfall > 0){
+            const matchingOrders = orders.filter(o=>o.style===f.style && o.ship);
+            const nearestShip = matchingOrders.length
+              ? matchingOrders.reduce((min,o)=>{ const d=-daysLate(o.ship); return (min===null||d<min)?d:min; }, null)
+              : null;
+            if(nearestShip!==null && nearestShip <= 10){
+              alerts.push(`🧵 PPC: Style ${f.style} — ${f.item} ${shortfall} ${f.unit} kam hai (Required ${f.req}, Received ${f.recd}) — shipment ${nearestShip} din mein hai, MATERIAL SHORT PAD SAKTA HAI`);
+            } else if(nearestShip===null){
+              alerts.push(`🧵 PPC: Style ${f.style} — ${f.item} ${shortfall} ${f.unit} kam hai (Required ${f.req}, Received ${f.recd})`);
+            }
+          }
+        });
+      }
+    }
+  }catch(e){ console.error('alert-scan ppc', e); }
+
+  // 3) Store Management — items at/below minimum stock level
+  try{
+    if(state.store && state.store.status==='ok'){
+      const raw = tryUnwrap(state.store.records['store_management/db']);
+      if(raw && raw.stock){
+        Object.entries(raw.stock).forEach(([key,s])=>{
+          if(s && s.min!=null && s.min>0 && Number(s.qty)<=Number(s.min)){
+            const label = (key.split('||')[0] || key);
+            alerts.push(`📦 Store: "${label}" minimum level par/neeche hai — ${s.qty} ${s.unit||''} (Min: ${s.min})`);
+          }
+        });
+      }
+    }
+  }catch(e){ console.error('alert-scan store', e); }
+
+  // 3b) Garment Cost Pro — margin anomaly: agar kisi order ka margin threshold se kam hai to alert
+  try{
+    if(state.garmentcost && state.garmentcost.status==='ok'){
+      const recs = state.garmentcost.records['garment_records'] || [];
+      const LOW_MARGIN_THRESHOLD = 10; // % — zaroorat ho to ye number badal sakte hain
+      recs.forEach(r=>{
+        const margin = Number(r.margin);
+        if(!isNaN(margin) && margin < LOW_MARGIN_THRESHOLD){
+          alerts.push(`💰 Costing: "${r.name||r.code}" (Buyer: ${r.buyer||'-'}) — Margin sirf ${margin}% hai (threshold ${LOW_MARGIN_THRESHOLD}%) — LOW MARGIN RISK`);
+        }
+      });
+    }
+  }catch(e){ console.error('alert-scan garmentcost', e); }
+
+  // 3c) Textile Compliance — audit due dates aur certificate/document expiry
+  try{
+    if(state.compliance && state.compliance.status==='ok'){
+      const raw = tryUnwrap(state.compliance.records['compliance/db']);
+      if(raw){
+        const DUE_WINDOW = 30; // din — isse kam bacha ho to alert (zaroorat ho to badal sakte hain)
+        (raw.audits||[]).forEach(a=>{
+          if(!a.next) return;
+          const daysToNext = -daysLate(a.next);
+          if(daysToNext < 0) alerts.push(`📜 Compliance: ${a.type} audit ki due date nikal chuki hai (${a.next}) — turant schedule karo`);
+          else if(daysToNext <= DUE_WINDOW) alerts.push(`📜 Compliance: ${a.type} audit sirf ${daysToNext} din mein due hai (${a.next})`);
+        });
+        (raw.textile||[]).forEach(c=>{
+          if(!c.to) return;
+          const daysToExpiry = -daysLate(c.to);
+          if(daysToExpiry < 0) alerts.push(`📜 Compliance: ${c.std} certificate expire ho chuka hai (${c.to}) — renewal zaroori hai`);
+          else if(daysToExpiry <= DUE_WINDOW) alerts.push(`📜 Compliance: ${c.std} certificate sirf ${daysToExpiry} din mein expire hoga (${c.to})`);
+        });
+        (raw.docs||[]).forEach(d=>{
+          if(!d.expiry) return;
+          const daysToExpiry = -daysLate(d.expiry);
+          if(daysToExpiry < 0) alerts.push(`📜 Compliance: "${d.name}" expire ho chuka hai (${d.expiry})`);
+          else if(daysToExpiry <= DUE_WINDOW) alerts.push(`📜 Compliance: "${d.name}" sirf ${daysToExpiry} din mein expire hoga (${d.expiry})`);
+        });
+      }
+    }
+  }catch(e){ console.error('alert-scan compliance', e); }
+
+  // 4) Job Work Register — material bheja gaya par abhi tak wapas/receive nahi hua (delivery date nikal chuki)
+  try{
+    if(state.jobwork && state.jobwork.status==='ok'){
+      const arr = state.jobwork.records['jobwork'] || [];
+      const doc = arr.find(d=>d.db) || arr[0];
+      const txns = (doc && doc.db) || [];
+      txns.forEach(t=>{
+        const isReturnLike = /receiv|return|in\b/i.test(t.type||'');
+        const late = t.deliveryDate ? daysLate(t.deliveryDate) : null;
+        if(!isReturnLike && late!==null && late > 0){
+          alerts.push(`🧵 Job Work: "${t.job||t.item}" — ${t.party} se material abhi tak wapas nahi aaya (delivery date ${late} din nikal chuki, Voucher ${t.voucher})`);
+        }
+      });
+      // 🏭 Vendor Performance risk — jis party ka on-time record kharab hai (kam se kam 2 transactions ho)
+      const vendorScores = computeVendorScores(txns);
+      vendorScores.forEach(v=>{
+        if(v.total >= 2 && v.onTimePct < 60){
+          alerts.push(`🏭 Job Work: Party "${v.party}" ka on-time record sirf ${v.onTimePct}% hai (${v.late}/${v.total} transactions currently overdue) — trust risk`);
+        }
+      });
+    }
+  }catch(e){ console.error('alert-scan jobwork', e); }
+
+  // 4b) Worsening trends — jo cheez pichle hafte/mahine se kharab ho rahi hai
+  try{
+    collectTrends().forEach(t=>{ if(t.worse) alerts.push(t.text.replace('📊','📉').replace('📈','📉')); });
+  }catch(e){ console.error('alert-scan trends', e); }
+
+  // 5) Fallback — koi bhi ⚠️ line jo report preview mein already ban chuki ho, usse bhi utha lo (dusre systems ke liye)
+  try{
+    const previewEl = document.getElementById('preview');
+    const text = previewEl ? previewEl.value : '';
+    if(text){
+      text.split('\n').forEach(line=>{
+        if(line.includes('⚠️') && !alerts.some(a=>a.includes(line.trim().slice(0,30)))) alerts.push(line.trim());
+      });
+    }
+  }catch(e){}
+
+  return alerts;
+}
+// Generic ribbon renderer — content ki actual width naapke ek fixed, bahut slow, readable speed set karta hai
+// (chahe items 2 ho ya 20, reading speed hamesha ek jaisi rahegi — sirf lambi ribbon lambi der chalegi)
+function renderBoard(boardId, contentId, items, pxPerSecond){
+  const board = document.getElementById(boardId);
+  const content = document.getElementById(contentId);
+  if(!board || !content) return;
+  content.innerHTML = '';
+  if(!items.length){ board.style.display = 'none'; return; }
+  board.style.display = 'flex';
+  const joined = items.join('       •       ');
+  // Content ko do baar daala hai taaki loop seamless dikhe (translateX -50% pe repeat ho jaaye)
+  const span1 = document.createElement('span'); span1.textContent = joined;
+  const span2 = document.createElement('span'); span2.textContent = joined;
+  content.appendChild(span1);
+  content.appendChild(span2);
+  requestAnimationFrame(()=>{
+    const halfWidth = content.scrollWidth / 2;
+    const dur = Math.max(30, halfWidth / pxPerSecond); // kabhi bhi isse tez nahi chalega
+    content.style.animationDuration = dur + 's';
+  });
+}
+
+function renderAlertBoard(){
+  // 22px/sec = bulkul slow, aaram se padh sakein
+  renderBoard('alertBoard', 'alertBoardContent', collectCriticalAlerts(), 22);
+}
+
+// ══════════════════════════════════════════════════════
+// WEEK-OVER-WEEK TREND COMPARISON — "is hafte vs pichle hafte" insight
+// ══════════════════════════════════════════════════════
+function collectTrends(){
+  const trends = [];
+  // PPC — Production output aur defect% ka weekly trend
+  try{
+    if(state.ppc && state.ppc.status==='ok'){
+      const raw = tryUnwrap(state.ppc.records['textilePPC/v5']);
+      const prod = (raw && raw.production) || [];
+      const inWindow = (dateStr, fromDaysAgo, toDaysAgo) => {
+        const d = daysLate(dateStr);
+        return d!==null && d>=fromDaysAgo && d<toDaysAgo;
+      };
+      const thisWeek = prod.filter(p=>inWindow(p.date, 0, 7));
+      const lastWeek = prod.filter(p=>inWindow(p.date, 7, 14));
+      const totals = arr => ({
+        output: arr.reduce((s,p)=>s+(Number(p.output)||0),0),
+        reject: arr.reduce((s,p)=>s+(Number(p.reject)||0),0)
+      });
+      const tw = totals(thisWeek), lw = totals(lastWeek);
+      if(thisWeek.length && lastWeek.length){
+        const twRejPct = tw.output ? (tw.reject/tw.output*100) : 0;
+        const lwRejPct = lw.output ? (lw.reject/lw.output*100) : 0;
+        const rejDiff = twRejPct - lwRejPct;
+        if(Math.abs(rejDiff) >= 1){
+          trends.push({
+            text: `📊 PPC: Is hafte defect rate ${twRejPct.toFixed(1)}% hai, pichle hafte ${lwRejPct.toFixed(1)}% tha (${rejDiff>0?'+':''}${rejDiff.toFixed(1)}% ${rejDiff>0?'zyada — kharab ho raha hai':'kam — sudhar ho raha hai'})`,
+            worse: rejDiff >= 1
+          });
+        }
+        if(lw.output > 0){
+          const outChangePct = ((tw.output-lw.output)/lw.output*100);
+          if(Math.abs(outChangePct) >= 10){
+            trends.push({
+              text: `📈 PPC: Is hafte total output ${tw.output} pcs hai, pichle hafte ${lw.output} pcs tha (${outChangePct>=0?'+':''}${outChangePct.toFixed(0)}%)`,
+              worse: outChangePct <= -10
+            });
+          }
+        }
+      }
+    }
+  }catch(e){ console.error('trend-scan ppc', e); }
+
+  // Job Work — is mahine vs pichle mahine kitne transactions "currently overdue" ban rahe hain
+  try{
+    if(state.jobwork && state.jobwork.status==='ok'){
+      const arr = state.jobwork.records['jobwork'] || [];
+      const doc = arr.find(d=>d.db) || arr[0];
+      const txns = (doc && doc.db) || [];
+      const now = new Date();
+      const inMonth = (dateStr, monthsAgo) => {
+        if(!dateStr) return false;
+        const d = new Date(dateStr);
+        const target = new Date(now.getFullYear(), now.getMonth()-monthsAgo, 1);
+        return d.getFullYear()===target.getFullYear() && d.getMonth()===target.getMonth();
+      };
+      const thisMonth = txns.filter(t=>inMonth(t.date,0) && !isReturnLikeType(t.type));
+      const lastMonth = txns.filter(t=>inMonth(t.date,1) && !isReturnLikeType(t.type));
+      const lateCount = arr => arr.filter(t=>{ const l=t.deliveryDate?daysLate(t.deliveryDate):null; return l!==null && l>0; }).length;
+      if(thisMonth.length && lastMonth.length){
+        const twLate = lateCount(thisMonth), lwLate = lateCount(lastMonth);
+        const twPct = Math.round((twLate/thisMonth.length)*100), lwPct = Math.round((lwLate/lastMonth.length)*100);
+        if(Math.abs(twPct-lwPct) >= 10){
+          trends.push({
+            text: `📊 Job Work: Is mahine ${twPct}% transactions overdue hain, pichle mahine ${lwPct}% the (${twPct>lwPct?'bigadta':'sudhar raha'} trend)`,
+            worse: twPct > lwPct
+          });
+        }
+      }
+    }
+  }catch(e){ console.error('trend-scan jobwork', e); }
+
+  return trends;
+}
+
+function collectOkStatusItems(){
+  const ok = [];
+  try{
+    SYSTEMS.forEach(s=>{
+      const st = state[s.key];
+      if(st && st.status==='ok'){
+        ok.push(`✅ ${s.name}: ${st.count} records theek se fetch ho gaye`);
+      }
+    });
+    if(state.ppc && state.ppc.status==='ok'){
+      const raw = tryUnwrap(state.ppc.records['textilePPC/v5']);
+      if(raw){
+        const orders = raw.orders || [];
+        const cutting = raw.cuttingData || [], production = raw.production || [], finishing = raw.finishingData || [], packing = raw.packingData || [];
+        const onTrack = orders.filter(o=>{
+          const shipDaysLeft = o.ship ? -daysLate(o.ship) : null;
+          const hasAction = [cutting,production,finishing,packing].some(arr=>arr.some(r=>r.po===o.po));
+          return (shipDaysLeft===null || shipDaysLeft>5) && hasAction;
+        });
+        if(onTrack.length) ok.push(`🟢 PPC: ${onTrack.length} orders schedule par chal rahe hain`);
+      }
+    }
+    if(state.store && state.store.status==='ok'){
+      const raw = tryUnwrap(state.store.records['store_management/db']);
+      if(raw && raw.stock){
+        const entries = Object.values(raw.stock);
+        const healthy = entries.filter(s=>!(s.min!=null && s.min>0 && Number(s.qty)<=Number(s.min)));
+        if(entries.length) ok.push(`🟢 Store: ${healthy.length}/${entries.length} items ka stock minimum level se upar hai`);
+      }
+    }
+    if(state.jobwork && state.jobwork.status==='ok'){
+      const arr = state.jobwork.records['jobwork'] || [];
+      const doc = arr.find(d=>d.db) || arr[0];
+      const txns = (doc && doc.db) || [];
+      const pending = txns.filter(t=>{
+        const isReturnLike = /receiv|return|in\b/i.test(t.type||'');
+        const late = t.deliveryDate ? daysLate(t.deliveryDate) : null;
+        return !isReturnLike && late!==null && late>0;
+      });
+      const onTime = txns.length - pending.length;
+      if(txns.length) ok.push(`🟢 Job Work: ${onTime}/${txns.length} transactions on-time hain`);
+    }
+  }catch(e){ console.error('ok-status-scan', e); }
+  return ok;
+}
+function renderOkBoard(){
+  // 30px/sec — critical wale se thoda tez lekin phir bhi slow-motion, kyunki inhe utni ghaur se nahi padhna
+  renderBoard('okBoard', 'okBoardContent', collectOkStatusItems(), 30);
+}
+
+// ══════════════════════════════════════════════════════
+// LAYOUT: SIDEBAR NAV + DARK/LIGHT MODE (PPC-style)
+// ══════════════════════════════════════════════════════
+function toggleSidebar(){
+  document.getElementById('mainSidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function navTo(id, el){
+  const target = document.getElementById(id);
+  if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('mainSidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+function updateThemeBtn(){
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+}
+function toggleDarkMode(){
+  document.body.classList.toggle('dark-mode');
+  localStorage.setItem('rma_dark_mode', document.body.classList.contains('dark-mode') ? '1' : '0');
+  updateThemeBtn();
+}
+(function initDarkMode(){
+  const saved = localStorage.getItem('rma_dark_mode');
+  if(saved === '1') document.body.classList.add('dark-mode');
+  else if(saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+    document.body.classList.add('dark-mode');
+  }
+  updateThemeBtn();
+})();
+// Scroll-spy: sidebar mein jo section screen par hai wahi highlight ho
+(function initScrollSpy(){
+  const ids = ['sec-systems','sec-report','sec-email','sec-ai','sec-reminders','sec-backup'];
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const idx = ids.indexOf(entry.target.id);
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        const navItems = document.querySelectorAll('.nav-item');
+        if(navItems[idx]) navItems[idx].classList.add('active');
+      }
+    });
+  }, {rootMargin:'-40% 0px -55% 0px'});
+  ids.forEach(id=>{ const el = document.getElementById(id); if(el) observer.observe(el); });
+})();
+
+// ══════════════════════════════════════════════════════
+// SYSTEM DEFINITIONS — 13 cloud + 3 local-only
+// ══════════════════════════════════════════════════════
+const SYSTEMS = [
+  {key:'garmentcost', name:'Garment Cost Pro', type:'firestore', paths:['garment_records','garment_companies','garment_price_master'],
+    config:{apiKey:"AIzaSyAAv1FeymRSJVspPW4-QVRYydP8m0O3XnI",authDomain:"garment-cost-pro.firebaseapp.com",projectId:"garment-cost-pro",storageBucket:"garment-cost-pro.firebasestorage.app",messagingSenderId:"41139778178",appId:"1:41139778178:web:c4773bd4319b3a2b987a9b"}},
+  {key:'jobwork', name:'Job Work Register', type:'firestore', paths:['jobwork'],
+    config:{apiKey:"AIzaSyAZup7wFBzwHYBlY2cxk3x0gMjbojuG5PY",authDomain:"jobwork-register-9d790.firebaseapp.com",projectId:"jobwork-register-9d790",storageBucket:"jobwork-register-9d790.firebasestorage.app",messagingSenderId:"72702523111",appId:"1:72702523111:web:af05e41f93725de03c9442"}},
+  {key:'leanpro', name:'Lean Pro', type:'firestore', paths:['daily_reports','kaizen','maintenance'],
+    config:{apiKey:"AIzaSyCyrwlj5XRt13urhvscNHWb3cTkxb5hrNk",authDomain:"garment-lean-pro.firebaseapp.com",projectId:"garment-lean-pro",storageBucket:"garment-lean-pro.firebasestorage.app",messagingSenderId:"906026262895",appId:"1:906026262895:web:6bf87ee30e1dfe3eecc89a"}},
+  {key:'mtm', name:'MTM Sheet', type:'rtdb', paths:['mtm_data'],
+    config:{apiKey:"AIzaSyBht1KWNd8XJdwO7XykSNUQCSboncpWSYg",authDomain:"mtm-dashboard-66fb5.firebaseapp.com",databaseURL:"https://mtm-dashboard-66fb5-default-rtdb.firebaseio.com",projectId:"mtm-dashboard-66fb5"}},
+  {key:'masterdash', name:'Master Dashboard', type:'rtdb', paths:['orders','schedules','alerts'],
+    config:{apiKey:"AIzaSyCqd0AtU2VItPf3nveCPQ1eCpkoDIQP_Yw",authDomain:"central-deshboard.firebaseapp.com",databaseURL:"https://central-deshboard-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"central-deshboard"}},
+  {key:'launcher', name:'Master Launcher', type:'rtdb', paths:['launcher/settings'],
+    config:{apiKey:"AIzaSyAkBBrfziX0Dn5GZKoZpTHH3wPJ702mOAM",authDomain:"master-launcher-fafb1.firebaseapp.com",databaseURL:"https://master-launcher-fafb1-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"master-launcher-fafb1"}},
+  {key:'sku', name:'SKU Tracker', type:'rtdb', paths:['sku_tracker/main_data'],
+    config:{apiKey:"AIzaSyAeneURTrenFC9C9CcABX6kUKdscRk8Tq8",authDomain:"sku-production-tracker.firebaseapp.com",databaseURL:"https://sku-production-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"sku-production-tracker"}},
+  {key:'store', name:'Store Management', type:'rtdb', paths:['store_management/db'], wrapped:true,
+    config:{apiKey:"AIzaSyCfZ5XISDvPgD8rmUtoI3E458LS7AIztP0",authDomain:"store-management-bcf34.firebaseapp.com",databaseURL:"https://store-management-bcf34-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"store-management-bcf34"}},
+  {key:'taskmgr', name:'Task Manager', type:'rtdb', paths:['taskmanager/data'],
+    config:{apiKey:"AIzaSyAaiSWAqjkr8Kbvkra9MVHdmFyHctFyZGE",authDomain:"task-manager-d56cf.firebaseapp.com",databaseURL:"https://task-manager-d56cf-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"task-manager-d56cf"}},
+  {key:'cutting', name:'Fabric Cutting Calculator', type:'rtdb', paths:['cuttingcalc/v2','designs'],
+    config:{apiKey:"AIzaSyCXCdGOQ1RwjxX9e-fx_4qxU3fzyfyMa_E",authDomain:"cutting-master-18d6d.firebaseapp.com",databaseURL:"https://cutting-master-18d6d-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"cutting-master-18d6d"}},
+  {key:'leansystem', name:'Garments Lean System', type:'rtdb', paths:['leanmaster/data'],
+    config:{apiKey:"AIzaSyCDoJkRO-zKde-Atn0D1LSqIyZ9whqXYOQ",authDomain:"garments-lean-master.firebaseapp.com",databaseURL:"https://garments-lean-master-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"garments-lean-master"}},
+  {key:'qcmaster', name:'QC Master', type:'rtdb', paths:['qcmaster/data'],
+    config:{apiKey:"AIzaSyB1VFsgjVpIn074ri-vKe9U8-dno9eyH-M",authDomain:"qc-master-tracker.firebaseapp.com",databaseURL:"https://qc-master-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"qc-master-tracker"}},
+  {key:'compliance', name:'Textile Compliance', type:'rtdb', paths:['compliance/db'], wrapped:true,
+    config:{apiKey:"AIzaSyAINGnBokW0slG7XhR6D3m05Ymi2GJoJQg",authDomain:"textile-compliance-master.firebaseapp.com",databaseURL:"https://textile-compliance-master-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"textile-compliance-master"}},
+  {key:'ppc', name:'Textile PPC System', type:'rtdb', paths:['textilePPC/v5'], wrapped:true,
+    config:{apiKey:"AIzaSyDxm3TMCBIWHQJcktRaRvQC4xIIIeCcbNY",authDomain:"ppc--manager.firebaseapp.com",databaseURL:"https://ppc--manager-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ppc--manager",storageBucket:"ppc--manager.firebasestorage.app",messagingSenderId:"416126645569",appId:"1:416126645569:web:e5eff6f9d3fe11856bddc0"}},
+  {key:'exportcrm', name:'Export CRM', type:'rtdb', paths:['export_crm/buyers-list','export_crm/contacts-list','export_crm/products-list','export_crm/tasks-list'], wrapped:true,
+    config:{apiKey:"AIzaSyBOjYZDPGGV-Lk5wOhAY9i-MZX2DAjoXTY",authDomain:"export-crm-6eb67.firebaseapp.com",databaseURL:"https://export-crm-6eb67-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"export-crm-6eb67",storageBucket:"export-crm-6eb67.firebasestorage.app",messagingSenderId:"244987705934",appId:"1:244987705934:web:8d7254194467615a24e11f"}},
+  // Local-upload-only systems (no live cloud data)
+  {key:'shipdoc', name:'ShipDoc Pro', type:'local'},
+  {key:'ratemaster', name:'Textile Rate Master', type:'local'},
+];
+
+const state = {}; // key -> {status, records, count}
+SYSTEMS.forEach(s => state[s.key] = {status:'idle', records:{}, count:0});
+
+// ══════════════════════════════════════════════════════
+// RENDER SYSTEM GRID
+// ══════════════════════════════════════════════════════
+let selected = new Set(SYSTEMS.map(s=>s.key)); // all selected by default
+
+function renderSysGrid(){
+  const grid = document.getElementById('sysGrid');
+  grid.innerHTML = '';
+  SYSTEMS.forEach(s=>{
+    const st = state[s.key];
+    const card = document.createElement('div');
+    card.className = 'sys-card' + (selected.has(s.key) ? ' selected':'');
+    card.onclick = ()=>{ selected.has(s.key) ? selected.delete(s.key) : selected.add(s.key); renderSysGrid(); };
+    const badgeClass = s.type==='local' ? (st.status==='ok'?'ok':'local') : (st.status==='ok'?'ok':st.status==='err'?'err':'idle');
+    const badgeText = s.type==='local' ? (st.status==='ok'? st.count+' rec':'📁 upload') : (st.status==='ok'? st.count+' rec': st.status==='err'?'error':'idle');
+    card.title = st.status==='err' ? ('Error: ' + (st.error||'unknown')) : '';
+    card.innerHTML = `
+      <div class="sys-name"><span>${s.type==='local'?'📁':'☁️'} ${s.name}</span>
+        <span class="badge ${badgeClass}">${badgeText}</span></div>
+      <div class="sys-meta">${s.type==='local' ? 'JSON upload chahiye' : s.paths.join(', ')}</div>
+      ${st.status==='err' ? `<div class="sys-meta" style="color:var(--red);margin-top:4px">⚠️ ${st.error||'unknown error'}</div>` : ''}
+      ${s.type==='local' ? `<input type="file" accept=".json" style="margin-top:8px" onclick="event.stopPropagation()" onchange="handleLocalUpload(event,'${s.key}')">` : ''}
+    `;
+    grid.appendChild(card);
+  });
+  renderThreadStrip();
+}
+renderSysGrid();
+
+function renderThreadStrip(){
+  const strip = document.getElementById('threadStrip');
+  if(!strip) return;
+  strip.querySelectorAll('.thread').forEach(t=>t.remove());
+  SYSTEMS.forEach(s=>{
+    const st = state[s.key];
+    const cls = st.status==='loading' ? 'loading' : st.status==='ok' ? 'ok' : st.status==='err' ? 'err' : (s.type==='local' ? 'local' : '');
+    const dot = document.createElement('span');
+    dot.className = 'thread' + (cls?' '+cls:'');
+    dot.title = s.name + ' — ' + (st.status==='ok' ? st.count+' records' : st.status);
+    strip.appendChild(dot);
+  });
+}
+
+function selectAllSystems(all){
+  if(all) selected = new Set(SYSTEMS.map(s=>s.key));
+  else selected = new Set();
+  renderSysGrid();
+}
+
+// ══════════════════════════════════════════════════════
+// LOCAL FILE UPLOAD (ShipDoc, Rate Master, PPC)
+// ══════════════════════════════════════════════════════
+function handleLocalUpload(evt, key){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      state[key].records = {uploaded: Array.isArray(data)?data:[data]};
+      state[key].count = Array.isArray(data)?data.length: Object.keys(data).length;
+      state[key].status = 'ok';
+      toast('✅ '+key+' data loaded ('+state[key].count+' records)');
+    }catch(err){
+      state[key].status='err';
+      state[key].error = err.message;
+      toast('❌ JSON parse error: '+err.message);
+    }
+    renderSysGrid();
+    renderAlertBoard();
+    renderOkBoard();
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════
+// CLOUD FETCH
+// ══════════════════════════════════════════════════════
+function getApp(sys){
+  const existing = firebase.apps.find(a=>a.name===sys.key);
+  return existing || firebase.initializeApp(sys.config, sys.key);
+}
+
+async function fetchSystem(sys){
+  state[sys.key].status = 'loading';
+  renderSysGrid();
+  try{
+    const app = getApp(sys);
+    let totalCount = 0;
+    const records = {};
+    if(sys.type==='firestore'){
+      const db = app.firestore();
+      for(const path of sys.paths){
+        const snap = await db.collection(path).limit(500).get();
+        const arr = [];
+        snap.forEach(doc=>arr.push({id:doc.id, ...doc.data()}));
+        records[path] = arr;
+        totalCount += arr.length;
+      }
+    } else if(sys.type==='rtdb'){
+      const db = app.database();
+      for(const path of sys.paths){
+        const snap = await db.ref(path).once('value');
+        let val = snap.val();
+        if(sys.wrapped && val && val.data!==undefined){
+          if(typeof val.data==='string'){
+            try{ val = JSON.parse(val.data); }catch(e){}
+          } else {
+            val = val.data;
+          }
+        }
+        records[path] = val;
+        totalCount += Array.isArray(val) ? val.length : (val && typeof val==='object' ? Object.keys(val).length : (val?1:0));
+      }
+    }
+    state[sys.key] = {status:'ok', records, count: totalCount};
+  }catch(err){
+    state[sys.key].status = 'err';
+    state[sys.key].error = (err && (err.code || err.message)) || String(err);
+    console.error(sys.key, err);
+    toast('❌ ' + sys.name + ': ' + state[sys.key].error);
+  }
+  renderSysGrid();
+}
+
+async function fetchAllCloud(){
+  const cloudSystems = SYSTEMS.filter(s=>s.type!=='local');
+  document.getElementById('fetchStatus').textContent = 'Fetching...';
+  for(const sys of cloudSystems){
+    await fetchSystem(sys);
+  }
+  document.getElementById('fetchStatus').textContent = 'Done — ' + new Date().toLocaleTimeString();
+  toast('🔄 Sabhi cloud systems fetch ho gaye');
+  renderAlertBoard();
+  renderOkBoard();
+}
+
+// ══════════════════════════════════════════════════════
+// REPORT GENERATION
+// ══════════════════════════════════════════════════════
+function tryUnwrap(val){
+  // Many RTDB systems store payload as: { data: "<json string>", updatedAt/savedAt: "..." }
+  // Some (like Export CRM) store payload as: { data: [...array/object directly...], updatedAt: ... }
+  if(val && typeof val==='object' && val.data!==undefined){
+    if(typeof val.data==='string'){
+      try{ return JSON.parse(val.data); }catch(e){ return val; }
+    }
+    return val.data;
+  }
+  return val;
+}
+
+function daysLate(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr), today = new Date();
+  return Math.round((today-d)/86400000);
+}
+
+// ── TABLE FORMATTER — plain-text report ko Excel jaisi clean, aligned columns mein dikhata hai ──
+// Emoji normal characters se zyada jagah lete hain screen par (jaise ⚠️ ya ✅), isliye
+// sirf .length se padding karne par columns tedhe ho jaate hain — visual width nikaal ke align karte hain
+function visualWidth(str){
+  let width = 0;
+  for(const ch of Array.from(String(str))){
+    const cp = ch.codePointAt(0);
+    if(cp === 0xFE0F || cp === 0x200D) width += 0;           // variation selector / joiner — jagah nahi leta
+    else if(cp > 0x1F000 || (cp>=0x2190 && cp<=0x2BFF)) width += 2; // emoji/symbols — double-width
+    else width += 1;
+  }
+  return width;
+}
+function padVisual(str, targetWidth){
+  return str + ' '.repeat(Math.max(0, targetWidth - visualWidth(str)));
+}
+function truncCell(v, max){
+  if(v===null || v===undefined || v==='') return '-';
+  let s = String(v);
+  if(visualWidth(s) <= max) return s;
+  let out = '', w = 0;
+  for(const ch of Array.from(s)){
+    const chW = visualWidth(ch);
+    if(w + chW > max-1) break;
+    out += ch; w += chW;
+  }
+  return out + '…';
+}
+function table(headers, rows, maxColWidth=24){
+  if(!rows || !rows.length) return '(koi record nahi mila)\n';
+  const truncRows = rows.map(r=>headers.map((h,i)=>truncCell(r[i], maxColWidth)));
+  const widths = headers.map((h,i)=> Math.max(visualWidth(h), ...truncRows.map(r=>visualWidth(r[i]))));
+  const line = (cells)=> cells.map((c,i)=>padVisual(String(c), widths[i])).join('  │  ');
+  const sep = widths.map(w=>'─'.repeat(w)).join('──┼──');
+  let out = line(headers) + '\n' + sep + '\n';
+  truncRows.forEach(r=> out += line(r) + '\n');
+  return out;
+}
+function autoTable(arr, maxCols=8){
+  if(!arr || !arr.length) return '(koi record nahi mila)\n';
+  const headers = Object.keys(arr[0]).slice(0,maxCols);
+  const rows = arr.map(r=>headers.map(h=>r[h]));
+  return table(headers, rows);
+}
+// Array-of-objects records ko generic table mein dikhata hai — jin systems ka custom summary nahi likha hai unke liye
+// ── Vendor/Job-Work Performance Score ──
+// Har party ke "sent/issue" transactions dekhkar batata hai kitne % abhi tak on-time hain
+// (Note: exact receipt-linking data nahi hai, isliye ye "currently overdue" proxy use karta hai)
+function isReturnLikeType(type){ return /receiv|return|in\b/i.test(type||''); }
+function computeVendorScores(txns){
+  const parties = {};
+  txns.forEach(t=>{
+    if(isReturnLikeType(t.type) || !t.party) return;
+    if(!parties[t.party]) parties[t.party] = {total:0, late:0};
+    parties[t.party].total++;
+    const late = t.deliveryDate ? daysLate(t.deliveryDate) : null;
+    if(late!==null && late>0) parties[t.party].late++;
+  });
+  return Object.entries(parties).map(([party,d])=>({
+    party, total:d.total, late:d.late, onTimePct: d.total ? Math.round(((d.total-d.late)/d.total)*100) : 100
+  }));
+}
+
+function genericTableDump(records){
+  let out = '';
+  for(const path in records){
+    let val = tryUnwrap(records[path]);
+    out += `\n-- ${path} --\n`;
+    if(Array.isArray(val) && val.length && typeof val[0]==='object'){
+      out += autoTable(val, 8);
+      if(val.length>20) out += `\n(Upar sirf pehle records dikhaye — total ${val.length} records hain, poora data system mein maujood hai)\n`;
+    } else if(Array.isArray(val)){
+      val.slice(0,20).forEach((r,i)=> out += `${i+1}. ${JSON.stringify(r)}\n`);
+    } else if(val && typeof val==='object'){
+      Object.entries(val).slice(0,20).forEach(([k,v])=> out += `${k}: ${JSON.stringify(v)}\n`);
+    } else {
+      out += `${JSON.stringify(val)}\n`;
+    }
+  }
+  return out;
+}
+
+// Custom, human-readable summary per known system (based on real data structure)
+const CUSTOM_SUMMARY = {
+  sku(records){
+    const raw = tryUnwrap(records['sku_tracker/main_data']);
+    if(!raw || !raw.skus) return null;
+    const rows = raw.skus.map(s=>{
+      const stages = Object.entries(s.processes||{});
+      const pending = stages.filter(([k,v])=>v.status!=='Done');
+      const totalLate = stages.reduce((sum,[k,v])=>sum+(v.late||0),0);
+      return [s.skuId, s.buyer, s.dispatch, pending.length? pending.map(([k,v])=>`${k}(${v.status})`).join(', ') : 'All stages done', totalLate ? totalLate+' din' : '-'];
+    });
+    let out = `Total SKUs: ${raw.skus.length}\n\n`;
+    out += table(['SKU ID','Buyer','Dispatch','Pending Stages','Total Delay'], rows);
+    const remarks = raw.skus.filter(s=>s.remarks);
+    if(remarks.length){ out += '\nRemarks:\n'; remarks.forEach(s=> out += `• ${s.skuId}: ${s.remarks}\n`); }
+    return out;
+  },
+  store(records){
+    const raw = tryUnwrap(records['store_management/db']);
+    if(!raw) return null;
+    let out = `Incoming entries: ${(raw.incoming||[]).length}, Outgoing entries: ${(raw.outgoing||[]).length}, Returns: ${(raw.returns||[]).length}\n\n`;
+    out += `-- Current Stock --\n`;
+    const stockRows = Object.entries(raw.stock||{}).map(([key,s])=>{
+      const parts = key.split('||');
+      const label = parts[0] || key;
+      const low = (s.min!=null && s.min>0 && s.qty<=s.min) ? '⚠️ LOW' : 'OK';
+      return [label, parts[1]||'-', s.qty, s.unit||parts[2]||'-', s.min!=null?s.min:'-', low];
+    });
+    out += table(['Item','Spec','Qty','Unit','Min Level','Status'], stockRows);
+    out += `\n-- Recent Incoming (last 5) --\n`;
+    out += table(['Date','Item','Qty','Unit','Party','Remarks'], (raw.incoming||[]).slice(-5).map(i=>[i.date,i.name,i.qty,i.unit,i.party,i.remarks]));
+    out += `\n-- Recent Outgoing (last 5) --\n`;
+    out += table(['Date','Item','Qty','Unit','Party','Purpose'], (raw.outgoing||[]).slice(-5).map(o=>[o.date,o.name,o.qty,o.unit,o.party,o.purpose||o.cat]));
+    return out;
+  },
+  taskmgr(records){
+    const raw = tryUnwrap(records['taskmanager/data']);
+    if(!raw || !raw.tasks) return null;
+    const pending = raw.tasks.filter(t=>t.status!=='completed');
+    const overdue = pending.filter(t=>daysLate(t.date) > 0);
+    const notOverdue = pending.filter(t=>daysLate(t.date)<=0);
+    const deptName = id => (raw.departments||[]).find(d=>d.id===id)?.name || id;
+    let out = `Total tasks: ${raw.tasks.length}, Pending: ${pending.length}, Overdue: ${overdue.length}\n\n`;
+    out += `-- Overdue Tasks --\n`;
+    out += table(['Priority','Title','Dept','Due Date','Days Late'], overdue.map(t=>[t.priority?.toUpperCase(), t.title, deptName(t.deptId), t.date, daysLate(t.date)]));
+    out += `\n-- Other Pending Tasks --\n`;
+    out += table(['Priority','Title','Dept','Due Date'], notOverdue.map(t=>[t.priority, t.title, deptName(t.deptId), t.date]));
+    return out;
+  },
+  leansystem(records){
+    const raw = tryUnwrap(records['leanmaster/data']);
+    if(!raw) return null;
+    let out = '';
+    if(raw.kpis){
+      const k = raw.kpis;
+      out += table(['Output','Efficiency%','Defect%','SMV','OTD%','Absenteeism%'], [[k.output,k.eff,k.def,k.smv,k.otd,k.abs]]) + '\n';
+    }
+    if(raw.kanban){
+      out += `-- Kanban Board --\n`;
+      out += `To-Do (${(raw.kanban.todo||[]).length}): ` + (raw.kanban.todo||[]).map(t=>t.title).join('; ') + '\n';
+      out += `In Progress (${(raw.kanban.prog||[]).length}): ` + (raw.kanban.prog||[]).map(t=>t.title).join('; ') + '\n';
+      out += `Done (${(raw.kanban.done||[]).length}): ` + (raw.kanban.done||[]).map(t=>t.title).join('; ') + '\n';
+    }
+    return out;
+  },
+  mtm(records){
+    const val = records['mtm_data'];
+    if(!val) return null;
+    let out = '';
+    if(val.tnaFields){
+      const f = val.tnaFields;
+      out += `Order — Buyer: ${f.buyer}, Product: ${f.product}, Order Date: ${f.orderDate}, Delivery: ${f.deliveryDate}\n\n`;
+    }
+    if(val.tnaData){
+      out += `-- TNA Stages --\n`;
+      out += table(['Stage','Start','Target','Status'], Object.entries(val.tnaData).map(([stage,d])=>[stage, d.start, d.target, d.completed?'Done: '+d.completed:'Pending']));
+    }
+    if(val.ocData && val.ocData.skus){
+      const skus = val.ocData.skus.filter(s=>s.itemCode);
+      out += `\n-- Order SKUs (${skus.length}) --\n`;
+      out += table(['Item Code','Description','Qty','Size'], skus.map(s=>[s.itemCode,s.description,s.totalQty,s.sizeInch]));
+    }
+    return out;
+  },
+  garmentcost(records){
+    const recs = records['garment_records'] || [];
+    const companies = records['garment_companies'] || [];
+    const priceMaster = records['garment_price_master'] || [];
+    if(!recs.length && !companies.length && !priceMaster.length) return null;
+    let out = '';
+    if(recs.length){
+      out += `-- Costing Records (${recs.length}) --\n`;
+      out += table(['Code','Name','Buyer','Qty','Fabric ₹','Access ₹','Process ₹','Total ₹','Sell $','Margin %'],
+        recs.map(r=>[r.code||r.id, r.name, r.buyer, r.qty, r.totFab||0, r.totAcc||0, r.totProc||0, r.total||0, typeof r.sell==='number'?r.sell.toFixed(2):r.sell, r.margin!=null?r.margin+'%':'-']));
+    }
+    if(companies.length){
+      out += `\n-- Companies (${companies.length}) --\n`;
+      out += table(['Name','Phone'], companies.map(c=>[c.name,c.phone]));
+    }
+    if(priceMaster.length){
+      out += `\n-- Price Master (${priceMaster.length}) --\n`;
+      out += table(['Name','Rate','Unit','Category'], priceMaster.map(p=>[p.name,p.rate,p.unit,p.category]));
+    }
+    return out;
+  },
+  jobwork(records){
+    const arr = records['jobwork'] || [];
+    const doc = arr.find(d=>d.db) || arr[0];
+    if(!doc) return null;
+    const txns = doc.db || [];
+    let out = `Total Job Work Transactions: ${txns.length}\n\n`;
+    out += table(['Date','Type','Job','Item','Qty','Unit','Party','Buyer','Delivery','Amount ₹'],
+      txns.map(t=>[t.date,t.type,t.job,t.item+(t.colour?' ('+t.colour+')':''),t.qty,t.unit,t.party,t.buyer,t.deliveryDate,t.amount]));
+    const withNotes = txns.filter(t=>t.narration);
+    if(withNotes.length){ out += '\nNotes:\n'; withNotes.forEach(t=> out += `• Voucher ${t.voucher}: ${t.narration}\n`); }
+    const vendorScores = computeVendorScores(txns);
+    if(vendorScores.length){
+      out += `\n-- Job Work Party Performance (on-time %) --\n`;
+      out += table(['Party','Total Txns','Currently Overdue','On-Time %'],
+        vendorScores.sort((a,b)=>a.onTimePct-b.onTimePct).map(v=>[v.party, v.total, v.late, v.onTimePct+'%']));
+    }
+    if(doc.buyerMaster && doc.buyerMaster.length) out += `\nBuyers: ${doc.buyerMaster.map(b=>b.name).join(', ')}\n`;
+    if(doc.partyMaster && doc.partyMaster.length) out += `Job Work Parties: ${doc.partyMaster.map(p=>p.name).join(', ')}\n`;
+    return out;
+  },
+  compliance(records){
+    const raw = tryUnwrap(records['compliance/db']);
+    if(!raw) return null;
+    let out = `Company: ${raw.company?.name || '-'}\n\n`;
+    if(raw.audits && raw.audits.length){
+      out += `-- Audits --\n`;
+      out += table(['Type','Auditor','Last Date','Next Due','Score','Status'], raw.audits.map(a=>[a.type,a.auditor,a.date,a.next,a.score,a.status]));
+    }
+    if(raw.textile && raw.textile.length){
+      out += `\n-- Certifications --\n`;
+      out += table(['Standard','Cert No','Issuer','Valid From','Valid To','Status'], raw.textile.map(c=>[c.std,c.cert,c.issuer,c.from,c.to,c.status]));
+    }
+    if(raw.docs && raw.docs.length){
+      out += `\n-- Documents --\n`;
+      out += table(['Document','Category','Issuer','Expiry','Remarks'], raw.docs.map(d=>[d.name,d.cat,d.issuer,d.expiry||'No expiry',d.remarks]));
+    }
+    return out || null;
+  },
+  ppc(records){
+    const raw = tryUnwrap(records['textilePPC/v5']);
+    if(!raw) return null;
+    let out = '';
+    const orders = raw.orders || [];
+    const packingArr = raw.packingData || [];
+    if(orders.length){
+      out += `-- Orders (${orders.length}) --\n`;
+      out += table(['PO','Buyer','Style','Qty','Packing %','Ex-Factory','Ship','Line','Status'],
+        orders.map(o=>{
+          const late = daysLate(o.exfac);
+          const packedQty = packingArr.filter(p=>p.po===o.po).reduce((sum,p)=>sum+(Number(p.packedQty)||0),0);
+          const packPct = o.qty ? Math.round((packedQty/o.qty)*100) : 0;
+          let statusTag = 'OK';
+          if(late!==null && late>0) statusTag = `⚠️ Late ${late}d`;
+          else if(o.ship && o.orderDate && o.qty){
+            const orderD = new Date(o.orderDate), shipD = new Date(o.ship), today = new Date();
+            const totalSpan = (shipD-orderD)/86400000, elapsed = (today-orderD)/86400000, daysLeft = (shipD-today)/86400000;
+            if(totalSpan>0 && daysLeft>=0 && daysLeft<=7){
+              const expectedPct = Math.min(100, Math.round((elapsed/totalSpan)*100));
+              if(packPct < expectedPct-15) statusTag = '🚨 Risk of delay';
+            }
+          }
+          return [o.po,o.buyer,o.style,o.qty,packPct+'%',o.exfac,o.ship,`${o.factory}/${o.line}`,statusTag];
+        }));
+    }
+    if(raw.fabricData && raw.fabricData.length){
+      out += `\n-- Fabric/Trim Requirement vs Received --\n`;
+      out += table(['Style','Type','Item','Required','Received','Shortfall','Unit'],
+        raw.fabricData.map(f=>{
+          const shortfall = (Number(f.req)||0) - (Number(f.recd)||0);
+          return [f.style,f.type,f.item,f.req,f.recd,shortfall>0?shortfall:'-',f.unit];
+        }));
+    }
+    const prod = raw.production || [];
+    if(prod.length){
+      out += `\n-- Sewing Production (last 5 entries) --\n`;
+      out += table(['Date','Line','Style','Target','Output','Reject','Alter/OK'], prod.slice(-5).map(p=>[p.date,p.line,p.style,p.target,p.output,p.reject,`${p.alter||0}/${p.alterOk||0}`]));
+    }
+    const cutting = raw.cuttingData || [];
+    if(cutting.length){
+      out += `\n-- Cutting (last 5) --\n`;
+      out += table(['Date','Style','PO','Cut/Target','Layers','Plies'], cutting.slice(-5).map(c=>[c.date,c.style,c.po,`${c.cutQty}/${c.target}`,c.layers,c.plies]));
+    }
+    const finishing = raw.finishingData || [];
+    if(finishing.length){
+      out += `\n-- Finishing (last 5) --\n`;
+      out += table(['Date','Style','PO','Input','Finished','Reject'], finishing.slice(-5).map(f=>[f.date,f.style,f.po,f.inputQty,f.finishedQty,f.reject]));
+    }
+    const packing = raw.packingData || [];
+    if(packing.length){
+      out += `\n-- Packing (last 5) --\n`;
+      out += table(['Date','Style','PO','Packed/Input','Cartons','Type'], packing.slice(-5).map(p=>[p.date,p.style,p.po,`${p.packedQty}/${p.inputQty}`,p.cartons,p.cartonType]));
+    }
+    const dispatch = raw.dispatchLog || [];
+    if(dispatch.length){
+      out += `\n-- Dispatch Log (last 5) --\n`;
+      out += autoTable(dispatch.slice(-5));
+    }
+    const stock = raw.fabricStock || [];
+    if(stock.length){
+      out += `\n-- Fabric/Yarn Stock --\n`;
+      out += table(['Item','Type','Qty','Unit','Source'], stock.map(s=>[s.item,s.type,s.qty,s.unit,s.source]));
+    }
+    return out || null;
+  }
+};
+
+function buildConsolidated(){
+  const dt = new Date().toLocaleString('en-IN');
+  const chosen = SYSTEMS.filter(s=>selected.has(s.key));
+  let out = `📋 CONSOLIDATED DAILY REPORT\nGenerated: ${dt}\n${'='.repeat(78)}\n\n`;
+
+  // Quick overview table — sabse pehle ek nazar mein sab kuch
+  out += `-- OVERVIEW --\n`;
+  out += table(['System','Type','Status','Records'], chosen.map(s=>{
+    const st = state[s.key];
+    const statusTxt = st.status==='ok' ? '✅ OK' : st.status==='err' ? '🔴 Error' : '⚪ Pending';
+    return [s.name, s.type==='local'?'Local':'Cloud', statusTxt, st.status==='ok'?st.count:'-'];
+  }));
+  out += '\n';
+
+  // Trends — is hafte/mahine vs pichle hafte/mahine
+  const trends = collectTrends();
+  if(trends.length){
+    out += `-- TRENDS (This week/month vs Last) --\n`;
+    trends.forEach(t=> out += `${t.text}\n`);
+    out += '\n';
+  }
+
+  // Har system ka poora detail — table format mein
+  chosen.forEach(s=>{
+    const st = state[s.key];
+    out += `${'='.repeat(78)}\n${s.type==='local'?'📁':'☁️'} ${s.name.toUpperCase()}\n${'='.repeat(78)}\n`;
+    if(st.status!=='ok'){ out += '[data abhi tak fetch/upload nahi hua hai]\n\n'; return; }
+    const custom = CUSTOM_SUMMARY[s.key] ? CUSTOM_SUMMARY[s.key](st.records) : null;
+    out += (custom || genericTableDump(st.records)) + '\n';
+  });
+  return out;
+}
+
+function buildIndividualPerSystem(){
+  const dt = new Date().toLocaleString('en-IN');
+  const map = {}; // key -> text
+  SYSTEMS.filter(s=>selected.has(s.key)).forEach(s=>{
+    const st = state[s.key];
+    let out = `${'='.repeat(78)}\n${s.type==='local'?'📁':'☁️'} ${s.name.toUpperCase()}\nGenerated: ${dt}\n${'='.repeat(78)}\n`;
+    if(st.status!=='ok'){ out += '[data not fetched/uploaded yet]\n'; map[s.key]=out; return; }
+    const custom = CUSTOM_SUMMARY[s.key] ? CUSTOM_SUMMARY[s.key](st.records) : null;
+    out += '\n' + (custom || genericTableDump(st.records));
+    map[s.key] = out;
+  });
+  return map;
+}
+
+function buildIndividual(){
+  const map = buildIndividualPerSystem();
+  return Object.values(map).join('\n\n');
+}
+
+let lastPerSystemMap = null;
+
+function renderPreview(){
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  const switchRow = document.getElementById('previewSwitchRow');
+  const switchSel = document.getElementById('previewSwitch');
+  const previewLabel = document.getElementById('previewLabel');
+
+  if(mode==='individual'){
+    lastPerSystemMap = buildIndividualPerSystem();
+    const chosen = SYSTEMS.filter(s=>selected.has(s.key));
+    const combined = chosen.map(s=>lastPerSystemMap[s.key]).join('\n\n');
+    document.getElementById('preview').value = combined;
+    previewLabel.textContent = `(FINAL — ye jayega email mein: ${chosen.map(s=>s.name).join(', ')})`;
+
+    switchRow.style.display = 'flex';
+    switchSel.innerHTML = '<option value="__all__">📑 Sab combined (final — email mein ye jayega)</option>';
+    chosen.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.key;
+      opt.textContent = (s.type==='local'?'📁 ':'☁️ ') + s.name + ' (sirf review)';
+      switchSel.appendChild(opt);
+    });
+    switchSel.value = '__all__';
+  } else {
+    lastPerSystemMap = null;
+    switchRow.style.display = 'none';
+    document.getElementById('preview').value = buildConsolidated();
+    previewLabel.textContent = '(ye poora report hai jo email mein jayega — scroll kar ke check karein)';
+  }
+
+  document.getElementById('subjectField').value = mode==='consolidated'
+    ? 'Consolidated Daily Report — ' + new Date().toLocaleDateString('en-IN')
+    : 'System Reports — ' + new Date().toLocaleDateString('en-IN');
+
+  const includedNames = SYSTEMS.filter(s=>selected.has(s.key)).map(s=>{
+    const st = state[s.key];
+    return (st.status==='ok' ? '✅ ' : '⚪ ') + s.name;
+  });
+  const chipsBox = document.getElementById('includedChips');
+  chipsBox.style.display = 'block';
+  chipsBox.innerHTML = '<b>Fetch/upload status (✅ = data mila, ⚪ = data nahi mila abhi tak):</b><br>' + (includedNames.length? includedNames.join(' &nbsp;|&nbsp; ') : 'Koi system selected nahi hai — Step 1 mein tick karo');
+
+  document.getElementById('emailPreviewBox').style.display = 'none';
+  document.getElementById('sendBtn').disabled = true;
+  pendingMailto = null;
+  renderAlertBoard();
+  renderOkBoard();
+}
+
+function switchPreview(val){
+  const previewLabel = document.getElementById('previewLabel');
+  if(val==='__all__'){
+    const chosen = SYSTEMS.filter(s=>selected.has(s.key));
+    document.getElementById('preview').value = chosen.map(s=>lastPerSystemMap[s.key]).join('\n\n');
+    previewLabel.textContent = `(FINAL — ye jayega email mein: ${chosen.map(s=>s.name).join(', ')})`;
+  } else {
+    document.getElementById('preview').value = lastPerSystemMap[val];
+    const sys = SYSTEMS.find(s=>s.key===val);
+    previewLabel.textContent = `(sirf ${sys.name} ka report — sirf review ke liye)`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// EMAIL DRAFT + SEND
+// ══════════════════════════════════════════════════════
+let pendingMailto = null;
+
+function prepareEmail(){
+  const to = document.getElementById('toField').value.trim();
+  const subject = document.getElementById('subjectField').value.trim();
+  const body = document.getElementById('preview').value;
+  if(!to){ toast('⚠️ Kam se kam ek email address dalo'); return; }
+  if(!body){ toast('⚠️ Pehle report generate karo'); return; }
+  pendingMailto = `mailto:${encodeURIComponent(to).replace(/%2C/g,',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  document.getElementById('prevTo').textContent = to;
+  document.getElementById('prevSubject').textContent = subject;
+  document.getElementById('prevBody').textContent = body;
+  document.getElementById('emailPreviewBox').style.display = 'block';
+  document.getElementById('emailPreviewBox').scrollIntoView({behavior:'smooth', block:'center'});
+
+  document.getElementById('sendBtn').disabled = false;
+  toast('✅ Email draft ready — neeche preview check karo');
+}
+
+function confirmAndSend(){
+  if(!pendingMailto) return;
+  if(!confirm('Ye email bhejne ke liye aapka mail app khulega, jaha aap final Send dabaoge. Continue karein?')) return;
+  window.location.href = pendingMailto;
+}
+
+function copyReport(){
+  const text = document.getElementById('preview').value;
+  if(!text){ toast('⚠️ Pehle report generate karo'); return; }
+  navigator.clipboard.writeText(text).then(()=>toast('📋 Report copy ho gaya'));
+}
+
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toastBox').appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ══════════════════════════════════════════════════════
+// REMINDERS: SETTINGS, DESKTOP NOTIFICATION, VOICE, WHATSAPP, AUTO-BRIEFING
+// ══════════════════════════════════════════════════════
+const RMA_KEY = 'RMA_SETTINGS';
+
+function loadReminderSettings(){
+  let s = {};
+  try{ s = JSON.parse(localStorage.getItem(RMA_KEY) || '{}'); }catch(e){}
+  return Object.assign({
+    notif:false, voice:false, morning:false, evening:false,
+    morningTime:'09:00', eveningTime:'18:00', waNumber:'',
+    sheetWebhookUrl:'', autoBackup:false
+  }, s);
+}
+
+function applyReminderSettingsToUI(){
+  const s = loadReminderSettings();
+  document.getElementById('chkNotif').checked = s.notif;
+  document.getElementById('chkVoice').checked = s.voice;
+  document.getElementById('chkMorning').checked = s.morning;
+  document.getElementById('chkEvening').checked = s.evening;
+  document.getElementById('morningTime').value = s.morningTime;
+  document.getElementById('eveningTime').value = s.eveningTime;
+  document.getElementById('waNumber').value = s.waNumber;
+  document.getElementById('sheetWebhookUrl').value = s.sheetWebhookUrl;
+  document.getElementById('chkAutoBackup').checked = s.autoBackup;
+  updateReminderStatus();
+}
+
+function saveReminderSettings(){
+  const s = {
+    notif: document.getElementById('chkNotif').checked,
+    voice: document.getElementById('chkVoice').checked,
+    morning: document.getElementById('chkMorning').checked,
+    evening: document.getElementById('chkEvening').checked,
+    morningTime: document.getElementById('morningTime').value || '09:00',
+    eveningTime: document.getElementById('eveningTime').value || '18:00',
+    waNumber: document.getElementById('waNumber').value.replace(/[^0-9]/g,''),
+    sheetWebhookUrl: document.getElementById('sheetWebhookUrl').value.trim(),
+    autoBackup: document.getElementById('chkAutoBackup').checked
+  };
+  localStorage.setItem(RMA_KEY, JSON.stringify(s));
+  if(s.notif) requestNotifPermission();
+  toast('💾 Reminder settings save ho gayi');
+  updateReminderStatus();
+}
+
+// ── Google Sheet Backup ──
+async function backupToGoogleSheet(){
+  const s = loadReminderSettings();
+  if(!s.sheetWebhookUrl){ toast('⚠️ Pehle Google Apps Script Web App URL daal ke save karo'); return; }
+  const chosen = SYSTEMS.filter(sys=>selected.has(sys.key));
+  if(!chosen.length){ toast('⚠️ Step 1 mein kam se kam ek system select karo'); return; }
+  const payload = {
+    timestamp: new Date().toISOString(),
+    rows: chosen.map(sys=>({ system: sys.name, status: state[sys.key].status, count: state[sys.key].status==='ok' ? state[sys.key].count : 0 }))
+  };
+  try{
+    // no-cors: Apps Script CORS headers set nahi karta, isliye response padh nahi sakte —
+    // lekin request server tak pahunch jaati hai aur sheet update ho jaati hai
+    await fetch(s.sheetWebhookUrl, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(payload)
+    });
+    toast('📊 Google Sheet backup bhej diya gaya');
+  }catch(err){
+    toast('❌ Backup bhejne mein error: ' + err.message);
+  }
+}
+
+function updateReminderStatus(){
+  const s = loadReminderSettings();
+  const box = document.getElementById('reminderStatus');
+  let lines = [];
+  if(s.morning) lines.push(`🌅 Morning briefing: roz ${s.morningTime} baje (tab is browser mein open rehna zaroori hai)`);
+  if(s.evening) lines.push(`🌆 Evening summary: roz ${s.eveningTime} baje (tab is browser mein open rehna zaroori hai)`);
+  if(!s.morning && !s.evening) lines.push('Abhi koi auto-briefing schedule ON nahi hai — upar checkbox tick karke save karein.');
+  box.innerHTML = lines.join('<br>');
+}
+
+// ---- Desktop Notification ----
+function requestNotifPermission(){
+  if(!('Notification' in window)){ toast('❌ Ye browser desktop notification support nahi karta'); return; }
+  Notification.requestPermission().then(p=>{
+    toast(p==='granted' ? '✅ Notification allow ho gaya' : '⚠️ Notification allow nahi hua — browser settings check karo');
+  });
+}
+function sendDesktopNotification(title, body){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  try{ new Notification(title, {body: body.slice(0,200)}); }catch(e){ console.error(e); }
+}
+function testNotification(){
+  if(!('Notification' in window) || Notification.permission!=='granted'){ toast('⚠️ Pehle "Notification permission allow karein" dabao'); return; }
+  sendDesktopNotification('📋 Report & Mail Agent', 'Ye ek test notification hai — sab theek chal raha hai.');
+}
+
+// ---- Voice reminder (Web Speech API) ----
+function speakText(text){
+  if(!('speechSynthesis' in window)){ toast('❌ Ye browser voice support nahi karta'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v=>v.lang==='hi-IN') || voices.find(v=>v.lang && v.lang.startsWith('en-IN'));
+  if(preferred) u.voice = preferred;
+  u.rate = 0.95;
+  window.speechSynthesis.speak(u);
+}
+function buildVoiceSummary(){
+  const chosen = SYSTEMS.filter(s=>selected.has(s.key));
+  const fetched = chosen.filter(s=>state[s.key].status==='ok');
+  let txt = `Report Mail Agent se summary. ${fetched.length} systems ka data fetched hai. `;
+  fetched.forEach(s=> txt += `${s.name} mein ${state[s.key].count} records hain. `);
+  if(!fetched.length) txt += 'Abhi tak koi data fetch nahi hua hai.';
+  return txt;
+}
+function testVoice(){
+  speakText(buildVoiceSummary());
+}
+
+// ---- WhatsApp (tap-to-send, jaise email ka mailto) ----
+function buildWhatsAppSummary(){
+  const text = document.getElementById('preview').value;
+  const base = text || buildConsolidated();
+  // WhatsApp click-to-chat URL ki practical length limit hoti hai, isliye trim
+  return base.length>1500 ? base.slice(0,1500) + '\n...(poora report email mein hai)' : base;
+}
+function sendWhatsApp(){
+  const s = loadReminderSettings();
+  if(!s.waNumber){ toast('⚠️ Pehle WhatsApp number settings mein daal ke save karo'); return; }
+  const text = buildWhatsAppSummary();
+  const url = `https://wa.me/${s.waNumber}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+  toast('📲 WhatsApp khul raha hai — wahan final Send aap khud dabaoge');
+}
+
+// ---- Auto morning/evening briefing ----
+async function runBriefing(kind){
+  toast((kind==='morning'?'🌅 Morning briefing':'🌆 Evening summary') + ' taiyaar ho rahi hai...');
+  await fetchAllCloud();
+  const consolidatedRadio = document.querySelector('input[name=mode][value=consolidated]');
+  if(consolidatedRadio) consolidatedRadio.checked = true;
+  renderPreview();
+  const s = loadReminderSettings();
+  if(s.notif) sendDesktopNotification(
+    kind==='morning' ? '🌅 Morning Briefing Ready' : '🌆 Evening Summary Ready',
+    'Report taiyaar hai — Report & Mail Agent tab check karein.'
+  );
+  if(s.voice) speakText((kind==='morning' ? 'Good morning. Aapki morning briefing taiyaar hai. ' : 'Good evening. Aapki evening summary taiyaar hai. ') + buildVoiceSummary());
+  if(s.autoBackup) backupToGoogleSheet();
+  toast('✅ ' + (kind==='morning'?'Morning briefing':'Evening summary') + ' taiyaar — report check karke email ya WhatsApp par bhej dein');
+}
+
+function reminderTick(){
+  const s = loadReminderSettings();
+  if(!s.morning && !s.evening) return;
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0,5);
+  const todayStr = now.toISOString().slice(0,10);
+
+  if(s.morning && hhmm===s.morningTime && localStorage.getItem('RMA_lastMorning')!==todayStr){
+    localStorage.setItem('RMA_lastMorning', todayStr);
+    runBriefing('morning');
+  }
+  if(s.evening && hhmm===s.eveningTime && localStorage.getItem('RMA_lastEvening')!==todayStr){
+    localStorage.setItem('RMA_lastEvening', todayStr);
+    runBriefing('evening');
+  }
+}
+setInterval(reminderTick, 20000);
+applyReminderSettingsToUI();
+
+// ══════════════════════════════════════════════════════
+// AI ASSISTANT (Groq API)
+// ══════════════════════════════════════════════════════
+// NOTE: Ye key sirf private/local use ke liye hai — kabhi public GitHub repo
+// ya kisi shared jagah is file ko is key ke saath mat daalna.
+const GROQ_API_KEY = YOUR_API_KEY_HERE;
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const AI_AVATAR = 'data:image/jpeg;base64,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';
+
+let chatHistory = [];
+
+function addChatBubble(text, cls){
+  const box = document.getElementById('chatBox');
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.gap = '8px';
+  wrap.style.alignItems = 'flex-start';
+  wrap.style.flexDirection = cls.includes('user') ? 'row-reverse' : 'row';
+  wrap.style.alignSelf = cls.includes('user') ? 'flex-end' : 'flex-start';
+  wrap.style.maxWidth = '90%';
+
+  if(cls.includes('ai')){
+    const img = document.createElement('img');
+    img.src = AI_AVATAR;
+    img.style.cssText = 'width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0';
+    wrap.appendChild(img);
+  }
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + cls;
+  div.textContent = text;
+  wrap.appendChild(div);
+
+  box.appendChild(wrap);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function buildAIContext(){
+  // Use the same readable per-system summaries the report uses — not raw JSON —
+  // so the AI gets clean, meaningful data instead of noisy nested objects.
+  let ctx = `Aaj ki date: ${new Date().toLocaleDateString('en-IN')}\n\n`;
+  SYSTEMS.forEach(s=>{
+    const st = state[s.key];
+    if(st.status!=='ok') return;
+    ctx += `\n### ${s.name} ###\n`;
+    const custom = CUSTOM_SUMMARY[s.key] ? CUSTOM_SUMMARY[s.key](st.records) : null;
+    if(custom){ ctx += custom + '\n'; return; }
+    for(const path in st.records){
+      let val = tryUnwrap(st.records[path]);
+      ctx += `-- ${path} --\n`;
+      if(Array.isArray(val)) ctx += val.slice(0,30).map(r=>JSON.stringify(r)).join('\n') + '\n';
+      else if(val && typeof val==='object') ctx += JSON.stringify(val).slice(0,3000) + '\n';
+      else ctx += `${val}\n`;
+    }
+  });
+  return ctx;
+}
+
+async function askAI(viaVoice){
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if(!question) return;
+  input.value = '';
+  addChatBubble(question, 'user');
+  const loadingBubble = addChatBubble('Soch raha hoon...', 'ai loading');
+
+  const anyFetched = SYSTEMS.some(s=>state[s.key].status==='ok');
+  if(!anyFetched){
+    loadingBubble.textContent = '⚠️ Pehle Step 1 mein kam se kam ek system fetch/upload karo, tabhi main jawaab de sakta hoon.';
+    loadingBubble.classList.remove('loading');
+    if(viaVoice) speakText('Pehle Step 1 mein data fetch kar lijiye, tabhi main jawaab de sakta hoon.');
+    return;
+  }
+
+  const context = buildAIContext();
+  const systemPrompt = `Tum ek helpful factory operations assistant ho jo garment/textile PPC data ke baare mein Hinglish (Hindi-English mix) mein jawaab dete ho. Neeche diya gaya data alag-alag factory systems (production, store, tasks, costing, etc.) se fetch kiya gaya hai. Sirf isi data ke aadhar par sawaal ka jawaab do — agar data mein jawaab nahi mil raha to saaf keh do "ye data mujhe nahi mila". Jawaab chhota aur clear rakho.\n\nDATA:\n${context}`;
+
+  chatHistory.push({role:'user', content: question});
+
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + GROQ_API_KEY
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          {role:'system', content: systemPrompt},
+          ...chatHistory.slice(-6) // recent turns only, to keep it light
+        ],
+        temperature: 0.3
+      })
+    });
+    const data = await res.json();
+    if(data.error){
+      loadingBubble.textContent = '❌ Error: ' + data.error.message;
+      loadingBubble.classList.remove('loading');
+      if(viaVoice) speakText('Error aa gaya: ' + data.error.message);
+      return;
+    }
+    const answer = data.choices[0].message.content;
+    loadingBubble.textContent = answer;
+    loadingBubble.classList.remove('loading');
+    chatHistory.push({role:'assistant', content: answer});
+    if(viaVoice) speakText(answer);
+  }catch(err){
+    loadingBubble.textContent = '❌ Connection error: ' + err.message;
+    loadingBubble.classList.remove('loading');
+    if(viaVoice) speakText('Connection error aa gaya.');
+  }
+}
+
+// ── Two-way Voice Command: bolke poochho, AI bolke jawaab dega ──
+let voiceRecognition = null;
+function startVoiceQuery(){
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognitionAPI){ toast('❌ Ye browser voice input support nahi karta (Chrome try karo)'); return; }
+  const statusEl = document.getElementById('voiceQueryStatus');
+  const micBtn = document.getElementById('micBtn');
+  if(voiceRecognition){ voiceRecognition.stop(); return; }
+
+  voiceRecognition = new SpeechRecognitionAPI();
+  voiceRecognition.lang = 'hi-IN';
+  voiceRecognition.interimResults = false;
+  voiceRecognition.maxAlternatives = 1;
+
+  statusEl.style.display = 'block';
+  statusEl.textContent = '🎤 Sun raha hoon... bolo apna sawaal';
+  micBtn.style.background = 'var(--red)';
+  micBtn.style.color = '#fff';
+
+  voiceRecognition.onresult = (event)=>{
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('chatInput').value = transcript;
+    statusEl.textContent = '🗣️ Aapne poocha: "' + transcript + '"';
+    askAI(true);
+  };
+  voiceRecognition.onerror = (event)=>{
+    statusEl.textContent = '❌ Voice sunne mein error: ' + event.error;
+    toast('❌ Voice input error: ' + event.error);
+  };
+  voiceRecognition.onend = ()=>{
+    micBtn.style.background = '';
+    micBtn.style.color = '';
+    voiceRecognition = null;
+    setTimeout(()=>{ if(statusEl.textContent.startsWith('🎤')) statusEl.style.display='none'; }, 3000);
+  };
+  voiceRecognition.start();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garments Lean System v3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#07090f;--surf:#0f1520;--surf2:#151e2e;--surf3:#1a2540;--acc:#00c896;--acc2:#f4a024;--acc3:#e53e3e;--acc4:#7c5cbf;--acc5:#2b7de9;--txt:#dde4f0;--txt2:#8899aa;--txt3:#4a5568;--bdr:rgba(0,200,150,0.12);--bdr2:rgba(255,255,255,0.06);--glow:0 0 24px rgba(0,200,150,0.18);}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,200,150,0.06),transparent);pointer-events:none;z-index:0;}
+header{background:linear-gradient(135deg,#07090f,#0c1520,#0a1428);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:200;box-shadow:0 4px 30px rgba(0,0,0,0.5);}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap;}
+.company-brand{display:flex;align-items:center;gap:14px;}
+.brand-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--acc),#009970);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:var(--glow);flex-shrink:0;}
+.brand-info h1{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;letter-spacing:3px;color:var(--acc);text-transform:uppercase;}
+.brand-info .sub{font-size:0.72rem;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;}
+.brand-info .dev{font-size:0.65rem;color:var(--txt3);letter-spacing:1px;margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fb-pill{display:flex;align-items:center;gap:5px;background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.2);border-radius:20px;padding:5px 12px;font-size:0.72rem;letter-spacing:1px;}
+.fb-dot{width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;transition:all .3s;}
+.fb-dot.ok{background:#00e676;box-shadow:0 0 6px #00e676;}.fb-dot.err{background:#ff1744;}.fb-dot.sync{background:#ffd740;animation:fbpulse .8s infinite;}
+@keyframes fbpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-btn{padding:5px 12px;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:5px;}
+.hdr-btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
+.hdr-btn-save{background:linear-gradient(135deg,#005c8a,#2b7de9);color:#fff;}
+.hdr-btn-load{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--txt2);}
+.hdr-btn-backup{background:linear-gradient(135deg,#005c2a,#00c896);color:#0a1a10;}
+.fb-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f1520;border:1px solid rgba(0,200,150,0.3);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:600;color:#00c896;opacity:0;transition:all .3s;z-index:9000;pointer-events:none;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(0,200,150,0.1);border:1px solid var(--bdr);border-radius:20px;padding:5px 12px;font-size:0.72rem;letter-spacing:1px;color:var(--acc);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--acc);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.3);}}
+.hdr-date{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--txt2);}
+.nav-wrap{border-top:1px solid var(--bdr2);overflow-x:auto;scrollbar-width:none;}
+.nav-wrap::-webkit-scrollbar{display:none;}
+.nav-tabs{display:flex;gap:0;min-width:max-content;}
+.nav-tab{padding:11px 18px;border:none;background:transparent;color:var(--txt2);font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;border-bottom:2px solid transparent;white-space:nowrap;}
+.nav-tab:hover{color:var(--txt);background:rgba(255,255,255,0.03);}
+.nav-tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(0,200,150,0.06);}
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 20px 40px;}
+.section{display:none;padding:24px 0;animation:fadeUp .35s ease;}.section.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:12px;}
+.sec-hdr-left{display:flex;align-items:center;gap:12px;}
+.sec-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.sec-title h2{font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.sec-title p{font-size:0.78rem;color:var(--txt2);margin-top:2px;}
+.sec-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{padding:8px 18px;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--acc);color:#07090f;}.btn-primary:hover{background:#00aa80;box-shadow:var(--glow);}
+.btn-secondary{background:var(--surf2);color:var(--txt2);border:1px solid var(--bdr2);}.btn-secondary:hover{color:var(--txt);border-color:var(--bdr);}
+.btn-warn{background:rgba(244,160,36,.15);color:var(--acc2);border:1px solid rgba(244,160,36,.25);}
+.btn-danger{background:rgba(229,62,62,.15);color:var(--acc3);border:1px solid rgba(229,62,62,.25);}
+.btn-info{background:rgba(43,125,233,.15);color:var(--acc5);border:1px solid rgba(43,125,233,.25);}
+.btn-purple{background:rgba(124,92,191,.15);color:var(--acc4);border:1px solid rgba(124,92,191,.25);}
+.btn-sm{padding:5px 12px;font-size:0.75rem;}.btn-xs{padding:3px 8px;font-size:0.7rem;}.btn:disabled{opacity:.6;cursor:not-allowed;}
+.export-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;margin-bottom:20px;flex-wrap:wrap;}
+.export-label{font-size:0.75rem;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-right:4px;}
+.card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;transition:all .25s;}.card:hover{border-color:var(--bdr);}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc);margin-bottom:14px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:0.72rem;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+input,textarea,select{background:var(--surf2);border:1px solid var(--bdr2);border-radius:7px;padding:9px 13px;color:var(--txt);font-family:'Barlow',sans-serif;font-size:0.88rem;outline:none;transition:border-color .25s;width:100%;}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,200,150,.08);}
+select option{background:var(--surf2);}textarea{resize:vertical;min-height:60px;}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--bdr2);}
+table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+thead tr{background:var(--surf2);}
+th{padding:11px 14px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt2);white-space:nowrap;border-bottom:1px solid var(--bdr2);}
+td{padding:10px 14px;border-bottom:1px solid var(--bdr2);vertical-align:middle;}tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;}
+.b-green{background:rgba(0,200,150,.15);color:var(--acc);}.b-yellow{background:rgba(244,160,36,.15);color:var(--acc2);}
+.b-red{background:rgba(229,62,62,.15);color:var(--acc3);}.b-blue{background:rgba(43,125,233,.15);color:var(--acc5);}
+.b-purple{background:rgba(124,92,191,.15);color:var(--acc4);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;position:relative;overflow:hidden;transition:all .3s;}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px 2px 0 0;}
+.kpi-c1::after{background:var(--acc);}.kpi-c2::after{background:var(--acc2);}.kpi-c3::after{background:var(--acc3);}
+.kpi-c4::after{background:var(--acc4);}.kpi-c5::after{background:var(--acc5);}.kpi-c6::after{background:#e91e63;}.kpi-c7::after{background:#00bcd4;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.3);}
+.kpi-lbl{font-size:0.7rem;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:600;}
+.kpi-unit{font-size:0.75rem;color:var(--txt2);margin-top:2px;}.kpi-trend{font-size:0.72rem;margin-top:5px;}.trend-up{color:var(--acc);}.trend-dn{color:var(--acc3);}
+.kpi-c1 .kpi-val{color:var(--acc);}.kpi-c2 .kpi-val{color:var(--acc2);}.kpi-c3 .kpi-val{color:var(--acc3);}
+.kpi-c4 .kpi-val{color:var(--acc4);}.kpi-c5 .kpi-val{color:var(--acc5);}.kpi-c6 .kpi-val{color:#e91e63;}.kpi-c7 .kpi-val{color:#00bcd4;}
+.kpi-alert{border-color:rgba(229,62,62,0.4)!important;background:rgba(229,62,62,0.04)!important;}
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:768px){.kanban{grid-template-columns:1fr;}}
+.k-col{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:14px;min-height:360px;}
+.k-col-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdr2);}
+.k-col-title{font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.k-count{font-family:'JetBrains Mono',monospace;font-size:0.78rem;background:var(--surf2);border:1px solid var(--bdr2);border-radius:20px;padding:2px 9px;}
+.k-card{background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:11px;margin-bottom:9px;cursor:grab;transition:all .2s;}
+.k-card:hover{border-color:var(--bdr);box-shadow:var(--glow);}.k-card.overdue{border-color:rgba(229,62,62,0.4);background:rgba(229,62,62,0.04);}
+.k-card-title{font-size:0.85rem;font-weight:600;margin-bottom:5px;}.k-card-sub{font-size:0.72rem;color:var(--txt3);}
+.k-card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:7px;}
+.k-add-btn{width:100%;padding:8px;border:1px dashed var(--bdr2);background:transparent;color:var(--txt3);border-radius:7px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;letter-spacing:1px;transition:all .25s;margin-top:8px;}
+.k-add-btn:hover{border-color:var(--acc);color:var(--acc);}
+.audit-cat{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;margin-bottom:14px;}
+.audit-cat-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.audit-cat-name{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;}
+.audit-score{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--acc);}
+.audit-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bdr2);}.audit-item:last-child{border-bottom:none;}
+.audit-item-lbl{font-size:0.83rem;color:var(--txt2);flex:1;padding-right:14px;}
+.stars{display:flex;gap:5px;}
+.star{width:26px;height:26px;border:1px solid var(--bdr2);background:var(--surf2);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:var(--txt3);}
+.star.on{background:rgba(244,160,36,.2);border-color:var(--acc2);color:var(--acc2);}
+.pbar-out{height:7px;background:var(--surf2);border-radius:4px;overflow:hidden;}
+.pbar-in{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),#007a5e);transition:width .5s ease;box-shadow:0 0 8px rgba(0,200,150,.3);}
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;}
+.rule-card{background:var(--surf);border:1px solid var(--bdr2);border-radius:12px;padding:18px;position:relative;transition:all .25s;}.rule-card:hover{border-color:var(--bdr);transform:translateY(-2px);}
+.rule-num{position:absolute;top:-11px;left:16px;background:var(--surf3);border:1px solid var(--acc);color:var(--acc);font-size:0.68rem;font-weight:700;padding:2px 10px;border-radius:8px;font-family:'JetBrains Mono',monospace;}
+.rule-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;margin-bottom:8px;letter-spacing:.5px;}
+.rule-desc{font-size:0.82rem;color:var(--txt2);line-height:1.65;}.rule-action{margin-top:10px;font-size:0.75rem;color:var(--acc);font-weight:600;letter-spacing:.5px;}
+.why-step{background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:16px;margin-bottom:12px;position:relative;}.why-step.active{border-color:var(--acc);box-shadow:var(--glow);}
+.why-num{position:absolute;top:-10px;left:14px;background:var(--acc);color:#07090f;font-size:0.68rem;font-weight:700;padding:2px 10px;border-radius:8px;letter-spacing:1px;}
+.why-q{font-size:0.78rem;color:var(--txt3);font-style:italic;margin-bottom:6px;padding-top:6px;}.why-a{font-size:0.9rem;font-weight:600;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}.modal-overlay.show{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--bdr2);}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.modal-close{background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}.modal-close:hover{color:var(--txt);border-color:var(--bdr);}
+.modal-body{overflow-y:auto;padding:22px;flex:1;}.modal-foot{padding:14px 22px;border-top:1px solid var(--bdr2);display:flex;gap:8px;flex-wrap:wrap;}
+.print-report{background:#fff;color:#111;font-family:'Barlow',sans-serif;padding:0;}
+.pr-header{background:linear-gradient(135deg,#0a2540,#0d3060);color:#fff;padding:28px 32px;}
+.pr-header h1{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;}
+.pr-header .pr-sub{font-size:0.8rem;opacity:.7;margin-top:4px;letter-spacing:1px;}
+.pr-header .pr-meta{display:flex;gap:30px;margin-top:14px;font-size:0.78rem;opacity:.8;flex-wrap:wrap;}
+.pr-section{padding:20px 32px;border-bottom:1px solid #e5e7eb;}
+.pr-section h2{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0a2540;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #00c896;}
+.pr-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.pr-table th{background:#0a2540;color:#fff;padding:8px 12px;text-align:left;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;}
+.pr-table td{padding:7px 12px;border-bottom:1px solid #e5e7eb;}.pr-table tr:nth-child(even) td{background:#f9fafb;}
+.pr-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.pr-kpi{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center;}
+.pr-kpi-lbl{font-size:0.68rem;color:#666;text-transform:uppercase;letter-spacing:1px;}
+.pr-kpi-val{font-size:1.6rem;font-weight:700;color:#0a2540;font-family:'JetBrains Mono',monospace;}
+.pr-footer{padding:14px 32px;text-align:center;font-size:0.72rem;color:#888;background:#f9fafb;}
+.empty{text-align:center;padding:36px;color:var(--txt3);}.empty-ico{font-size:2.5rem;opacity:.3;margin-bottom:8px;}
+.divider{height:1px;background:var(--bdr2);margin:18px 0;}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.add-form{background:var(--surf3);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-top:8px;display:none;animation:fadeUp .2s ease;}.add-form.show{display:block;}
+.search-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}.search-bar input{max-width:300px;}
+.ai-box{background:rgba(124,92,191,0.06);border:1px solid rgba(124,92,191,0.2);border-radius:10px;padding:14px;margin-top:12px;display:none;}
+.oee-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+/* AI STYLES */
+.ai-chat-wrap{display:flex;flex-direction:column;height:420px;background:var(--surf2);border:1px solid rgba(124,92,191,0.3);border-radius:12px;overflow:hidden;}
+.ai-chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.ai-msg{max-width:85%;padding:10px 14px;border-radius:10px;font-size:0.84rem;line-height:1.6;}
+.ai-msg-user{background:rgba(0,200,150,0.15);border:1px solid rgba(0,200,150,0.2);align-self:flex-end;color:var(--txt);}
+.ai-msg-bot{background:rgba(124,92,191,0.12);border:1px solid rgba(124,92,191,0.2);align-self:flex-start;color:var(--txt);}
+.ai-msg-bot strong{color:var(--acc4);}
+.ai-chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(124,92,191,0.2);background:var(--surf);}
+.ai-chat-input input{flex:1;border-color:rgba(124,92,191,0.3);}
+.ai-chat-input input:focus{border-color:var(--acc4);}
+.ai-key-banner{background:rgba(124,92,191,0.08);border:1px solid rgba(124,92,191,0.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.ai-key-status{font-size:0.82rem;}
+.ai-suggest-btn{background:rgba(124,92,191,0.15);border:1px solid rgba(124,92,191,0.3);color:var(--acc4);border-radius:6px;padding:5px 12px;font-size:0.75rem;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:1px;transition:all .2s;}
+.ai-suggest-btn:hover{background:rgba(124,92,191,0.25);}
+.ai-result-box{background:rgba(124,92,191,0.06);border:1px solid rgba(124,92,191,0.2);border-radius:8px;padding:12px;margin-top:10px;font-size:0.83rem;line-height:1.7;display:none;}
+.ai-insight-card{background:linear-gradient(135deg,rgba(124,92,191,0.1),rgba(0,200,150,0.06));border:1px solid rgba(124,92,191,0.2);border-radius:12px;padding:16px;}
+.oee-kpi{background:var(--surf);border:1px solid var(--bdr2);border-radius:10px;padding:14px;text-align:center;}
+.oee-kpi-lbl{font-size:0.68rem;color:var(--txt3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.oee-kpi-val{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--acc);}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.hdr-top{padding:10px 14px;}.wrap{padding:0 12px 40px;}.oee-kpi-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-top">
+    <div class="company-brand">
+      <div class="brand-logo">🧵</div>
+      <div class="brand-info">
+        <h1 id="companyNameDisplay">Al-Faisal Garments Ltd.</h1>
+        <div class="sub">Garments &amp; Textile — Lean Management System</div>
+        <div class="dev" id="devDisplay">Developed by: Muhammad Azeem | IE Department | v3.0</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="fb-pill"><div class="fb-dot sync" id="fb-dot"></div><span id="fb-txt" style="color:var(--txt2);">Connecting...</span></div>
+      <button class="hdr-btn hdr-btn-save" onclick="fbSaveNow()">☁️ Save</button>
+      <button class="hdr-btn hdr-btn-load" onclick="fbLoadNow()">📥 Load</button>
+      <button class="hdr-btn hdr-btn-backup" onclick="backupData()">💾 Backup</button>
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="hdr-date" id="liveDate"></div>
+      <button class="btn btn-secondary btn-sm" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+  <div class="nav-wrap">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSec('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showSec('ie-rules',this)">📋 IE Rules</button>
+      <button class="nav-tab" onclick="showSec('workflow',this)">🔄 Workflow</button>
+      <button class="nav-tab" onclick="showSec('responsibility',this)">👥 Responsibility</button>
+      <button class="nav-tab" onclick="showSec('kanban',this)">📌 Kanban</button>
+      <button class="nav-tab" onclick="showSec('audit5s',this)">✅ 5S Audit</button>
+      <button class="nav-tab" onclick="showSec('whys',this)">🔍 5 Whys</button>
+      <button class="nav-tab" onclick="showSec('kaizen',this)">💡 Kaizen</button>
+      <button class="nav-tab" onclick="showSec('production',this)">🏭 Production</button>
+      <button class="nav-tab" onclick="showSec('quality',this)">🎯 Quality</button>
+      <button class="nav-tab" onclick="showSec('oee-section',this)">⚙️ OEE</button>
+      <button class="nav-tab" onclick="showSec('smed-section',this)">⏱️ SMED</button>
+      <button class="nav-tab" onclick="showSec('reports',this)">📄 Reports</button>
+      <button class="nav-tab" onclick="showSec('ai-assistant',this)" style="color:#a78bfa;border-bottom-color:transparent;" id="ai-nav-tab">🤖 AI Assistant</button>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section active">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(0,200,150,.12);">📊</div><div class="sec-title"><h2>Operations Dashboard</h2><p>Real-time KPIs — auto-update from Production &amp; Quality data</p></div></div>
+    <div class="sec-actions">
+      <button class="btn btn-secondary btn-sm" onclick="generateReport('dashboard')">📄 Report</button>
+      <button class="btn btn-info btn-sm" onclick="openTaktModal()">⏱️ Takt Time</button>
+      <button class="btn btn-primary btn-sm" onclick="refreshDashboard()">🔄 Refresh</button>
+      <button class="btn btn-warn btn-sm" onclick="exportCSV('dashboard')">📊 CSV</button>
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-c1" id="kpi-card-output"><div class="kpi-lbl">Daily Output</div><div class="kpi-val" id="kpi-output">1,240</div><div class="kpi-unit">Pieces/Day</div><div class="kpi-trend trend-up">Auto-calc from Production</div></div>
+    <div class="kpi-card kpi-c2" id="kpi-card-eff"><div class="kpi-lbl">Efficiency</div><div class="kpi-val" id="kpi-eff">82</div><div class="kpi-unit">%</div><div class="kpi-trend" id="kpi-eff-trend">Target: <span id="eff-tgt">75</span>%</div></div>
+    <div class="kpi-card kpi-c3" id="kpi-card-def"><div class="kpi-lbl">Defect Rate (DHU)</div><div class="kpi-val" id="kpi-def">3.2</div><div class="kpi-unit">%</div><div class="kpi-trend" id="kpi-def-trend">Target: &lt;<span id="dhu-tgt">3</span>%</div></div>
+    <div class="kpi-card kpi-c4"><div class="kpi-lbl">SMV</div><div class="kpi-val" id="kpi-smv">18.5</div><div class="kpi-unit">Min/Piece</div><div class="kpi-trend" style="color:var(--txt3);">Standard Minute Value</div></div>
+    <div class="kpi-card kpi-c5" id="kpi-card-otd"><div class="kpi-lbl">On-Time Delivery</div><div class="kpi-val" id="kpi-otd">91</div><div class="kpi-unit">%</div><div class="kpi-trend" id="kpi-otd-trend">Target: <span id="otd-tgt">90</span>%</div></div>
+    <div class="kpi-card kpi-c1" id="kpi-card-abs"><div class="kpi-lbl">Absenteeism</div><div class="kpi-val" id="kpi-abs">4.1</div><div class="kpi-unit">%</div><div class="kpi-trend" id="kpi-abs-trend">Target: &lt;<span id="abs-tgt">5</span>%</div></div>
+    <div class="kpi-card kpi-c7"><div class="kpi-lbl">Sigma Level</div><div class="kpi-val" id="kpi-sigma">—</div><div class="kpi-unit">Quality</div><div class="kpi-trend" id="kpi-sigma-sub" style="color:var(--txt3);">From DHU data</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">📈 Production Trend — Output &amp; Efficiency</div><canvas id="prodChart" height="130"></canvas><div id="chartLabels"></div></div>
+    <div class="card">
+      <div class="card-title">⚡ Quick KPI Update</div>
+      <div style="font-size:0.72rem;color:var(--acc);padding:6px 10px;background:rgba(0,200,150,.06);border-radius:6px;margin-bottom:10px;">🤖 KPIs auto-update jab Production/Quality data save hota hai</div>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="fg"><label>Output (pcs)</label><input type="number" id="upd-output" placeholder="1240"></div>
+        <div class="fg"><label>Efficiency %</label><input type="number" id="upd-eff" placeholder="82"></div>
+        <div class="fg"><label>Defect Rate %</label><input type="number" id="upd-def" placeholder="3.2" step="0.1"></div>
+        <div class="fg"><label>SMV (min)</label><input type="number" id="upd-smv" placeholder="18.5" step="0.1"></div>
+        <div class="fg"><label>OTD %</label><input type="number" id="upd-otd" placeholder="91"></div>
+        <div class="fg"><label>Absenteeism %</label><input type="number" id="upd-abs" placeholder="4.1" step="0.1"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px;width:100%;" onclick="updateKPIs()">📊 Update Dashboard</button>
+    </div>
+  </div>
+  <!-- AI DAILY INSIGHTS -->
+  <div class="ai-insight-card" style="margin-top:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:700;letter-spacing:1.5px;color:var(--acc4);">🤖 AI DAILY INSIGHTS</div>
+      <button class="ai-suggest-btn" onclick="aiDailyInsights()">⚡ Generate Insights</button>
+    </div>
+    <div id="ai-daily-result" style="font-size:0.83rem;color:var(--txt2);line-height:1.7;">AI key setup karein aur "Generate Insights" click karein — aaj ke data ki smart analysis milegi.</div>
+  </div>
+</div>
+
+<!-- IE RULES -->
+<div id="ie-rules" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(244,160,36,.12);">📋</div><div class="sec-title"><h2>IE Rules — Garments &amp; Textile</h2><p>Industrial Engineering standards for lean operations</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('ie-rules')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('ie-rules')">📊 CSV</button></div></div>
+  <div class="rules-grid" id="ie-rules-grid"></div>
+</div>
+
+<!-- WORKFLOW -->
+<div id="workflow" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(43,125,233,.12);">🔄</div><div class="sec-title"><h2>Workflow Management</h2><p>Production workflow entry &amp; tracking</p></div></div><div class="sec-actions"><button class="btn btn-primary btn-sm" onclick="showWFForm()">+ Add</button><button class="btn btn-secondary btn-sm" onclick="generateReport('workflow')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('workflow')">📊 CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('workflow')">📗 Excel</button></div></div>
+  <div class="export-bar"><span class="export-label">Export:</span><button class="btn btn-secondary btn-xs" onclick="generateReport('workflow')">🖨️ PDF</button><button class="btn btn-info btn-xs" onclick="exportCSV('workflow')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('workflow')">Excel</button><button class="btn btn-secondary btn-xs" onclick="exportPowerBI('workflow')">🔷 Power BI</button></div>
+  <div class="search-bar"><input id="wf-search" placeholder="🔍 Style, Dept, Process se search..." oninput="filterTable('wf-search','wf-tbody')"><span style="font-size:0.73rem;color:var(--txt3);">Live search</span></div>
+  <div class="card" id="wf-form-card" style="display:none;margin-bottom:16px;">
+    <div class="card-title">➕ New Workflow Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Style No.</label><input id="wf-style" placeholder="ST-2024-001"></div>
+      <div class="fg"><label>Department</label><select id="wf-dept"><option>Cutting</option><option>Sewing</option><option>Finishing</option><option>Quality</option><option>Packing</option><option>Washing</option><option>Embroidery</option></select></div>
+      <div class="fg"><label>Process</label><input id="wf-process" placeholder="Front Panel Stitching"></div>
+      <div class="fg"><label>Operator/Team</label><input id="wf-operator" placeholder="Name or Team"></div>
+      <div class="fg"><label>Target (pcs)</label><input id="wf-target" type="number" placeholder="500"></div>
+      <div class="fg"><label>Actual (pcs)</label><input id="wf-actual" type="number" placeholder="480"></div>
+      <div class="fg"><label>SMV (min)</label><input id="wf-smv" type="number" placeholder="2.5" step="0.1"></div>
+      <div class="fg"><label>Status</label><select id="wf-status"><option value="pending">⏳ Pending</option><option value="running">🔵 Running</option><option value="done">✅ Done</option><option value="hold">🔴 Hold</option></select></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Remarks</label><textarea id="wf-remarks" rows="2" placeholder="Notes..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" onclick="addWorkflow()">✅ Save</button><button class="btn btn-secondary" onclick="document.getElementById('wf-form-card').style.display='none'">Cancel</button></div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Dept</th><th>Process</th><th>Operator</th><th>Target</th><th>Actual</th><th>Eff%</th><th>SMV</th><th>Status</th><th>Action</th></tr></thead><tbody id="wf-tbody"></tbody></table></div>
+</div>
+
+<!-- RESPONSIBILITY -->
+<div id="responsibility" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(124,92,191,.12);">👥</div><div class="sec-title"><h2>Responsibility Matrix</h2><p>RACI — Who does what</p></div></div><div class="sec-actions"><button class="btn btn-primary btn-sm" onclick="showRespForm()">+ Assign</button><button class="btn btn-secondary btn-sm" onclick="generateReport('responsibility')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('responsibility')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('responsibility')">Excel</button></div></div>
+  <div class="export-bar"><span class="export-label">Export:</span><button class="btn btn-secondary btn-xs" onclick="generateReport('responsibility')">🖨️ PDF</button><button class="btn btn-info btn-xs" onclick="exportCSV('responsibility')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('responsibility')">Excel</button><button class="btn btn-secondary btn-xs" onclick="exportPowerBI('responsibility')">🔷 Power BI</button></div>
+  <div class="card" id="resp-form-card" style="display:none;margin-bottom:16px;">
+    <div class="card-title">➕ Responsibility Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Task</label><input id="r-task" placeholder="e.g. Daily 5S Audit"></div>
+      <div class="fg"><label>Department</label><select id="r-dept"><option>IE</option><option>Production</option><option>Quality</option><option>HR</option><option>Cutting</option><option>Sewing</option><option>Finishing</option><option>Management</option></select></div>
+      <div class="fg"><label>Person</label><input id="r-person" placeholder="Name"></div>
+      <div class="fg"><label>RACI Role</label><select id="r-role"><option value="R">R — Responsible</option><option value="A">A — Accountable</option><option value="C">C — Consulted</option><option value="I">I — Informed</option></select></div>
+      <div class="fg"><label>Frequency</label><select id="r-freq"><option>Daily</option><option>Weekly</option><option>Monthly</option><option>As Needed</option></select></div>
+      <div class="fg"><label>Priority</label><select id="r-priority"><option value="high">🔴 High</option><option value="med">🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Description</label><textarea id="r-desc" rows="2" placeholder="Detail..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" onclick="addResponsibility()">✅ Save</button><button class="btn btn-secondary" onclick="document.getElementById('resp-form-card').style.display='none'">Cancel</button></div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Task</th><th>Dept</th><th>Person</th><th>RACI</th><th>Frequency</th><th>Priority</th><th>Date</th><th>Action</th></tr></thead><tbody id="resp-tbody"></tbody></table></div>
+</div>
+
+<!-- KANBAN -->
+<div id="kanban" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(0,200,150,.12);">📌</div><div class="sec-title"><h2>Kanban Board</h2><p>Drag &amp; drop | Due date + overdue alerts</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('kanban')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('kanban')">CSV</button></div></div>
+  <div class="kanban">
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'todo')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc2);">📌 To Do</span><span class="k-count" id="kc-todo">0</span></div>
+      <div id="kb-todo"></div>
+      <button class="k-add-btn" onclick="showKForm('todo')">+ Add Task</button>
+      <div class="add-form" id="kf-todo">
+        <input id="kt-todo" placeholder="Task naam..." style="margin-bottom:8px;">
+        <select id="kp-todo" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
+        <input id="kdept-todo" placeholder="Department..." style="margin-bottom:8px;">
+        <input id="kdue-todo" type="date" style="margin-bottom:8px;">
+        <div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('todo')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('todo')">✕</button></div>
+      </div>
+    </div>
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'prog')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc4);">⚙️ In Progress</span><span class="k-count" id="kc-prog">0</span></div>
+      <div id="kb-prog"></div>
+      <button class="k-add-btn" onclick="showKForm('prog')">+ Add Task</button>
+      <div class="add-form" id="kf-prog">
+        <input id="kt-prog" placeholder="Task naam..." style="margin-bottom:8px;">
+        <select id="kp-prog" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
+        <input id="kdept-prog" placeholder="Department..." style="margin-bottom:8px;">
+        <input id="kdue-prog" type="date" style="margin-bottom:8px;">
+        <div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('prog')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('prog')">✕</button></div>
+      </div>
+    </div>
+    <div class="k-col" ondragover="event.preventDefault()" ondrop="dropK(event,'done')">
+      <div class="k-col-hdr"><span class="k-col-title" style="color:var(--acc);">✅ Done</span><span class="k-count" id="kc-done">0</span></div>
+      <div id="kb-done"></div>
+      <button class="k-add-btn" onclick="showKForm('done')">+ Add Task</button>
+      <div class="add-form" id="kf-done">
+        <input id="kt-done" placeholder="Task naam..." style="margin-bottom:8px;">
+        <select id="kp-done" style="margin-bottom:8px;"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
+        <input id="kdept-done" placeholder="Department..." style="margin-bottom:8px;">
+        <input id="kdue-done" type="date" style="margin-bottom:8px;">
+        <div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="addK('done')">Add</button><button class="btn btn-secondary btn-sm" onclick="hideKForm('done')">✕</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5S AUDIT -->
+<div id="audit5s" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(244,160,36,.12);">✅</div><div class="sec-title"><h2>5S Audit</h2><p>Rate each area 1–5 stars</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('audit5s')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('audit5s')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('audit5s')">Excel</button><button class="btn btn-secondary btn-sm" onclick="exportPowerBI('audit5s')">🔷 PBI</button></div></div>
+  <div id="audit-cats"></div>
+  <div style="background:linear-gradient(135deg,var(--surf2),var(--surf3));border:1px solid var(--acc);border-radius:12px;padding:22px;text-align:center;margin-top:18px;box-shadow:var(--glow);">
+    <div style="font-size:0.72rem;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">TOTAL 5S SCORE</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:700;color:var(--acc);" id="audit-total">0<span style="font-size:1.5rem;color:var(--txt2);">/100</span></div>
+    <div style="font-size:0.9rem;color:var(--txt2);margin-top:6px;" id="audit-grade">Rating shuru karein...</div>
+    <div class="pbar-out" style="margin-top:12px;max-width:400px;margin-left:auto;margin-right:auto;"><div class="pbar-in" id="audit-bar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- 5 WHYS -->
+<div id="whys" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(229,62,62,.12);">🔍</div><div class="sec-title"><h2>5 Whys Root Cause Analyzer</h2><p>AI-powered root cause analysis</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('whys')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('whys')">CSV</button></div></div>
+  <div style="max-width:720px;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">🔴 Problem Entry</div>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+        <div class="fg"><label>Problem Statement</label><input id="w-prob" placeholder="e.g. Seam pulli ho rahi hai"></div>
+        <div class="fg"><label>Department</label><select id="w-dept"><option>Sewing</option><option>Cutting</option><option>Finishing</option><option>Quality</option><option>Packing</option></select></div>
+        <div class="fg"><label>Reported By</label><input id="w-by" placeholder="Name"></div>
+        <div class="fg"><label>Severity</label><select id="w-sev"><option value="high">🔴 High</option><option value="med">🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startWhys()">🔍 Analysis Shuru</button>
+        <button class="btn btn-purple" id="ai-why-btn" onclick="aiSuggestWhys()">🤖 AI Root Causes Suggest</button>
+      </div>
+      <div class="ai-box" id="ai-why-div"></div>
+    </div>
+    <div id="whys-steps"></div>
+    <div id="root-result" style="display:none;" class="card">
+      <div style="color:var(--acc);font-weight:700;letter-spacing:1px;margin-bottom:8px;font-size:0.78rem;">✅ ROOT CAUSE FOUND</div>
+      <div id="root-text" style="font-size:1rem;font-weight:600;margin-bottom:12px;"></div>
+      <div class="divider"></div>
+      <div style="font-size:0.82rem;color:var(--txt2);"><strong style="color:var(--acc2);">⚡ Next Step:</strong> CAPA tayar karein aur standard work mein add karein.</div>
+      <button class="btn btn-purple btn-sm" style="margin-top:10px;" onclick="linkToKaizen()">💡 Kaizen mein Add</button>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div style="margin-bottom:12px;"><h2 style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;">📝 Saved Analyses</h2></div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Problem</th><th>Dept</th><th>Root Cause</th><th>By</th><th>Severity</th><th>Date</th></tr></thead><tbody id="whys-tbody"></tbody></table></div>
+</div>
+
+<!-- KAIZEN -->
+<div id="kaizen" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(124,92,191,.12);">💡</div><div class="sec-title"><h2>Kaizen Log</h2><p>Continuous improvement tracking</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('kaizen')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('kaizen')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('kaizen')">Excel</button><button class="btn btn-secondary btn-sm" onclick="exportPowerBI('kaizen')">🔷 PBI</button></div></div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ New Kaizen</div>
+    <div class="form-grid">
+      <div class="fg"><label>Title</label><input id="kz-title" placeholder="Improvement naam..."></div>
+      <div class="fg"><label>Category</label><select id="kz-cat"><option value="process">⚙️ Process</option><option value="quality">✅ Quality</option><option value="safety">🦺 Safety</option><option value="waste">🗑️ Waste</option><option value="cost">💰 Cost</option><option value="delivery">🚚 Delivery</option></select></div>
+      <div class="fg"><label>Department</label><select id="kz-dept"><option>Sewing</option><option>Cutting</option><option>Finishing</option><option>Quality</option><option>IE</option><option>Packing</option><option>Management</option></select></div>
+      <div class="fg"><label>Owner</label><input id="kz-owner" placeholder="Name"></div>
+      <div class="fg"><label>Target Date</label><input id="kz-date" type="date"></div>
+      <div class="fg"><label>Status</label><select id="kz-status"><option value="open">🟡 Open</option><option value="prog">🟣 In Progress</option><option value="done">🟢 Complete</option></select></div>
+      <div class="fg"><label>Before Condition</label><input id="kz-before" placeholder="Current situation..."></div>
+      <div class="fg"><label>Expected Result</label><input id="kz-after" placeholder="Expected improvement..."></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Detail</label><textarea id="kz-desc" rows="2" placeholder="Kaizen detail..."></textarea></div>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="addKaizen()">💡 Log Kaizen</button>
+    <button class="ai-suggest-btn" style="margin-top:10px;margin-left:8px;padding:8px 16px;font-size:0.78rem;" onclick="aiKaizenIdeas()">🤖 AI Improvement Ideas</button>
+    <div class="ai-result-box" id="ai-kaizen-result"></div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Dept</th><th>Owner</th><th>Before</th><th>Expected</th><th>Target Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="kz-tbody"></tbody></table></div>
+</div>
+
+<!-- PRODUCTION -->
+<div id="production" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(43,125,233,.12);">🏭</div><div class="sec-title"><h2>Production Entry</h2><p>Line-wise data | Auto Dashboard update</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('production')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('production')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('production')">Excel</button><button class="btn btn-secondary btn-sm" onclick="exportPowerBI('production')">🔷 PBI</button></div></div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ Production Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Date</label><input id="pr-date" type="date"></div>
+      <div class="fg"><label>Line No.</label><input id="pr-line" placeholder="Line 5"></div>
+      <div class="fg"><label>Style No.</label><input id="pr-style" placeholder="ST-001"></div>
+      <div class="fg"><label>Buyer</label><input id="pr-buyer" placeholder="H&M, Zara..."></div>
+      <div class="fg"><label>Target (pcs)</label><input id="pr-target" type="number" placeholder="500"></div>
+      <div class="fg"><label>Actual (pcs)</label><input id="pr-actual" type="number" placeholder="460"></div>
+      <div class="fg"><label>Workers</label><input id="pr-workers" type="number" placeholder="45"></div>
+      <div class="fg"><label>Working Hours</label><input id="pr-hours" type="number" placeholder="9" step="0.5"></div>
+      <div class="fg"><label>SMV (min)</label><input id="pr-smv" type="number" placeholder="18.5" step="0.1"></div>
+      <div class="fg"><label>Defects (pcs)</label><input id="pr-defects" type="number" placeholder="12"></div>
+      <div class="fg"><label>Shift</label><select id="pr-shift"><option>Morning</option><option>Evening</option><option>Night</option></select></div>
+      <div class="fg"><label>Supervisor</label><input id="pr-sup" placeholder="Name"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="addProduction()">🏭 Save Entry</button>
+    <button class="ai-suggest-btn" style="margin-top:10px;margin-left:8px;padding:8px 16px;font-size:0.78rem;" onclick="aiProductionInsights()">🤖 AI Production Tips</button>
+    <div class="ai-result-box" id="ai-production-result"></div>
+  </div>
+  <div id="line-summary" style="display:none;margin-bottom:16px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc5);margin-bottom:10px;">📊 Line-wise Performance</div><div id="line-grid" class="g3"></div></div>
+  <div class="search-bar"><input id="pr-search" placeholder="🔍 Line, Style, Buyer, Shift se search..." oninput="filterTable('pr-search','pr-tbody')"><span style="font-size:0.73rem;color:var(--txt3);">Live search</span></div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Line</th><th>Style</th><th>Buyer</th><th>Target</th><th>Actual</th><th>Eff%</th><th>Workers</th><th>SMV</th><th>Defects</th><th>Shift</th><th>Action</th></tr></thead><tbody id="pr-tbody"></tbody></table></div>
+</div>
+
+<!-- QUALITY -->
+<div id="quality" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(229,62,62,.12);">🎯</div><div class="sec-title"><h2>Quality Control Log</h2><p>DHU tracking | Auto Pareto + Sigma Level</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('quality')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('quality')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('quality')">Excel</button><button class="btn btn-secondary btn-sm" onclick="exportPowerBI('quality')">🔷 PBI</button></div></div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ Defect Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Date</label><input id="q-date" type="date"></div>
+      <div class="fg"><label>Style No.</label><input id="q-style" placeholder="ST-001"></div>
+      <div class="fg"><label>Line/Dept</label><input id="q-line" placeholder="Line 5 / Sewing"></div>
+      <div class="fg"><label>Defect Type</label><select id="q-deftype"><option>Seam Pulli (Seam Slippage)</option><option>Skip Stitch</option><option>Uneven Stitch</option><option>Raw Edge</option><option>Oil Stain</option><option>Broken Stitch</option><option>Measurement Defect</option><option>Puckering</option><option>Button Missing</option><option>Zipper Defect</option><option>Color Variation</option><option>Shade Variation</option><option>Other</option></select></div>
+      <div class="fg"><label>Qty Defective</label><input id="q-qty" type="number" placeholder="5"></div>
+      <div class="fg"><label>Total Checked</label><input id="q-total" type="number" placeholder="200"></div>
+      <div class="fg"><label>Inspector</label><input id="q-inspector" placeholder="Name"></div>
+      <div class="fg"><label>Severity</label><select id="q-sev"><option value="critical">🔴 Critical</option><option value="major">🟡 Major</option><option value="minor">🟢 Minor</option></select></div>
+      <div class="fg"><label>CAPA Action</label><input id="q-capa" placeholder="Action taken..."></div>
+      <div class="fg"><label>Status</label><select id="q-status"><option value="open">🔴 Open</option><option value="wip">🟡 WIP</option><option value="closed">🟢 Closed</option></select></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="addQuality()">🎯 Save Defect</button>
+    <button class="ai-suggest-btn" style="margin-top:10px;margin-left:8px;padding:8px 16px;font-size:0.78rem;" onclick="aiQualityAnalysis()">🤖 AI CAPA Suggest</button>
+    <div class="ai-result-box" id="ai-quality-result"></div>
+  </div>
+  <div class="card" id="pareto-card" style="display:none;margin-bottom:18px;"><div class="card-title">📊 Pareto Chart — Top Defects (80/20 Rule)</div><canvas id="paretoChart" height="160"></canvas></div>
+  <div class="search-bar"><input id="q-search" placeholder="🔍 Style, Defect, Inspector se search..." oninput="filterTable('q-search','q-tbody')"><span style="font-size:0.73rem;color:var(--txt3);">Live search</span></div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Line</th><th>Defect</th><th>Qty</th><th>Checked</th><th>DHU%</th><th>Inspector</th><th>Severity</th><th>CAPA</th><th>Status</th><th>Action</th></tr></thead><tbody id="q-tbody"></tbody></table></div>
+</div>
+
+<!-- OEE -->
+<div id="oee-section" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(0,188,212,.12);">⚙️</div><div class="sec-title"><h2>OEE Tracker</h2><p>Overall Equipment Effectiveness = Availability × Performance × Quality</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('oee')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('oee')">CSV</button><button class="btn btn-warn btn-sm" onclick="exportExcel('oee')">Excel</button></div></div>
+  <div class="oee-kpi-row">
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Avg OEE</div><div class="oee-kpi-val" id="oee-avg-val">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Avg Availability</div><div class="oee-kpi-val" id="oee-avail-avg" style="color:var(--acc5);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Avg Performance</div><div class="oee-kpi-val" id="oee-perf-avg" style="color:var(--acc2);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Avg Quality</div><div class="oee-kpi-val" id="oee-qual-avg" style="color:var(--acc3);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Entries</div><div class="oee-kpi-val" id="oee-count" style="color:var(--txt2);">0</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;border-color:rgba(0,188,212,0.2);">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;text-align:center;font-size:0.78rem;">
+      <div><div style="color:var(--acc5);font-weight:700;">AVAILABILITY</div><div style="color:var(--txt3);">Actual Run / Planned Time × 100</div></div>
+      <div style="display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--txt3);">×</div>
+      <div><div style="color:var(--acc2);font-weight:700;">PERFORMANCE</div><div style="color:var(--txt3);">Actual Output / Planned Output × 100</div></div>
+      <div style="display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--txt3);">×</div>
+      <div><div style="color:var(--acc3);font-weight:700;">QUALITY</div><div style="color:var(--txt3);">Good Units / Total Units × 100</div></div>
+      <div style="display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--txt3);">=</div>
+      <div><div style="color:var(--acc);font-weight:700;">OEE</div><div style="color:var(--txt3);">World Class: 85%+</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ OEE Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Machine / Line</label><input id="oee-machine" placeholder="Loom-01 / Line 5"></div>
+      <div class="fg"><label>Date</label><input id="oee-date" type="date"></div>
+      <div class="fg"><label>Planned Hours</label><input id="oee-planned" type="number" placeholder="9" step="0.5"></div>
+      <div class="fg"><label>Actual Run Hours</label><input id="oee-actual" type="number" placeholder="7.5" step="0.5"></div>
+      <div class="fg"><label>Planned Output (pcs)</label><input id="oee-planned-out" type="number" placeholder="500"></div>
+      <div class="fg"><label>Actual Output (pcs)</label><input id="oee-actual-out" type="number" placeholder="420"></div>
+      <div class="fg"><label>Good Units (pcs)</label><input id="oee-good" type="number" placeholder="410"></div>
+      <div class="fg"><label>Shift</label><select id="oee-shift"><option>Morning</option><option>Evening</option><option>Night</option></select></div>
+    </div>
+    <div id="oee-preview" style="display:none;margin-top:14px;padding:14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr);">
+      <div style="font-size:0.7rem;color:var(--txt3);letter-spacing:1px;margin-bottom:8px;">⚡ LIVE PREVIEW</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;">
+        <div><div style="font-size:0.68rem;color:var(--acc5);">Availability</div><div id="oee-p-avail" style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--acc5);">—</div></div>
+        <div><div style="font-size:0.68rem;color:var(--acc2);">Performance</div><div id="oee-p-perf" style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--acc2);">—</div></div>
+        <div><div style="font-size:0.68rem;color:var(--acc3);">Quality</div><div id="oee-p-qual" style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--acc3);">—</div></div>
+        <div><div style="font-size:0.68rem;color:var(--acc);">OEE</div><div id="oee-p-oee" style="font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--acc);">—</div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="addOEE()">⚙️ Save OEE</button>
+    <button class="ai-suggest-btn" style="margin-top:10px;margin-left:8px;padding:8px 16px;font-size:0.78rem;" onclick="aiOEESuggestion()">🤖 AI OEE Analysis</button>
+    <div class="ai-result-box" id="ai-oee-result"></div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Machine/Line</th><th>Date</th><th>Shift</th><th>Availability%</th><th>Performance%</th><th>Quality%</th><th>OEE%</th><th>Action</th></tr></thead><tbody id="oee-tbody"></tbody></table></div>
+</div>
+
+<!-- SMED -->
+<div id="smed-section" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(244,160,36,.12);">⏱️</div><div class="sec-title"><h2>SMED — Changeover Tracker</h2><p>Setup time reduction | Internal vs External activities</p></div></div><div class="sec-actions"><button class="btn btn-secondary btn-sm" onclick="generateReport('smed')">📄 Report</button><button class="btn btn-info btn-sm" onclick="exportCSV('smed')">CSV</button></div></div>
+  <div class="oee-kpi-row">
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Avg Changeover</div><div class="oee-kpi-val" id="smed-avg-val" style="color:var(--acc2);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Best (Min)</div><div class="oee-kpi-val" id="smed-min-val" style="color:var(--acc);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Worst (Max)</div><div class="oee-kpi-val" id="smed-max-val" style="color:var(--acc3);">—</div></div>
+    <div class="oee-kpi"><div class="oee-kpi-lbl">Total Entries</div><div class="oee-kpi-val" id="smed-count" style="color:var(--txt2);">0</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;border-color:rgba(244,160,36,0.2);font-size:0.82rem;color:var(--txt2);line-height:1.7;">
+    <strong style="color:var(--acc2);">SMED Goal:</strong> Style change &lt; 2 hours. <strong style="color:var(--acc5);">Internal:</strong> Machine band hone par hoti hain. <strong style="color:var(--acc);">External:</strong> Machine chalu rehne par bhi ho sakti hain.
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">➕ Changeover Entry</div>
+    <div class="form-grid">
+      <div class="fg"><label>Line / Machine</label><input id="sm-line" placeholder="Line 3"></div>
+      <div class="fg"><label>From Style</label><input id="sm-from" placeholder="Previous style no."></div>
+      <div class="fg"><label>To Style</label><input id="sm-to" placeholder="New style no."></div>
+      <div class="fg"><label>Start Time</label><input id="sm-start" type="time"></div>
+      <div class="fg"><label>End Time</label><input id="sm-end" type="time"></div>
+      <div class="fg"><label>Duration (min)</label><input id="sm-duration" type="number" placeholder="Auto ya manually enter"></div>
+      <div class="fg"><label>Category</label><select id="sm-cat"><option value="Internal">Internal</option><option value="External">External</option><option value="Mixed">Mixed</option></select></div>
+      <div class="fg"><label>Target Time (min)</label><input id="sm-target" type="number" placeholder="120"></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>Notes</label><textarea id="sm-notes" rows="2" placeholder="Changeover notes..."></textarea></div>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="addSMED()">⏱️ Save Changeover</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Line</th><th>Style Change</th><th>Duration</th><th>Target</th><th>vs Target</th><th>Category</th><th>Notes</th><th>Date</th><th>Action</th></tr></thead><tbody id="smed-tbody"></tbody></table></div>
+</div>
+
+<!-- REPORTS -->
+<div id="reports" class="section">
+  <div class="sec-hdr"><div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(0,200,150,.12);">📄</div><div class="sec-title"><h2>Reports Center</h2><p>Print, PDF, Excel, CSV, Power BI</p></div></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">🖨️ Available Reports</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">📊 Dashboard KPIs</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('dashboard')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('dashboard')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('dashboard')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">🏭 Production Report</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('production')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('production')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('production')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">🎯 Quality / DHU Report</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('quality')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('quality')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('quality')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">⚙️ OEE Report</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('oee')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('oee')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('oee')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">⏱️ SMED Report</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('smed')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('smed')">CSV</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">✅ 5S Audit</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('audit5s')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('audit5s')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('audit5s')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.85rem;">💡 Kaizen Log</span><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-xs" onclick="generateReport('kaizen')">Print</button><button class="btn btn-info btn-xs" onclick="exportCSV('kaizen')">CSV</button><button class="btn btn-warn btn-xs" onclick="exportExcel('kaizen')">Excel</button></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(43,125,233,.08);border-radius:8px;border:1px solid rgba(43,125,233,.2);"><span style="font-size:0.85rem;color:var(--acc5);">🔷 Power BI — All Data</span><button class="btn btn-info btn-xs" onclick="exportAllPowerBI()">Export All</button></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">📊 Summary Statistics</div><div id="report-stats" style="display:flex;flex-direction:column;gap:8px;"></div></div>
+  </div>
+</div>
+
+<!-- AI ASSISTANT SECTION -->
+<div id="ai-assistant" class="section">
+  <div class="sec-hdr">
+    <div class="sec-hdr-left"><div class="sec-icon" style="background:rgba(124,92,191,.15);">🤖</div><div class="sec-title"><h2>AI Assistant</h2><p>Gemini AI — Production, Quality, OEE sab samjhega aur guide karega</p></div></div>
+  </div>
+  <!-- API KEY BANNER -->
+  <div class="ai-key-banner">
+    <div class="ai-key-status">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--acc4);margin-bottom:4px;">🔑 Google Gemini API Key</div>
+      <div id="ai-key-info" style="font-size:0.75rem;color:var(--txt3);">Key set nahi — aistudio.google.com se free key lein</div>
+    </div>
+    <button class="btn btn-purple btn-sm" onclick="openAIKeySetup()">⚙️ Key Setup</button>
+  </div>
+  <!-- QUICK AI ACTIONS -->
+  <div class="g3" style="margin-bottom:18px;">
+    <div class="card" style="cursor:pointer;border-color:rgba(124,92,191,0.2);" onclick="aiQuickAction('dashboard')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">📊</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:var(--acc4);">Dashboard Analysis</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">Aaj ke KPIs ka AI summary</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:rgba(229,62,62,0.2);" onclick="aiQuickAction('quality')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">🎯</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:var(--acc3);">Quality Deep Dive</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">Top defects ka analysis aur CAPA</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:rgba(43,125,233,0.2);" onclick="aiQuickAction('production')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">🏭</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:var(--acc5);">Production Review</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">Line performance aur tips</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:rgba(0,188,212,0.2);" onclick="aiQuickAction('oee')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">⚙️</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:#00bcd4;">OEE Improvement</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">OEE badhane ke steps</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:rgba(244,160,36,0.2);" onclick="aiQuickAction('smed')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">⏱️</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:var(--acc2);">SMED Tips</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">Changeover time kaise kam karein</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-color:rgba(124,92,191,0.2);" onclick="aiQuickAction('kaizen')">
+      <div style="font-size:1.5rem;margin-bottom:6px;">💡</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;color:var(--acc4);">Kaizen Ideas</div>
+      <div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">Improvement suggestions</div>
+    </div>
+  </div>
+  <!-- CHAT INTERFACE -->
+  <div class="card">
+    <div class="card-title">💬 AI Chat — Seedha Poochho</div>
+    <div style="font-size:0.75rem;color:var(--txt3);margin-bottom:12px;">Factory data ke baare mein kuch bhi poochho — AI aapke actual data dekh kar jawab dega</div>
+    <div class="ai-chat-wrap">
+      <div class="ai-chat-msgs" id="ai-chat-msgs">
+        <div class="ai-msg ai-msg-bot">
+          <strong>🤖 AI Assistant:</strong> Assalam-o-Alaikum! Main aapka Garments IE Assistant hoon. Mujhse poochho:<br><br>
+          • "Aaj ki efficiency kaise hai?"<br>
+          • "Seam pulli defect kyun baar baar aa raha hai?"<br>
+          • "OEE improve karne ke liye kya karein?"<br>
+          • "Line 5 ki performance review karo"<br><br>
+          <em style="color:var(--txt3);font-size:0.78rem;">Pehle API key setup karein Settings mein ☝️</em>
+        </div>
+      </div>
+      <div class="ai-chat-input">
+        <input id="ai-chat-inp" placeholder="Kuch bhi poochho... (Enter dabao)" onkeydown="if(event.key==='Enter')sendAIChat()">
+        <button class="btn btn-purple btn-sm" onclick="sendAIChat()">Send ➤</button>
+      </div>
+    </div>
+  </div>
+  <!-- WHATSAPP MESSAGE GENERATOR -->
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title" style="color:var(--acc2);">📱 WhatsApp / Email Message Generator</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+      <div class="fg"><label>Message Type</label>
+        <select id="msg-type">
+          <option value="delay">Delivery Delay Inform</option>
+          <option value="quality">Quality Issue Report</option>
+          <option value="buyer">Buyer Update</option>
+          <option value="supplier">Supplier Complaint</option>
+          <option value="internal">Internal Team Alert</option>
+        </select>
+      </div>
+      <div class="fg"><label>Tone</label>
+        <select id="msg-tone">
+          <option value="professional">Professional</option>
+          <option value="friendly">Polite &amp; Friendly</option>
+          <option value="urgent">Urgent</option>
+          <option value="apologetic">Apologetic</option>
+        </select>
+      </div>
+      <div class="fg"><label>Key Detail</label><input id="msg-detail" placeholder="e.g. 3 din delay, 500 pcs affected"></div>
+    </div>
+    <button class="ai-suggest-btn" style="margin-top:12px;padding:9px 20px;font-size:0.8rem;" onclick="aiGenerateMessage()">🤖 Message Generate Karo</button>
+    <div class="ai-result-box" id="ai-msg-result" style="white-space:pre-wrap;"></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- AI KEY SETUP MODAL -->
+<div class="modal-overlay" id="aikey-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr"><div class="modal-title">🔑 Gemini AI Key Setup</div><button class="modal-close" onclick="document.getElementById('aikey-modal').classList.remove('show')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:rgba(124,92,191,0.08);border:1px solid rgba(124,92,191,0.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:0.82rem;line-height:1.7;">
+        <strong style="color:var(--acc4);">Free Key Kaise Lein:</strong><br>
+        1. <strong>aistudio.google.com</strong> kholo<br>
+        2. Google account se login karo<br>
+        3. Left mein <strong>"Get API Key"</strong> click karo<br>
+        4. <strong>"Create API Key"</strong> click karo<br>
+        5. Key copy karke neeche paste karo ✅
+      </div>
+      <div class="fg" style="margin-bottom:12px;">
+        <label>Gemini API Key</label>
+        <input id="gemini-key-input" type="password" placeholder="AIzaSy... yahan paste karein">
+      </div>
+      <div id="key-test-result" style="font-size:0.78rem;margin-top:8px;"></div>
+      <div style="font-size:0.72rem;color:var(--txt3);margin-top:10px;">🔒 Key sirf aapke browser mein save hogi — Firebase mein nahi jayegi</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-purple" onclick="saveAIKey()">✅ Key Save Karo</button>
+      <button class="btn btn-secondary btn-sm" onclick="testAIKey()">🧪 Test Karo</button>
+      <button class="btn btn-danger btn-sm" onclick="removeAIKey()">🗑️ Key Hatao</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-hdr"><div class="modal-title">⚙️ System Settings</div><button class="modal-close" onclick="closeSettings()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:0.72rem;color:var(--acc);letter-spacing:1px;margin-bottom:12px;text-transform:uppercase;">Company Info</div>
+      <div class="fg" style="margin-bottom:12px;"><label>Company Name</label><input id="s-company" value="Al-Faisal Garments Ltd."></div>
+      <div class="fg" style="margin-bottom:12px;"><label>Developed By</label><input id="s-dev" value="Muhammad Azeem"></div>
+      <div class="fg" style="margin-bottom:12px;"><label>Department</label><input id="s-dept" value="IE Department"></div>
+      <div class="fg" style="margin-bottom:18px;"><label>System Version</label><input id="s-ver" value="v3.0"></div>
+      <div style="height:1px;background:var(--bdr2);margin-bottom:14px;"></div>
+      <div style="font-size:0.72rem;color:#a78bfa;letter-spacing:1px;margin-bottom:12px;text-transform:uppercase;">🤖 Gemini AI Key (Free)</div>
+      <div class="fg" style="margin-bottom:6px;">
+        <label>API Key — aistudio.google.com se copy karein</label>
+        <input id="s-gemini-key" type="text" placeholder="AIzaSy... yahan paste karein">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <button class="btn btn-purple btn-sm" onclick="saveGeminiKeyFromSettings()">✅ Key Save</button>
+        <button class="btn btn-secondary btn-sm" onclick="testGeminiFromSettings()">🧪 Test</button>
+        <button class="btn btn-danger btn-sm" onclick="removeAIKey();document.getElementById('s-gemini-key').value='';fbToast('Key hata di gayi');">🗑️ Hatao</button>
+      </div>
+      <div id="s-key-status" style="font-size:0.75rem;margin-top:4px;"></div>
+      <div style="height:1px;background:var(--bdr2);margin-bottom:14px;margin-top:14px;"></div>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="fg"><label>Min Efficiency %</label><input id="s-eff" type="number" placeholder="75"></div>
+        <div class="fg"><label>Max DHU %</label><input id="s-dhu" type="number" placeholder="3"></div>
+        <div class="fg"><label>Min OTD %</label><input id="s-otd" type="number" placeholder="90"></div>
+        <div class="fg"><label>Max Absenteeism %</label><input id="s-abs" type="number" placeholder="5"></div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--txt3);margin-top:8px;">Target miss hone par KPI card red ho jayega</div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="saveSettings()">✅ Save</button><button class="btn btn-secondary" onclick="closeSettings()">Cancel</button></div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title" id="report-modal-title">Report</div><button class="modal-close" onclick="closeReport()">✕</button></div>
+    <div class="modal-body" id="report-modal-body"></div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="printReport()">🖨️ Print</button><button class="btn btn-info" onclick="savePDF()">📄 Save PDF</button><button class="btn btn-secondary" onclick="closeReport()">Close</button></div>
+  </div>
+</div>
+
+<!-- TAKT TIME MODAL -->
+<div class="modal-overlay" id="takt-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-hdr"><div class="modal-title">⏱️ Takt Time Calculator</div><button class="modal-close" onclick="document.getElementById('takt-modal').classList.remove('show')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:0.78rem;color:var(--txt2);margin-bottom:14px;line-height:1.6;"><strong style="color:var(--acc);">Takt Time</strong> = Available Time ÷ Customer Demand. Customer ki demand poori karne ke liye har kitne minute mein ek piece banana hai.</div>
+      <div class="fg" style="margin-bottom:12px;"><label>Available Time (minutes)</label><input type="number" id="takt-available" placeholder="480 (8 hours)" oninput="calcTaktTime()"></div>
+      <div class="fg" style="margin-bottom:12px;"><label>Demand (pieces/day)</label><input type="number" id="takt-demand" placeholder="600" oninput="calcTaktTime()"></div>
+      <div id="takt-result" style="padding:14px;background:var(--surf2);border-radius:10px;border:1px solid var(--bdr);text-align:center;margin-top:12px;"><div style="color:var(--txt3);font-size:0.82rem;">Values bharo...</div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" onclick="document.getElementById('takt-modal').classList.remove('show')">Close</button></div>
+  </div>
+</div>
+<script>
+// ════════════════════════════════════════
+// FIREBASE — DO NOT MODIFY THIS SECTION
+// ════════════════════════════════════════
+const FIREBASE_CONFIG={apiKey:"AIzaSyCDoJkRO-zKde-Atn0D1LSqIyZ9whqXYOQ",authDomain:"garments-lean-master.firebaseapp.com",databaseURL:"https://garments-lean-master-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"garments-lean-master",storageBucket:"garments-lean-master.firebasestorage.app",messagingSenderId:"393464503902",appId:"1:393464503902:web:e4b6888925f451bde71ecf",measurementId:"G-5172SZ202F"};
+if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+const fbDB=firebase.database();
+function initFbStatus(){const dot=document.getElementById('fb-dot'),txt=document.getElementById('fb-txt');fbDB.ref('.info/connected').on('value',snap=>{if(snap.val()===true){dot.className='fb-dot ok';txt.textContent='Firebase Connected';txt.style.color='#00e676';}else{dot.className='fb-dot err';txt.textContent='Offline';txt.style.color='#ff1744';}});}
+let fbToastTimer;
+function fbToast(msg,color='#00c896'){let t=document.getElementById('fb-toast-el');if(!t){t=document.createElement('div');t.id='fb-toast-el';t.className='fb-toast';document.body.appendChild(t);}t.textContent=msg;t.style.color=color;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';clearTimeout(fbToastTimer);fbToastTimer=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},3000);}
+function fbSaveNow(){const dot=document.getElementById('fb-dot');dot.className='fb-dot sync';fbDB.ref('leanmaster/data').set({data:JSON.stringify(state),updatedAt:new Date().toISOString()}).then(()=>{dot.className='fb-dot ok';fbToast('☁️ Firebase mein save ho gaya!');}).catch(()=>{dot.className='fb-dot err';fbToast('❌ Save fail — internet check karein','#ff1744');});}
+function fbLoadNow(){fbToast('📥 Firebase se load ho raha hai...','#ffd740');fbDB.ref('leanmaster/data').once('value').then(snap=>{if(snap.exists()){try{const d=JSON.parse(snap.val().data);Object.assign(state,d);refreshDashboard();fbToast('✅ Data load ho gaya!');}catch(e){fbToast('❌ Data parse error','#ff1744');}}else{fbToast('⚠️ Firebase mein koi data nahi abhi tak','#ffd740');}}).catch(()=>fbToast('❌ Load fail — internet check karein','#ff1744'));}
+function backupData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LeanSystem_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();fbToast('💾 Backup download ho raha hai!');}
+// ════════════════════════════════════════
+// END FIREBASE
+// ════════════════════════════════════════
+
+// STATE
+const state={company:'Al-Faisal Garments Ltd.',dev:'Muhammad Azeem',dept:'IE Department',ver:'v3.0',kpis:{output:'1,240',eff:'82',def:'3.2',smv:'18.5',otd:'91',abs:'4.1'},workflow:[],responsibility:[],kanban:{todo:[],prog:[],done:[]},kaizen:[],production:[],quality:[],auditScores:{},whysData:{prob:'',dept:'',by:'',sev:'high',answers:[]},whysList:[],oee:[],smed:[],targets:{eff:75,dhu:3,otd:90,abs:5}};
+
+// CHART INSTANCES
+let prodChartInst=null,paretoChartInst=null;
+
+// LIVE DATE
+function updateDate(){const n=new Date();document.getElementById('liveDate').textContent=n.toLocaleDateString('en-PK',{weekday:'short',year:'numeric',month:'short',day:'numeric'})+' — '+n.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'});}
+updateDate();setInterval(updateDate,30000);
+
+// NAV
+function showSec(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');el.classList.add('active');updateReportStats();if(id==='quality')setTimeout(renderParetoChart,100);if(id==='production')renderLineSummary();}
+
+// SETTINGS
+function openSettings(){
+  document.getElementById('settings-modal').classList.add('show');
+  document.getElementById('s-company').value=state.company;
+  document.getElementById('s-dev').value=state.dev;
+  document.getElementById('s-dept').value=state.dept||'';
+  const t=state.targets||{};
+  document.getElementById('s-eff').value=t.eff||75;
+  document.getElementById('s-dhu').value=t.dhu||3;
+  document.getElementById('s-otd').value=t.otd||90;
+  document.getElementById('s-abs').value=t.abs||5;
+  // Gemini key show karo
+  const k=getAIKey();
+  const keyEl=document.getElementById('s-gemini-key');
+  if(keyEl)keyEl.value=k||'';
+  const st=document.getElementById('s-key-status');
+  if(st)st.innerHTML=k?'<span style="color:var(--acc);">✅ Key set hai</span>':'<span style="color:var(--acc3);">⚠️ Key set nahi</span>';
+}
+
+function saveGeminiKeyFromSettings(){
+  const k=document.getElementById('s-gemini-key').value.trim();
+  if(!k){alert('Key enter karein!');return;}
+  localStorage.setItem('gemini_api_key',k);
+  updateAIKeyStatus();
+  const st=document.getElementById('s-key-status');
+  if(st)st.innerHTML='<span style="color:var(--acc);">✅ Key save ho gayi!</span>';
+  fbToast('🔑 AI Key save ho gayi!','#a78bfa');
+}
+
+async function testGeminiFromSettings(){
+  const k=document.getElementById('s-gemini-key').value.trim()||getAIKey();
+  const st=document.getElementById('s-key-status');
+  if(!k){if(st)st.innerHTML='<span style="color:var(--acc3);">Key enter karein pehle!</span>';return;}
+  if(st)st.innerHTML='<span style="color:var(--acc2);">⏳ Testing...</span>';
+  try{
+    const r=await callGemini('Reply with just: "Key working!"',k);
+    if(st)st.innerHTML='<span style="color:var(--acc);">✅ Key kaam kar rahi hai! — '+r+'</span>';
+  }catch(e){
+    if(st)st.innerHTML='<span style="color:var(--acc3);">❌ '+e.message+'</span>';
+  }
+}
+function closeSettings(){document.getElementById('settings-modal').classList.remove('show');}
+function saveSettings(){state.company=document.getElementById('s-company').value;state.dev=document.getElementById('s-dev').value;state.dept=document.getElementById('s-dept').value||state.dept;state.targets={eff:parseFloat(document.getElementById('s-eff').value)||75,dhu:parseFloat(document.getElementById('s-dhu').value)||3,otd:parseFloat(document.getElementById('s-otd').value)||90,abs:parseFloat(document.getElementById('s-abs').value)||5};document.getElementById('companyNameDisplay').textContent=state.company;document.getElementById('devDisplay').textContent=`Developed by: ${state.dev} | ${state.dept} | ${state.ver||'v3.0'}`;updateTargetDisplay();colorCodeKPIs();closeSettings();autoSave();fbToast('⚙️ Settings saved!');}
+
+// KPI FUNCTIONS
+function updateKPIs(){const map=[['upd-output','kpi-output','output'],['upd-eff','kpi-eff','eff'],['upd-def','kpi-def','def'],['upd-smv','kpi-smv','smv'],['upd-otd','kpi-otd','otd'],['upd-abs','kpi-abs','abs']];map.forEach(([inp,el,key])=>{const v=document.getElementById(inp).value;if(v){document.getElementById(el).textContent=v;state.kpis[key]=v;document.getElementById(inp).value='';}});colorCodeKPIs();updateSigmaLevel();fbToast('📊 KPIs updated!');}
+
+function autoCalcKPIs(){
+  if(state.production.length>0){const r=state.production.slice(0,10);const ev=r.filter(p=>parseFloat(p.eff)>0);if(ev.length){const ae=(ev.reduce((s,p)=>s+parseFloat(p.eff),0)/ev.length).toFixed(1);state.kpis.eff=ae;document.getElementById('kpi-eff').textContent=ae;}const ov=r.filter(p=>parseFloat(p.actual)>0);if(ov.length){const ao=Math.round(ov.reduce((s,p)=>s+parseFloat(p.actual),0)/ov.length);state.kpis.output=ao.toLocaleString();document.getElementById('kpi-output').textContent=state.kpis.output;}const sv=r.filter(p=>parseFloat(p.smv)>0);if(sv.length){const as=(sv.reduce((s,p)=>s+parseFloat(p.smv),0)/sv.length).toFixed(1);state.kpis.smv=as;document.getElementById('kpi-smv').textContent=as;}}
+  if(state.quality.length>0){const r=state.quality.slice(0,15);const dv=r.filter(q=>parseFloat(q.dhu)>=0);if(dv.length){const ad=(dv.reduce((s,q)=>s+parseFloat(q.dhu),0)/dv.length).toFixed(2);state.kpis.def=ad;document.getElementById('kpi-def').textContent=ad;}}
+  colorCodeKPIs();updateSigmaLevel();renderChart();
+}
+
+function colorCodeKPIs(){const t=state.targets||{eff:75,dhu:3,otd:90,abs:5};const eff=parseFloat(state.kpis.eff),def=parseFloat(state.kpis.def),otd=parseFloat(state.kpis.otd),abs=parseFloat(state.kpis.abs);const ec=document.getElementById('kpi-card-eff'),dc=document.getElementById('kpi-card-def'),oc=document.getElementById('kpi-card-otd'),ac=document.getElementById('kpi-card-abs');if(ec)ec.classList.toggle('kpi-alert',eff<t.eff);if(dc)dc.classList.toggle('kpi-alert',def>t.dhu);if(oc)oc.classList.toggle('kpi-alert',otd<t.otd);if(ac)ac.classList.toggle('kpi-alert',abs>t.abs);const et=document.getElementById('kpi-eff-trend'),dt=document.getElementById('kpi-def-trend');if(et){et.className='kpi-trend';et.classList.add(eff>=t.eff?'trend-up':'trend-dn');et.textContent=eff>=t.eff?`✅ Target met (${t.eff}%)`:`⚠️ Below target (${t.eff}%)`;}if(dt){dt.className='kpi-trend';dt.classList.add(def<=t.dhu?'trend-up':'trend-dn');dt.textContent=def<=t.dhu?`✅ Under limit`:`⚠️ Above ${t.dhu}%`;}}
+
+function updateTargetDisplay(){const t=state.targets||{};['eff-tgt','dhu-tgt','otd-tgt','abs-tgt'].forEach((id,i)=>{const vals=[t.eff||75,t.dhu||3,t.otd||90,t.abs||5];const el=document.getElementById(id);if(el)el.textContent=vals[i];});}
+
+function calcSigmaLevel(dhu){const d=parseFloat(dhu)*10000;if(d<=3.4)return'6.0';if(d<=233)return'5.0';if(d<=6210)return'4.0';if(d<=66807)return'3.0';if(d<=308537)return'2.0';return'<2';}
+
+function updateSigmaLevel(){const dhu=parseFloat(state.kpis.def)||0;if(!dhu)return;const sigma=calcSigmaLevel(dhu);const el=document.getElementById('kpi-sigma'),sub=document.getElementById('kpi-sigma-sub');if(el)el.textContent=sigma+'σ';if(sub){const dpmo=Math.round(dhu*10000);sub.textContent='DPMO: '+dpmo.toLocaleString();sub.style.color=parseFloat(sigma)>=4?'var(--acc)':parseFloat(sigma)>=3?'var(--acc2)':'var(--acc3)';}}
+
+function refreshDashboard(){
+  // ── Backward Compatibility: new fields jo purane data mein nahi hain ──
+  if(!state.oee||!Array.isArray(state.oee))state.oee=[];
+  if(!state.smed||!Array.isArray(state.smed))state.smed=[];
+  if(!state.targets)state.targets={eff:75,dhu:3,otd:90,abs:5};
+  if(!state.whysList||!Array.isArray(state.whysList))state.whysList=[];
+  if(!state.kanban)state.kanban={todo:[],prog:[],done:[]};
+  if(!state.kanban.todo)state.kanban.todo=[];
+  if(!state.kanban.prog)state.kanban.prog=[];
+  if(!state.kanban.done)state.kanban.done=[];
+  if(!state.kpis)state.kpis={output:'—',eff:'—',def:'—',smv:'—',otd:'—',abs:'—'};
+  if(!state.auditScores)state.auditScores={};
+  // ── Company Info Sync (header update) ──
+  if(state.company)document.getElementById('companyNameDisplay').textContent=state.company;
+  document.getElementById('devDisplay').textContent='Developed by: '+(state.dev||'')+(state.dept?' | '+state.dept:'')+' | '+(state.ver||'v3.0');
+  // ── KPI Cards Sync from state.kpis ──
+  const km={'kpi-output':state.kpis.output,'kpi-eff':state.kpis.eff,'kpi-def':state.kpis.def,'kpi-smv':state.kpis.smv,'kpi-otd':state.kpis.otd,'kpi-abs':state.kpis.abs};
+  Object.entries(km).forEach(([id,val])=>{const el=document.getElementById(id);if(el&&val!==undefined)el.textContent=val;});
+  updateTargetDisplay();
+  // ── Render All Sections ──
+  renderChart();renderWorkflow();renderResponsibility();renderKanban();
+  renderKaizen();renderProduction();renderQuality();renderWhysList();
+  renderOEE();renderSMED();updateReportStats();
+  // ── Auto Calc + Color Code ──
+  if(state.production.length>0||state.quality.length>0)autoCalcKPIs();
+  else{colorCodeKPIs();updateSigmaLevel();}
+  // ── Audit Scores Restore ──
+  restoreAuditScores();
+}
+
+// ── Audit Scores UI Restore (Firebase load ke baad) ──
+function restoreAuditScores(){
+  if(!state.auditScores)return;
+  auditCats.forEach(cat=>{
+    cat.items.forEach((_,i)=>{
+      const score=state.auditScores[cat.id+'-'+i]||0;
+      const stars=document.getElementById('stars-'+cat.id+'-'+i);
+      if(stars&&score>0){for(let j=0;j<5;j++)stars.children[j].classList.toggle('on',j<score);}
+    });
+  });
+  updateAuditTotal();
+}
+
+// CHART.JS PRODUCTION CHART
+function renderChart(){const canvas=document.getElementById('prodChart');if(!canvas)return;let labels=[],data=[],effData=[];if(state.production.length){const last7=[...state.production].reverse().slice(-7);labels=last7.map(p=>p.line?p.line.replace('Line ','L'):p.date.slice(-5));data=last7.map(p=>parseFloat(p.actual)||0);effData=last7.map(p=>parseFloat(p.eff)||0);}else{labels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];data=[1120,1180,1095,1240,1300,1260,1210];effData=[78,80,75,82,85,83,79];}if(prodChartInst){prodChartInst.destroy();prodChartInst=null;}const ctx=canvas.getContext('2d');prodChartInst=new Chart(ctx,{data:{labels,datasets:[{type:'bar',label:'Output (pcs)',data,backgroundColor:'rgba(0,200,150,0.65)',borderColor:'#00c896',borderWidth:1,borderRadius:4,yAxisID:'y'},{type:'line',label:'Efficiency %',data:effData,borderColor:'#f4a024',backgroundColor:'rgba(244,160,36,0.08)',pointBackgroundColor:'#f4a024',tension:0.3,yAxisID:'y1',pointRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:'#8899aa',font:{size:10},boxWidth:12}}},scales:{y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8899aa',font:{size:10}},position:'left'},y1:{grid:{display:false},ticks:{color:'#f4a024',font:{size:10},callback:v=>v+'%'},position:'right',min:0,max:100},x:{grid:{display:false},ticks:{color:'#8899aa',font:{size:10}}}}}}); document.getElementById('chartLabels').innerHTML='';}
+
+// PARETO CHART
+function renderParetoChart(){if(!state.quality.length){document.getElementById('pareto-card').style.display='none';return;}document.getElementById('pareto-card').style.display='block';const counts={};state.quality.forEach(q=>{counts[q.deftype]=(counts[q.deftype]||0)+parseInt(q.qty||0);});const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);const labels=sorted.map(([k])=>k.length>16?k.slice(0,16)+'…':k);const data=sorted.map(([,v])=>v);const total=data.reduce((s,v)=>s+v,0);const cum=data.map((_,i)=>total>0?Math.round(data.slice(0,i+1).reduce((s,v)=>s+v,0)/total*100):0);if(paretoChartInst){paretoChartInst.destroy();paretoChartInst=null;}const canvas=document.getElementById('paretoChart');if(!canvas)return;const ctx=canvas.getContext('2d');paretoChartInst=new Chart(ctx,{data:{labels,datasets:[{type:'bar',label:'Defect Count',data,backgroundColor:'rgba(229,62,62,0.65)',borderColor:'#e53e3e',borderWidth:1,borderRadius:4,yAxisID:'y'},{type:'line',label:'Cumulative %',data:cum,borderColor:'#f4a024',backgroundColor:'rgba(244,160,36,0.05)',pointBackgroundColor:'#f4a024',tension:0.3,yAxisID:'y1',pointRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:'#8899aa',font:{size:10},boxWidth:12}}},scales:{y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8899aa',font:{size:10}},position:'left'},y1:{grid:{display:false},ticks:{color:'#f4a024',font:{size:10},callback:v=>v+'%'},position:'right',min:0,max:100},x:{grid:{display:false},ticks:{color:'#8899aa',font:{size:9},maxRotation:25}}}}});}
+
+// IE RULES
+const ieRules=[{n:'IE-01',title:'Line Balancing',emoji:'⚖️',desc:'Har operator ka workload balanced hona chahiye. Bottleneck identify karein. Target: <10% imbalance.',action:'Weekly line balancing check karo.'},{n:'IE-02',title:'SMV (Standard Minute Value)',emoji:'⏱️',desc:'Har operation ka SMV documented hona chahiye. SMV = Basic Time + Allowances.',action:'Naye style pe pehle din SMV study karo.'},{n:'IE-03',title:'Efficiency Monitoring',emoji:'📊',desc:'Line efficiency = (Actual × SMV) / (Workers × Time × 60) × 100. Target minimum 75%.',action:'Hourly production board update karein.'},{n:'IE-04',title:'DHU Control',emoji:'🎯',desc:'DHU = (Defects / Checked) × 100. Target <3% inline, <1% final audit.',action:'Inline QC hourly checking mandatory.'},{n:'IE-05',title:'Motion Study',emoji:'🚶',desc:'Unnecessary movements eliminate karein. Tool placement aur ergonomics optimize karein.',action:'Monthly motion study karo.'},{n:'IE-06',title:'Time Study',emoji:'⌚',desc:'Stopwatch time study se accurate SMV set karein. Minimum 20 cycles observe karein.',action:'New style par time study karo.'},{n:'IE-07',title:'Layout Optimization',emoji:'🗺️',desc:'Machine layout flow ke hisaab se — no backtracking. U-shape ya straight line.',action:'Style change par layout review karo.'},{n:'IE-08',title:'Cutting Ratio Control',emoji:'✂️',desc:'Marker efficiency minimum 85%. Fabric consumption track karein.',action:'Daily marker efficiency check karo.'},{n:'IE-09',title:'Thread Consumption',emoji:'🧵',desc:'Thread consumption per piece calculate karein. Waste track karein.',action:'Monthly thread consumption vs standard compare karo.'},{n:'IE-10',title:'Absenteeism Control',emoji:'👤',desc:'>5% absenteeism target miss ka risk hai. Daily attendance track karein.',action:'Weekly absenteeism report management ko bhejo.'},{n:'IE-11',title:'Changeover Reduction (SMED)',emoji:'🔧',desc:'Style change time minimize karein. Target <2 hours. Pre-planning se time reduce hota hai.',action:'Changeover checklist follow karo.'},{n:'IE-12',title:'Ergonomics & Safety',emoji:'🦺',desc:'Workstation height, lighting aur seating ergonomic honi chahiye.',action:'Monthly ergonomic audit karo.'},{n:'IE-13',title:'WIP Control',emoji:'📦',desc:'WIP maximum 1 hour per operation. Kanban se WIP control karein.',action:'Hourly WIP count karo.'},{n:'IE-14',title:'Needle Management',emoji:'🪡',desc:'Broken needle register mandatory. Metal detector se garments scan karein.',action:'Broken needle log daily maintain karo.'},{n:'IE-15',title:'Traceability System',emoji:'🏷️',desc:'Har bundle cutting se packing tak track hona chahiye.',action:'Bundle card system strictly follow karo.'}];
+function renderIERules(){document.getElementById('ie-rules-grid').innerHTML=ieRules.map(r=>`<div class="rule-card"><div class="rule-num">${r.n}</div><div class="rule-title">${r.emoji} ${r.title}</div><div class="rule-desc">${r.desc}</div><div class="rule-action">→ ${r.action}</div></div>`).join('');}
+renderIERules();
+
+// SEARCH FILTER
+function filterTable(inputId,tbodyId){const q=document.getElementById(inputId).value.toLowerCase();Array.from(document.getElementById(tbodyId).getElementsByTagName('tr')).forEach(row=>{row.style.display=row.textContent.toLowerCase().includes(q)?'':'none';});}
+
+// WORKFLOW
+function showWFForm(){const c=document.getElementById('wf-form-card');c.style.display=c.style.display==='none'?'block':'none';}
+function addWorkflow(){const style=document.getElementById('wf-style').value.trim();if(!style)return alert('Style No. required!');const target=parseFloat(document.getElementById('wf-target').value)||0,actual=parseFloat(document.getElementById('wf-actual').value)||0,eff=target>0?Math.round((actual/target)*100):0;const entry={id:Date.now(),style,dept:document.getElementById('wf-dept').value,process:document.getElementById('wf-process').value,operator:document.getElementById('wf-operator').value,target,actual,eff,smv:document.getElementById('wf-smv').value,status:document.getElementById('wf-status').value,remarks:document.getElementById('wf-remarks').value,date:new Date().toLocaleDateString('en-PK')};state.workflow.unshift(entry);renderWorkflow();document.getElementById('wf-form-card').style.display='none';['wf-style','wf-process','wf-operator','wf-target','wf-actual','wf-smv','wf-remarks'].forEach(id=>document.getElementById(id).value='');autoSave();}
+function renderWorkflow(){const tb=document.getElementById('wf-tbody');if(!state.workflow.length){tb.innerHTML='<tr><td colspan="12" class="empty"><div class="empty-ico">🔄</div><div>No entries yet</div></td></tr>';return;}const sm={pending:'<span class="badge b-yellow">⏳ Pending</span>',running:'<span class="badge b-blue">🔵 Running</span>',done:'<span class="badge b-green">✅ Done</span>',hold:'<span class="badge b-red">🔴 Hold</span>'};tb.innerHTML=state.workflow.map((w,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td style="font-size:0.75rem;color:var(--txt3);">${w.date}</td><td><strong>${w.style}</strong></td><td>${w.dept}</td><td>${w.process}</td><td>${w.operator}</td><td style="font-family:'JetBrains Mono',monospace;">${w.target}</td><td style="font-family:'JetBrains Mono',monospace;">${w.actual}</td><td><span class="badge ${w.eff>=80?'b-green':w.eff>=60?'b-yellow':'b-red'}">${w.eff}%</span></td><td style="font-family:'JetBrains Mono',monospace;">${w.smv}</td><td>${sm[w.status]||w.status}</td><td><button class="btn btn-danger btn-xs" onclick="delItem('workflow',${w.id})">✕</button></td></tr>`).join('');}
+renderWorkflow();
+
+// RESPONSIBILITY
+function showRespForm(){const c=document.getElementById('resp-form-card');c.style.display=c.style.display==='none'?'block':'none';}
+function addResponsibility(){const task=document.getElementById('r-task').value.trim();if(!task)return alert('Task required!');const entry={id:Date.now(),task,dept:document.getElementById('r-dept').value,person:document.getElementById('r-person').value,role:document.getElementById('r-role').value,freq:document.getElementById('r-freq').value,priority:document.getElementById('r-priority').value,desc:document.getElementById('r-desc').value,date:new Date().toLocaleDateString('en-PK')};state.responsibility.unshift(entry);renderResponsibility();document.getElementById('resp-form-card').style.display='none';['r-task','r-person','r-desc'].forEach(id=>document.getElementById(id).value='');autoSave();}
+function renderResponsibility(){const tb=document.getElementById('resp-tbody');if(!state.responsibility.length){tb.innerHTML='<tr><td colspan="9" class="empty"><div class="empty-ico">👥</div><div>No assignments yet</div></td></tr>';return;}const rm={R:'<span class="badge b-red">R</span>',A:'<span class="badge b-yellow">A</span>',C:'<span class="badge b-blue">C</span>',I:'<span class="badge b-green">I</span>'};const pm={high:'<span class="badge b-red">High</span>',med:'<span class="badge b-yellow">Medium</span>',low:'<span class="badge b-green">Low</span>'};tb.innerHTML=state.responsibility.map((r,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td><strong>${r.task}</strong>${r.desc?`<div style="font-size:0.72rem;color:var(--txt3);">${r.desc}</div>`:''}</td><td>${r.dept}</td><td>${r.person}</td><td>${rm[r.role]||r.role}</td><td><span class="badge b-purple">${r.freq}</span></td><td>${pm[r.priority]||r.priority}</td><td style="font-size:0.75rem;color:var(--txt3);">${r.date}</td><td><button class="btn btn-danger btn-xs" onclick="delItem('responsibility',${r.id})">✕</button></td></tr>`).join('');}
+renderResponsibility();
+
+// KANBAN
+let dragK=null;
+function showKForm(col){document.getElementById('kf-'+col).classList.add('show');}
+function hideKForm(col){document.getElementById('kf-'+col).classList.remove('show');}
+function addK(col){const t=document.getElementById('kt-'+col).value.trim();if(!t)return;const due=document.getElementById('kdue-'+col)?.value||'';state.kanban[col].push({id:Date.now(),title:t,priority:document.getElementById('kp-'+col).value,dept:document.getElementById('kdept-'+col).value,due,date:new Date().toLocaleDateString('en-PK')});hideKForm(col);document.getElementById('kt-'+col).value='';document.getElementById('kdept-'+col).value='';if(document.getElementById('kdue-'+col))document.getElementById('kdue-'+col).value='';renderKanban();autoSave();}
+function delK(col,id){state.kanban[col]=state.kanban[col].filter(c=>c.id!==id);renderKanban();autoSave();}
+function isOverdue(due){if(!due)return false;return new Date(due)<new Date(new Date().toDateString());}
+function renderKanban(){['todo','prog','done'].forEach(col=>{const box=document.getElementById('kb-'+col);document.getElementById('kc-'+col).textContent=state.kanban[col].length;if(!state.kanban[col].length){box.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt3);font-size:0.78rem;">Empty</div>';return;}const pm={high:'b-red',med:'b-yellow',low:'b-green'};box.innerHTML=state.kanban[col].map(c=>{const od=col!=='done'&&isOverdue(c.due);return`<div class="k-card ${od?'overdue':''}" draggable="true" ondragstart="dragK='${col}|${c.id}'"><div class="k-card-title">${c.title}</div>${c.dept?`<div class="k-card-sub">${c.dept}</div>`:''}${c.due?`<div class="k-card-sub" style="color:${od?'var(--acc3)':'var(--txt3)'};">${od?'🔴 OVERDUE':'📅'} ${c.due}</div>`:''}<div class="k-card-meta"><span class="badge ${pm[c.priority]}">${c.priority}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:0.7rem;color:var(--txt3);">${c.date}</span><button onclick="delK('${col}',${c.id})" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;">✕</button></div></div></div>`;}).join('');});}
+function dropK(e,tc){if(!dragK)return;const[sc,is]=dragK.split('|');const id=parseInt(is);const card=state.kanban[sc].find(c=>c.id===id);if(card){state.kanban[sc]=state.kanban[sc].filter(c=>c.id!==id);state.kanban[tc].push(card);}dragK=null;renderKanban();autoSave();}
+state.kanban.todo.push({id:1,title:'5S Audit — Sewing Floor',priority:'high',dept:'IE',due:'',date:new Date().toLocaleDateString('en-PK')});
+state.kanban.prog.push({id:2,title:'Line Balancing — Line 5',priority:'med',dept:'Production',due:'',date:new Date().toLocaleDateString('en-PK')});
+state.kanban.done.push({id:3,title:'DHU Board Update',priority:'low',dept:'Quality',due:'',date:new Date().toLocaleDateString('en-PK')});
+renderKanban();
+
+// 5S AUDIT
+const auditCats=[{id:'sort',title:'SORT (Seiri)',emoji:'🔵',col:'#3b82f6',items:['Cutting floor par unnecessary fabric remove','Sewing machines ke paas sirf zaroorat ki tools','Scrap aur waste ke liye alag container','Red tag system implement hai']},{id:'set',title:'SET IN ORDER (Seiton)',emoji:'🟣',col:'#8b5cf6',items:['Har machine aur tool ki jagah marked','Accessories clearly labeled','Bundles aur WIP ka area designated','Pattern aur marker ka storage organized']},{id:'shine',title:'SHINE (Seiso)',emoji:'🟡',col:'#f4a024',items:['Machine cleaning daily ho rahi hai','Floor saaf aur dry hai','Oil aur lubricant spills nahi','Maintenance schedule follow ho raha hai']},{id:'std',title:'STANDARDIZE (Seiketsu)',emoji:'🟢',col:'#00c896',items:['SOPs display hain','Visual management boards updated','Cleaning schedule posted','Inspection checklists available']},{id:'sus',title:'SUSTAIN (Shitsuke)',emoji:'🔴',col:'#e53e3e',items:['Weekly audit ho raha hai','Management regular floor visit','Training records maintained','Improvement suggestions welcome']}];
+function initAudit(){document.getElementById('audit-cats').innerHTML=auditCats.map(cat=>`<div class="audit-cat"><div class="audit-cat-hdr"><div class="audit-cat-name" style="color:${cat.col};">${cat.emoji} ${cat.title}</div><div class="audit-score" id="ascore-${cat.id}">0/20</div></div>${cat.items.map((item,i)=>`<div class="audit-item"><div class="audit-item-lbl">${item}</div><div class="stars" id="stars-${cat.id}-${i}">${[1,2,3,4,5].map(s=>`<div class="star" onclick="rateAudit('${cat.id}',${i},${s})">${s}</div>`).join('')}</div></div>`).join('')}</div>`).join('');}
+function rateAudit(cat,item,rating){state.auditScores[`${cat}-${item}`]=rating;const stars=document.getElementById(`stars-${cat}-${item}`).children;for(let i=0;i<5;i++)stars[i].classList.toggle('on',i<rating);updateAuditTotal();}
+function updateAuditTotal(){let total=0;auditCats.forEach(cat=>{let s=0;cat.items.forEach((_,i)=>s+=(state.auditScores[`${cat.id}-${i}`]||0));const norm=Math.round((s/(cat.items.length*5))*20);document.getElementById(`ascore-${cat.id}`).textContent=`${norm}/20`;total+=norm;});document.getElementById('audit-total').innerHTML=`${total}<span style="font-size:1.5rem;color:var(--txt2);">/100</span>`;document.getElementById('audit-bar').style.width=total+'%';document.getElementById('audit-grade').textContent=total>=90?'🏆 Excellent — World Class!':total>=75?'✅ Good — Keep Improving!':total>=50?'⚠️ Average — Action Needed':'🔴 Poor — Immediate Action!';}
+initAudit();
+
+// 5 WHYS
+function startWhys(){const prob=document.getElementById('w-prob').value.trim();if(!prob)return alert('Problem enter karein!');state.whysData={prob,dept:document.getElementById('w-dept').value,by:document.getElementById('w-by').value,sev:document.getElementById('w-sev').value,answers:[]};document.getElementById('root-result').style.display='none';document.getElementById('ai-why-div').style.display='none';renderWhys();}
+function renderWhys(){const qs=['Yeh kyun hua? (Why #1)','Iske peeche kyun? (Why #2)','Aur is wajah se kyun? (Why #3)','Is wajah ka bhi kyun? (Why #4)','Bilkul asal wajah kyun? (Why #5 — Root Cause)'];let html=`<div class="why-step" style="background:rgba(229,62,62,.05);border-color:rgba(229,62,62,.2);"><div class="why-num" style="background:var(--acc3);">PROBLEM</div><div style="padding-top:6px;font-weight:700;font-size:0.95rem;">${state.whysData.prob}</div><div style="font-size:0.75rem;color:var(--txt3);margin-top:4px;">${state.whysData.dept} | ${state.whysData.by} | Severity: ${state.whysData.sev}</div></div>`;state.whysData.answers.forEach((a,i)=>{html+=`<div class="why-step"><div class="why-num">WHY ${i+1}</div><div class="why-q" style="padding-top:6px;">${qs[i]}</div><div class="why-a">${a}</div></div>`;});const cur=state.whysData.answers.length;if(cur<5){html+=`<div class="why-step active"><div class="why-num">WHY ${cur+1}</div><div class="why-q" style="padding-top:6px;">${qs[cur]}</div><div class="fg" style="margin-top:8px;"><input id="why-inp" placeholder="Jawab likhen..." onkeydown="if(event.key==='Enter')submitWhy()"></div><button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="submitWhy()">Aage →</button></div>`;}document.getElementById('whys-steps').innerHTML=html;if(cur===5){document.getElementById('root-text').textContent='🎯 Root Cause: '+state.whysData.answers[4];document.getElementById('root-result').style.display='block';state.whysList.push({...state.whysData,rootCause:state.whysData.answers[4],date:new Date().toLocaleDateString('en-PK')});renderWhysList();}setTimeout(()=>document.getElementById('why-inp')?.focus(),80);}
+function submitWhy(){const inp=document.getElementById('why-inp');if(!inp?.value.trim())return;state.whysData.answers.push(inp.value.trim());renderWhys();}
+function renderWhysList(){const tb=document.getElementById('whys-tbody');if(!state.whysList.length){tb.innerHTML='<tr><td colspan="7" class="empty"><div>No analyses saved yet</div></td></tr>';return;}const sm={high:'b-red',med:'b-yellow',low:'b-green'};tb.innerHTML=state.whysList.map((w,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td><strong>${w.prob}</strong></td><td>${w.dept}</td><td style="font-size:0.82rem;">${w.rootCause||'—'}</td><td>${w.by||'—'}</td><td><span class="badge ${sm[w.sev]}">${w.sev}</span></td><td style="font-size:0.75rem;color:var(--txt3);">${w.date}</td></tr>`).join('');}
+function linkToKaizen(){const w=state.whysData;document.getElementById('kz-title').value=w.prob||'';document.getElementById('kz-before').value=w.rootCause||(w.answers[4]||'');document.getElementById('kz-dept').value=w.dept||'Sewing';document.getElementById('kz-cat').value='quality';document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('kaizen').classList.add('active');document.querySelector('[onclick="showSec(\'kaizen\',this)"]').classList.add('active');fbToast('💡 Kaizen form fill ho gaya!');}
+
+// AI 5 WHYS
+async function aiSuggestWhys(){const prob=document.getElementById('w-prob').value.trim();if(!prob)return alert('Pehle problem likhen!');const btn=document.getElementById('ai-why-btn'),div=document.getElementById('ai-why-div');btn.textContent='⏳ Soch raha hai...';btn.disabled=true;div.style.display='none';try{const text=await callGemini(`Garments/textile manufacturing mein 5 Whys expert hain. Problem: "${prob}" (Dept: ${document.getElementById('w-dept').value}). 5 root causes suggest karein jo ek chain bana sakein. SIRF JSON return karo, kuch aur nahi, koi extra text nahi: {"causes":["cause1","cause2","cause3","cause4","cause5"]}`);const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());div.innerHTML=`<div style="font-size:0.78rem;font-weight:700;color:var(--acc4);margin-bottom:8px;">🤖 AI Suggested Root Causes — Click to use</div>${parsed.causes.map((c,i)=>`<div onclick="fillWhyInput('${c.replace(/'/g,"\\'")}'" style="padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:7px;margin-bottom:6px;cursor:pointer;font-size:0.82rem;" onmouseover="this.style.borderColor='var(--acc4)'" onmouseout="this.style.borderColor='var(--bdr2)'"><span style="color:var(--acc4);font-weight:700;">${i+1}.</span> ${c}</div>`).join('')}`;div.style.display='block';}catch(e){div.innerHTML='<div style="color:var(--acc3);font-size:0.82rem;">⚠️ AI connect nahi hua — Gemini key check karein: '+e.message+'</div>';div.style.display='block';}btn.textContent='🤖 AI Root Causes Suggest';btn.disabled=false;}
+function fillWhyInput(text){const inp=document.getElementById('why-inp');if(inp){inp.value=text;inp.focus();}}
+
+// KAIZEN
+function addKaizen(){const t=document.getElementById('kz-title').value.trim();if(!t)return alert('Title required!');const entry={id:Date.now(),title:t,cat:document.getElementById('kz-cat').value,dept:document.getElementById('kz-dept').value,owner:document.getElementById('kz-owner').value,before:document.getElementById('kz-before').value,after:document.getElementById('kz-after').value,tdate:document.getElementById('kz-date').value,status:document.getElementById('kz-status').value,desc:document.getElementById('kz-desc').value,date:new Date().toLocaleDateString('en-PK')};state.kaizen.unshift(entry);renderKaizen();['kz-title','kz-owner','kz-before','kz-after','kz-desc'].forEach(id=>document.getElementById(id).value='');autoSave();}
+function renderKaizen(){const tb=document.getElementById('kz-tbody');if(!state.kaizen.length){tb.innerHTML='<tr><td colspan="10" class="empty"><div class="empty-ico">💡</div><div>No Kaizen entries yet</div></td></tr>';return;}const cm={process:'⚙️',quality:'✅',safety:'🦺',waste:'🗑️',cost:'💰',delivery:'🚚'};const sm={open:'<span class="badge b-yellow">🟡 Open</span>',prog:'<span class="badge b-purple">🟣 In Progress</span>',done:'<span class="badge b-green">🟢 Done</span>'};tb.innerHTML=state.kaizen.map((k,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td><strong>${k.title}</strong>${k.desc?`<div style="font-size:0.72rem;color:var(--txt3);">${k.desc}</div>`:''}</td><td><span class="badge b-blue">${cm[k.cat]||''} ${k.cat}</span></td><td>${k.dept}</td><td>${k.owner}</td><td style="font-size:0.78rem;">${k.before||'—'}</td><td style="font-size:0.78rem;">${k.after||'—'}</td><td style="font-size:0.75rem;color:var(--txt3);">${k.tdate||'—'}</td><td>${sm[k.status]||k.status}</td><td><button class="btn btn-danger btn-xs" onclick="delItem('kaizen',${k.id})">✕</button></td></tr>`).join('');}
+
+// PRODUCTION
+function addProduction(){const line=document.getElementById('pr-line').value.trim();if(!line)return alert('Line No. required!');const target=parseFloat(document.getElementById('pr-target').value)||0,actual=parseFloat(document.getElementById('pr-actual').value)||0,workers=parseFloat(document.getElementById('pr-workers').value)||1,hours=parseFloat(document.getElementById('pr-hours').value)||9,smv=parseFloat(document.getElementById('pr-smv').value)||0;const eff=smv>0?((actual*smv)/(workers*hours*60)*100).toFixed(1):((actual/target)*100).toFixed(1);const entry={id:Date.now(),date:document.getElementById('pr-date').value||new Date().toLocaleDateString('en-PK'),line,style:document.getElementById('pr-style').value,buyer:document.getElementById('pr-buyer').value,target,actual,eff,workers,hours,smv,defects:document.getElementById('pr-defects').value||0,shift:document.getElementById('pr-shift').value,sup:document.getElementById('pr-sup').value};state.production.unshift(entry);renderProduction();renderLineSummary();autoCalcKPIs();['pr-style','pr-buyer','pr-target','pr-actual','pr-workers','pr-smv','pr-defects','pr-sup'].forEach(id=>document.getElementById(id).value='');autoSave();fbToast('🏭 Production saved! Dashboard auto-updated.');}
+function renderProduction(){const tb=document.getElementById('pr-tbody');if(!state.production.length){tb.innerHTML='<tr><td colspan="13" class="empty"><div class="empty-ico">🏭</div><div>No production entries yet</div></td></tr>';return;}tb.innerHTML=state.production.map((p,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td style="font-size:0.78rem;">${p.date}</td><td><strong>${p.line}</strong></td><td>${p.style}</td><td>${p.buyer}</td><td style="font-family:'JetBrains Mono',monospace;">${p.target}</td><td style="font-family:'JetBrains Mono',monospace;">${p.actual}</td><td><span class="badge ${p.eff>=75?'b-green':p.eff>=60?'b-yellow':'b-red'}">${p.eff}%</span></td><td>${p.workers}</td><td style="font-family:'JetBrains Mono',monospace;">${p.smv}</td><td style="color:${p.defects>10?'var(--acc3)':'var(--txt)'};">${p.defects}</td><td><span class="badge b-blue">${p.shift}</span></td><td><button class="btn btn-danger btn-xs" onclick="delItem('production',${p.id})">✕</button></td></tr>`).join('');}
+function renderLineSummary(){if(!state.production.length){document.getElementById('line-summary').style.display='none';return;}document.getElementById('line-summary').style.display='block';const lines={};state.production.forEach(p=>{if(!lines[p.line])lines[p.line]={eff:[],output:[],entries:0};lines[p.line].eff.push(parseFloat(p.eff)||0);lines[p.line].output.push(parseFloat(p.actual)||0);lines[p.line].entries++;});document.getElementById('line-grid').innerHTML=Object.entries(lines).map(([line,d])=>{const ae=(d.eff.reduce((s,v)=>s+v,0)/d.eff.length).toFixed(1),ao=Math.round(d.output.reduce((s,v)=>s+v,0)/d.output.length);return`<div class="card" style="padding:12px;"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.9rem;color:var(--acc5);margin-bottom:6px;">${line}</div><div style="font-size:0.7rem;color:var(--txt3);">Avg Efficiency</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:${ae>=75?'var(--acc)':'var(--acc3)'};">${ae}%</div><div style="font-size:0.7rem;color:var(--txt3);margin-top:4px;">Avg: ${ao} pcs | ${d.entries} entries</div></div>`;}).join('');}
+
+// QUALITY
+function addQuality(){const style=document.getElementById('q-style').value.trim();if(!style)return alert('Style No. required!');const qty=parseFloat(document.getElementById('q-qty').value)||0,total=parseFloat(document.getElementById('q-total').value)||1,dhu=((qty/total)*100).toFixed(2);const entry={id:Date.now(),date:document.getElementById('q-date').value||new Date().toLocaleDateString('en-PK'),style,line:document.getElementById('q-line').value,deftype:document.getElementById('q-deftype').value,qty,total,dhu,inspector:document.getElementById('q-inspector').value,sev:document.getElementById('q-sev').value,capa:document.getElementById('q-capa').value,status:document.getElementById('q-status').value};state.quality.unshift(entry);renderQuality();renderParetoChart();autoCalcKPIs();['q-style','q-line','q-qty','q-total','q-inspector','q-capa'].forEach(id=>document.getElementById(id).value='');autoSave();fbToast('🎯 Quality saved! Pareto + Sigma updated.');}
+function renderQuality(){const tb=document.getElementById('q-tbody');if(!state.quality.length){tb.innerHTML='<tr><td colspan="13" class="empty"><div class="empty-ico">🎯</div><div>No quality entries yet</div></td></tr>';return;}const sm={critical:'<span class="badge b-red">🔴 Critical</span>',major:'<span class="badge b-yellow">🟡 Major</span>',minor:'<span class="badge b-green">🟢 Minor</span>'};const st={open:'<span class="badge b-red">Open</span>',wip:'<span class="badge b-yellow">WIP</span>',closed:'<span class="badge b-green">Closed</span>'};tb.innerHTML=state.quality.map((q,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td style="font-size:0.78rem;">${q.date}</td><td><strong>${q.style}</strong></td><td>${q.line}</td><td style="font-size:0.8rem;">${q.deftype}</td><td style="font-family:'JetBrains Mono',monospace;">${q.qty}</td><td style="font-family:'JetBrains Mono',monospace;">${q.total}</td><td><span class="badge ${q.dhu<=1?'b-green':q.dhu<=3?'b-yellow':'b-red'}">${q.dhu}%</span></td><td>${q.inspector}</td><td>${sm[q.sev]||q.sev}</td><td style="font-size:0.78rem;">${q.capa||'—'}</td><td>${st[q.status]||q.status}</td><td><button class="btn btn-danger btn-xs" onclick="delItem('quality',${q.id})">✕</button></td></tr>`).join('');}
+
+// OEE
+function addOEE(){const machine=document.getElementById('oee-machine').value.trim();if(!machine)return alert('Machine/Line required!');const pl=parseFloat(document.getElementById('oee-planned').value)||0,ac=parseFloat(document.getElementById('oee-actual').value)||0,po=parseFloat(document.getElementById('oee-planned-out').value)||0,ao=parseFloat(document.getElementById('oee-actual-out').value)||0,gu=parseFloat(document.getElementById('oee-good').value)||0;if(!pl||!po||!ao)return alert('Planned Hours, Planned Output aur Actual Output required!');const avail=pl>0?((ac/pl)*100).toFixed(1):0,perf=po>0?((ao/po)*100).toFixed(1):0,qual=ao>0?((gu/ao)*100).toFixed(1):0,oee=((parseFloat(avail)*parseFloat(perf)*parseFloat(qual))/10000).toFixed(1);const entry={id:Date.now(),machine,date:document.getElementById('oee-date').value||new Date().toLocaleDateString('en-PK'),shift:document.getElementById('oee-shift').value,planned:pl,actual:ac,plannedOut:po,actualOut:ao,good:gu,availability:avail,performance:perf,quality:qual,oee};state.oee.unshift(entry);renderOEE();['oee-machine','oee-planned','oee-actual','oee-planned-out','oee-actual-out','oee-good'].forEach(id=>document.getElementById(id).value='');document.getElementById('oee-preview').style.display='none';autoSave();fbToast('⚙️ OEE saved!');}
+['oee-planned','oee-actual','oee-planned-out','oee-actual-out','oee-good'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',previewOEE);});
+function previewOEE(){const pl=parseFloat(document.getElementById('oee-planned').value)||0,ac=parseFloat(document.getElementById('oee-actual').value)||0,po=parseFloat(document.getElementById('oee-planned-out').value)||0,ao=parseFloat(document.getElementById('oee-actual-out').value)||0,gu=parseFloat(document.getElementById('oee-good').value)||0;if(!pl&&!po&&!ao){document.getElementById('oee-preview').style.display='none';return;}const avail=pl>0?((ac/pl)*100).toFixed(1):'—',perf=po>0?((ao/po)*100).toFixed(1):'—',qual=ao>0?((gu/ao)*100).toFixed(1):'—';let oee='—';if(avail!=='—'&&perf!=='—'&&qual!=='—')oee=((parseFloat(avail)*parseFloat(perf)*parseFloat(qual))/10000).toFixed(1)+'%';document.getElementById('oee-p-avail').textContent=avail+(avail!=='—'?'%':'');document.getElementById('oee-p-perf').textContent=perf+(perf!=='—'?'%':'');document.getElementById('oee-p-qual').textContent=qual+(qual!=='—'?'%':'');document.getElementById('oee-p-oee').textContent=oee;document.getElementById('oee-preview').style.display='block';}
+function renderOEE(){const tb=document.getElementById('oee-tbody');if(!state.oee.length){tb.innerHTML='<tr><td colspan="9" class="empty"><div class="empty-ico">⚙️</div><div>No OEE entries yet</div></td></tr>';updateOEESummary();return;}tb.innerHTML=state.oee.map((o,i)=>`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td><strong>${o.machine}</strong></td><td style="font-size:0.78rem;">${o.date}</td><td><span class="badge b-blue">${o.shift||'—'}</span></td><td><span class="badge ${o.availability>=90?'b-green':o.availability>=70?'b-yellow':'b-red'}">${o.availability}%</span></td><td><span class="badge ${o.performance>=90?'b-green':o.performance>=70?'b-yellow':'b-red'}">${o.performance}%</span></td><td><span class="badge ${o.quality>=99?'b-green':o.quality>=95?'b-yellow':'b-red'}">${o.quality}%</span></td><td><span class="badge ${o.oee>=85?'b-green':o.oee>=60?'b-yellow':'b-red'}" style="font-size:0.82rem;font-weight:800;">${o.oee}%</span></td><td><button class="btn btn-danger btn-xs" onclick="delOEE(${o.id})">✕</button></td></tr>`).join('');updateOEESummary();}
+function delOEE(id){state.oee=state.oee.filter(o=>o.id!==id);renderOEE();}
+function updateOEESummary(){const n=state.oee.length;document.getElementById('oee-count').textContent=n;if(!n){['oee-avg-val','oee-avail-avg','oee-perf-avg','oee-qual-avg'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});return;}document.getElementById('oee-avg-val').textContent=(state.oee.reduce((s,o)=>s+parseFloat(o.oee),0)/n).toFixed(1)+'%';document.getElementById('oee-avail-avg').textContent=(state.oee.reduce((s,o)=>s+parseFloat(o.availability),0)/n).toFixed(1)+'%';document.getElementById('oee-perf-avg').textContent=(state.oee.reduce((s,o)=>s+parseFloat(o.performance),0)/n).toFixed(1)+'%';document.getElementById('oee-qual-avg').textContent=(state.oee.reduce((s,o)=>s+parseFloat(o.quality),0)/n).toFixed(1)+'%';}
+renderOEE();
+
+// SMED
+function addSMED(){const line=document.getElementById('sm-line').value.trim();if(!line)return alert('Line required!');const start=document.getElementById('sm-start').value,end=document.getElementById('sm-end').value;let dur=parseFloat(document.getElementById('sm-duration').value)||0;if(start&&end&&!dur){const[sh,sm2]=start.split(':').map(Number),[eh,em]=end.split(':').map(Number);dur=(eh*60+em)-(sh*60+sm2);if(dur<0)dur+=1440;}const target=parseFloat(document.getElementById('sm-target').value)||0;const entry={id:Date.now(),line,from:document.getElementById('sm-from').value,to:document.getElementById('sm-to').value,start,end,duration:dur,target,category:document.getElementById('sm-cat').value,notes:document.getElementById('sm-notes').value,date:new Date().toLocaleDateString('en-PK')};state.smed.unshift(entry);renderSMED();['sm-line','sm-from','sm-to','sm-start','sm-end','sm-duration','sm-notes','sm-target'].forEach(id=>document.getElementById(id).value='');autoSave();fbToast('⏱️ SMED saved!');}
+function renderSMED(){const tb=document.getElementById('smed-tbody');if(!state.smed.length){tb.innerHTML='<tr><td colspan="10" class="empty"><div class="empty-ico">⏱️</div><div>No changeover entries yet</div></td></tr>';updateSMEDSummary();return;}tb.innerHTML=state.smed.map((s,i)=>{const ok=s.target?s.duration<=s.target:true,diff=s.target?s.duration-s.target:null;return`<tr><td style="color:var(--txt3);font-size:0.75rem;">${i+1}</td><td><strong>${s.line}</strong></td><td style="font-size:0.78rem;">${s.from||'—'} → ${s.to||'—'}</td><td><span class="badge ${s.duration<=120?'b-green':s.duration<=180?'b-yellow':'b-red'}" style="font-family:'JetBrains Mono',monospace;">${s.duration} min</span></td><td style="font-family:'JetBrains Mono',monospace;color:var(--txt3);">${s.target||'—'} min</td><td>${diff!==null?`<span class="badge ${ok?'b-green':'b-red'}">${ok?'✅ Met':'⚠️ +'+(diff)+' min'}</span>`:'—'}</td><td><span class="badge ${s.category==='External'?'b-blue':s.category==='Internal'?'b-yellow':'b-purple'}">${s.category}</span></td><td style="font-size:0.75rem;color:var(--txt3);">${s.notes||'—'}</td><td style="font-size:0.75rem;color:var(--txt3);">${s.date}</td><td><button class="btn btn-danger btn-xs" onclick="delSMED(${s.id})">✕</button></td></tr>`;}).join('');updateSMEDSummary();}
+function delSMED(id){state.smed=state.smed.filter(s=>s.id!==id);renderSMED();}
+function updateSMEDSummary(){const n=state.smed.length;document.getElementById('smed-count').textContent=n;if(!n){['smed-avg-val','smed-min-val','smed-max-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});return;}const durs=state.smed.map(s=>parseFloat(s.duration)||0).filter(d=>d>0);if(!durs.length)return;document.getElementById('smed-avg-val').textContent=Math.round(durs.reduce((s,v)=>s+v,0)/durs.length)+' min';document.getElementById('smed-min-val').textContent=Math.min(...durs)+' min';document.getElementById('smed-max-val').textContent=Math.max(...durs)+' min';}
+renderSMED();
+
+// DELETE HELPER
+function delItem(type,id){if(type==='workflow'){state.workflow=state.workflow.filter(x=>x.id!==id);renderWorkflow();}else if(type==='responsibility'){state.responsibility=state.responsibility.filter(x=>x.id!==id);renderResponsibility();}else if(type==='kaizen'){state.kaizen=state.kaizen.filter(x=>x.id!==id);renderKaizen();}else if(type==='production'){state.production=state.production.filter(x=>x.id!==id);renderProduction();renderLineSummary();autoCalcKPIs();}else if(type==='quality'){state.quality=state.quality.filter(x=>x.id!==id);renderQuality();renderParetoChart();autoCalcKPIs();}autoSave();}
+
+// TAKT TIME
+function openTaktModal(){document.getElementById('takt-modal').classList.add('show');}
+function calcTaktTime(){const avail=parseFloat(document.getElementById('takt-available').value)||0,demand=parseFloat(document.getElementById('takt-demand').value)||0,el=document.getElementById('takt-result');if(!avail||!demand){el.innerHTML='<div style="color:var(--txt3);font-size:0.82rem;">Values bharo...</div>';return;}const takt=(avail/demand).toFixed(2),pph=(60/takt).toFixed(1);el.innerHTML=`<div style="font-family:'JetBrains Mono',monospace;font-size:2.5rem;font-weight:700;color:var(--acc);">${takt}</div><div style="font-size:0.78rem;color:var(--txt2);">minutes per piece</div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div style="background:rgba(0,200,150,0.06);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.68rem;color:var(--txt3);">PIECES/HOUR</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.3rem;color:var(--acc2);">${pph}</div></div><div style="background:rgba(43,125,233,0.06);border:1px solid rgba(43,125,233,0.2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:0.68rem;color:var(--txt3);">DEMAND/DAY</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.3rem;color:var(--acc5);">${demand}</div></div></div><div style="margin-top:10px;font-size:0.75rem;color:var(--txt3);">SMV < ${takt} min hona chahiye</div>`;}
+
+// REPORT STATS
+function updateReportStats(){const el=document.getElementById('report-stats');if(!el)return;const stats=[{l:'Production Entries',v:state.production.length,c:'var(--acc5)'},{l:'Quality Defect Logs',v:state.quality.length,c:'var(--acc3)'},{l:'OEE Entries',v:state.oee.length,c:'#00bcd4'},{l:'SMED Changeovers',v:state.smed.length,c:'var(--acc2)'},{l:'Workflow Entries',v:state.workflow.length,c:'var(--acc)'},{l:'Kaizen Improvements',v:state.kaizen.length,c:'var(--acc4)'},{l:'5 Whys Analyses',v:state.whysList.length,c:'var(--acc3)'},{l:'Responsibility Entries',v:state.responsibility.length,c:'var(--acc2)'}];el.innerHTML=stats.map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr2);"><span style="font-size:0.83rem;color:var(--txt2);">${s.l}</span><span style="font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:${s.c};">${s.v}</span></div>`).join('');}
+
+// EXPORT CSV
+function exportCSV(section){let rows=[],filename='';const now=new Date().toLocaleDateString('en-PK'),co=state.company;if(section==='workflow'){filename=`Workflow_${now}.csv`;rows=[['#','Date','Style','Dept','Process','Operator','Target','Actual','Eff%','SMV','Status','Remarks']];state.workflow.forEach((w,i)=>rows.push([i+1,w.date,w.style,w.dept,w.process,w.operator,w.target,w.actual,w.eff+'%',w.smv,w.status,w.remarks]));}else if(section==='production'){filename=`Production_${now}.csv`;rows=[['#','Date','Line','Style','Buyer','Target','Actual','Eff%','Workers','Hours','SMV','Defects','Shift','Supervisor']];state.production.forEach((p,i)=>rows.push([i+1,p.date,p.line,p.style,p.buyer,p.target,p.actual,p.eff+'%',p.workers,p.hours,p.smv,p.defects,p.shift,p.sup]));}else if(section==='quality'){filename=`Quality_${now}.csv`;rows=[['#','Date','Style','Line','Defect','Qty','Checked','DHU%','Inspector','Severity','CAPA','Status']];state.quality.forEach((q,i)=>rows.push([i+1,q.date,q.style,q.line,q.deftype,q.qty,q.total,q.dhu+'%',q.inspector,q.sev,q.capa,q.status]));}else if(section==='kaizen'){filename=`Kaizen_${now}.csv`;rows=[['#','Title','Category','Dept','Owner','Before','Expected','Target Date','Status']];state.kaizen.forEach((k,i)=>rows.push([i+1,k.title,k.cat,k.dept,k.owner,k.before,k.after,k.tdate,k.status]));}else if(section==='responsibility'){filename=`Responsibility_${now}.csv`;rows=[['#','Task','Dept','Person','RACI','Frequency','Priority']];state.responsibility.forEach((r,i)=>rows.push([i+1,r.task,r.dept,r.person,r.role,r.freq,r.priority]));}else if(section==='audit5s'){filename=`5S_Audit_${now}.csv`;rows=[['Category','Item','Score']];auditCats.forEach(cat=>cat.items.forEach((item,i)=>rows.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0])));}else if(section==='dashboard'){filename=`Dashboard_${now}.csv`;rows=[['Metric','Value'],['Daily Output',state.kpis.output],['Efficiency',state.kpis.eff+'%'],['Defect Rate',state.kpis.def+'%'],['SMV',state.kpis.smv+' min'],['OTD',state.kpis.otd+'%'],['Absenteeism',state.kpis.abs+'%'],['Sigma Level',document.getElementById('kpi-sigma').textContent]];}else if(section==='ie-rules'){filename=`IE_Rules_${now}.csv`;rows=[['Rule','Title','Description','Action']];ieRules.forEach(r=>rows.push([r.n,r.title,r.desc,r.action]));}else if(section==='whys'){filename=`5Whys_${now}.csv`;rows=[['#','Problem','Dept','Root Cause','By','Severity','Date']];state.whysList.forEach((w,i)=>rows.push([i+1,w.prob,w.dept,w.rootCause,w.by,w.sev,w.date]));}else if(section==='oee'){filename=`OEE_${now}.csv`;rows=[['#','Machine','Date','Shift','Availability%','Performance%','Quality%','OEE%']];state.oee.forEach((o,i)=>rows.push([i+1,o.machine,o.date,o.shift,o.availability,o.performance,o.quality,o.oee]));}else if(section==='smed'){filename=`SMED_${now}.csv`;rows=[['#','Line','From','To','Duration(min)','Target(min)','Category','Notes','Date']];state.smed.forEach((s,i)=>rows.push([i+1,s.line,s.from,s.to,s.duration,s.target,s.category,s.notes,s.date]));}if(!rows.length)return alert('No data!');rows.unshift([co+' — Lean Management System v3.0','Exported: '+now]);const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(csv,'text/csv',filename);}
+
+// EXPORT EXCEL
+function exportExcel(section){let data=[],filename='';const now=new Date().toLocaleDateString('en-PK');if(section==='production'){filename=`Production_${now}.xlsx`;data=[['Date','Line','Style','Buyer','Target','Actual','Efficiency%','Workers','SMV','Defects','Shift','Supervisor']];state.production.forEach(p=>data.push([p.date,p.line,p.style,p.buyer,p.target,p.actual,parseFloat(p.eff),p.workers,p.smv,p.defects,p.shift,p.sup]));}else if(section==='quality'){filename=`Quality_${now}.xlsx`;data=[['Date','Style','Line','Defect','Qty','Checked','DHU%','Inspector','Severity','CAPA','Status']];state.quality.forEach(q=>data.push([q.date,q.style,q.line,q.deftype,q.qty,q.total,parseFloat(q.dhu),q.inspector,q.sev,q.capa,q.status]));}else if(section==='workflow'){filename=`Workflow_${now}.xlsx`;data=[['Date','Style','Dept','Process','Operator','Target','Actual','Eff%','SMV','Status']];state.workflow.forEach(w=>data.push([w.date,w.style,w.dept,w.process,w.operator,w.target,w.actual,parseFloat(w.eff),w.smv,w.status]));}else if(section==='kaizen'){filename=`Kaizen_${now}.xlsx`;data=[['Title','Category','Dept','Owner','Before','Expected','Target Date','Status']];state.kaizen.forEach(k=>data.push([k.title,k.cat,k.dept,k.owner,k.before,k.after,k.tdate,k.status]));}else if(section==='responsibility'){filename=`Responsibility_${now}.xlsx`;data=[['Task','Dept','Person','RACI','Frequency','Priority']];state.responsibility.forEach(r=>data.push([r.task,r.dept,r.person,r.role,r.freq,r.priority]));}else if(section==='audit5s'){filename=`5S_Audit_${now}.xlsx`;data=[['Category','Item','Score']];auditCats.forEach(cat=>cat.items.forEach((item,i)=>data.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0])));}else if(section==='dashboard'){filename=`Dashboard_${now}.xlsx`;data=[['Metric','Value'],['Daily Output',state.kpis.output],['Efficiency',state.kpis.eff],['Defect Rate',state.kpis.def],['SMV',state.kpis.smv],['OTD',state.kpis.otd],['Absenteeism',state.kpis.abs]];}else if(section==='oee'){filename=`OEE_${now}.xlsx`;data=[['Machine','Date','Shift','Availability%','Performance%','Quality%','OEE%']];state.oee.forEach(o=>data.push([o.machine,o.date,o.shift,o.availability,o.performance,o.quality,o.oee]));}if(!data.length)return alert('No data!');try{const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=data[0].map(()=>({wch:20}));XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Company',state.company],['Developed By',state.dev],['Date',now]]),'Info');XLSX.writeFile(wb,filename);}catch(e){alert('Excel export ke liye internet chahiye (XLSX library).'); }}
+
+// POWER BI EXPORT
+function exportPowerBI(section){let rows=[],filename=`PowerBI_${section}_${new Date().toLocaleDateString('en-PK')}.csv`;if(section==='production'){rows=[['Date','Line','Style','Buyer','Target','Actual','Efficiency_Pct','Workers','Hours','SMV','Defects','Shift','Company']];state.production.forEach(p=>rows.push([p.date,p.line,p.style,p.buyer,p.target,p.actual,p.eff,p.workers,p.hours,p.smv,p.defects,p.shift,state.company]));}else if(section==='quality'){rows=[['Date','Style','Line','Defect_Type','Qty','Total_Checked','DHU_Pct','Inspector','Severity','Status','Company']];state.quality.forEach(q=>rows.push([q.date,q.style,q.line,q.deftype,q.qty,q.total,q.dhu,q.inspector,q.sev,q.status,state.company]));}else if(section==='workflow'){rows=[['Style','Dept','Process','Operator','Target','Actual','Eff_Pct','SMV','Status','Date','Company']];state.workflow.forEach(w=>rows.push([w.style,w.dept,w.process,w.operator,w.target,w.actual,w.eff,w.smv,w.status,w.date,state.company]));}else if(section==='kaizen'){rows=[['Title','Category','Dept','Owner','Status','Target_Date','Date','Company']];state.kaizen.forEach(k=>rows.push([k.title,k.cat,k.dept,k.owner,k.status,k.tdate,k.date,state.company]));}else if(section==='audit5s'){rows=[['Category','Item','Score','Max','Company','Date']];auditCats.forEach(cat=>cat.items.forEach((item,i)=>rows.push([cat.title,item,state.auditScores[`${cat.id}-${i}`]||0,5,state.company,new Date().toLocaleDateString('en-PK')])));}else if(section==='dashboard'){rows=[['Metric','Value','Company','Date']];[['Output',state.kpis.output],['Efficiency',state.kpis.eff],['Defect_Rate',state.kpis.def],['SMV',state.kpis.smv],['OTD',state.kpis.otd],['Absenteeism',state.kpis.abs]].forEach(r=>rows.push([r[0],r[1],state.company,new Date().toLocaleDateString('en-PK')]));}else if(section==='oee'){rows=[['Machine','Date','Shift','Availability','Performance','Quality','OEE','Company']];state.oee.forEach(o=>rows.push([o.machine,o.date,o.shift,o.availability,o.performance,o.quality,o.oee,state.company]));}if(!rows.length)return alert('No data!');const csv=rows.map(r=>r.map(c=>`"${String(c||'')}"`).join(',')).join('\n');downloadFile(csv,'text/csv',filename);alert('✅ Power BI CSV ready!\n\nPower BI Desktop mein:\n1. Get Data → Text/CSV\n2. File select karein\n3. Load aur visuals banayein');}
+function exportAllPowerBI(){['production','quality','workflow','kaizen','audit5s','dashboard','oee'].forEach(s=>exportPowerBI(s));}
+
+// DOWNLOAD HELPER
+function downloadFile(content,type,filename){const blob=new Blob([content],{type}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
+
+// PRINT/PDF REPORT
+function generateReport(section){document.getElementById('report-modal-title').textContent=section.toUpperCase()+' REPORT';const now=new Date().toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});let body=`<div class="print-report"><div class="pr-header"><h1>🧵 ${state.company}</h1><div class="pr-sub">Garments &amp; Textile — Lean Management System v3.0</div><div class="pr-meta"><span>📅 ${now}</span><span>👤 ${state.dev}</span><span>🏢 ${state.dept}</span><span>📋 ${section.toUpperCase()}</span></div></div>`;
+if(section==='dashboard'){body+=`<div class="pr-section"><h2>Key Performance Indicators</h2><div class="pr-kpis"><div class="pr-kpi"><div class="pr-kpi-lbl">Daily Output</div><div class="pr-kpi-val">${state.kpis.output}</div><div style="font-size:0.72rem;color:#666;">pcs/day</div></div><div class="pr-kpi"><div class="pr-kpi-lbl">Efficiency</div><div class="pr-kpi-val">${state.kpis.eff}%</div></div><div class="pr-kpi"><div class="pr-kpi-lbl">Defect Rate</div><div class="pr-kpi-val">${state.kpis.def}%</div></div><div class="pr-kpi"><div class="pr-kpi-lbl">OTD</div><div class="pr-kpi-val">${state.kpis.otd}%</div></div></div></div>`;}
+if(section==='production'&&state.production.length){body+=`<div class="pr-section"><h2>Production Records (${state.production.length} entries)</h2><table class="pr-table"><thead><tr><th>#</th><th>Date</th><th>Line</th><th>Style</th><th>Buyer</th><th>Target</th><th>Actual</th><th>Eff%</th><th>Workers</th><th>Shift</th></tr></thead><tbody>${state.production.map((p,i)=>`<tr><td>${i+1}</td><td>${p.date}</td><td>${p.line}</td><td>${p.style}</td><td>${p.buyer}</td><td>${p.target}</td><td>${p.actual}</td><td>${p.eff}%</td><td>${p.workers}</td><td>${p.shift}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='quality'&&state.quality.length){body+=`<div class="pr-section"><h2>Quality Records (${state.quality.length} entries)</h2><table class="pr-table"><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Line</th><th>Defect</th><th>Qty</th><th>DHU%</th><th>Severity</th><th>Status</th></tr></thead><tbody>${state.quality.map((q,i)=>`<tr><td>${i+1}</td><td>${q.date}</td><td>${q.style}</td><td>${q.line}</td><td>${q.deftype}</td><td>${q.qty}</td><td>${q.dhu}%</td><td>${q.sev}</td><td>${q.status}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='oee'&&state.oee.length){body+=`<div class="pr-section"><h2>OEE Records (${state.oee.length} entries)</h2><table class="pr-table"><thead><tr><th>#</th><th>Machine</th><th>Date</th><th>Availability%</th><th>Performance%</th><th>Quality%</th><th>OEE%</th></tr></thead><tbody>${state.oee.map((o,i)=>`<tr><td>${i+1}</td><td>${o.machine}</td><td>${o.date}</td><td>${o.availability}%</td><td>${o.performance}%</td><td>${o.quality}%</td><td><strong>${o.oee}%</strong></td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='smed'&&state.smed.length){body+=`<div class="pr-section"><h2>SMED Records (${state.smed.length} entries)</h2><table class="pr-table"><thead><tr><th>#</th><th>Line</th><th>From Style</th><th>To Style</th><th>Duration(min)</th><th>Target(min)</th><th>Category</th><th>Date</th></tr></thead><tbody>${state.smed.map((s,i)=>`<tr><td>${i+1}</td><td>${s.line}</td><td>${s.from||'—'}</td><td>${s.to||'—'}</td><td>${s.duration}</td><td>${s.target||'—'}</td><td>${s.category}</td><td>${s.date}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='audit5s'){let auditTotal=0;auditCats.forEach(cat=>{let s=0;cat.items.forEach((_,i)=>s+=(state.auditScores[`${cat.id}-${i}`]||0));auditTotal+=Math.round((s/(cat.items.length*5))*20);});body+=`<div class="pr-section"><h2>5S Audit Score: ${auditTotal}/100</h2><table class="pr-table"><thead><tr><th>Category</th><th>Item</th><th>Score</th></tr></thead><tbody>${auditCats.map(cat=>cat.items.map((item,i)=>`<tr><td>${cat.title}</td><td>${item}</td><td>${state.auditScores[`${cat.id}-${i}`]||0}/5</td></tr>`).join('')).join('')}</tbody></table></div>`;}
+if(section==='kaizen'&&state.kaizen.length){body+=`<div class="pr-section"><h2>Kaizen Log (${state.kaizen.length} entries)</h2><table class="pr-table"><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Dept</th><th>Owner</th><th>Status</th><th>Date</th></tr></thead><tbody>${state.kaizen.map((k,i)=>`<tr><td>${i+1}</td><td>${k.title}</td><td>${k.cat}</td><td>${k.dept}</td><td>${k.owner}</td><td>${k.status}</td><td>${k.date}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='ie-rules'){body+=`<div class="pr-section"><h2>IE Rules (${ieRules.length} rules)</h2><table class="pr-table"><thead><tr><th>Rule</th><th>Title</th><th>Action</th></tr></thead><tbody>${ieRules.map(r=>`<tr><td>${r.n}</td><td>${r.emoji} ${r.title}</td><td>${r.action}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='whys'&&state.whysList.length){body+=`<div class="pr-section"><h2>5 Whys Analyses (${state.whysList.length} analyses)</h2><table class="pr-table"><thead><tr><th>#</th><th>Problem</th><th>Dept</th><th>Root Cause</th><th>By</th><th>Date</th></tr></thead><tbody>${state.whysList.map((w,i)=>`<tr><td>${i+1}</td><td>${w.prob}</td><td>${w.dept}</td><td>${w.rootCause||'—'}</td><td>${w.by||'—'}</td><td>${w.date}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='workflow'&&state.workflow.length){body+=`<div class="pr-section"><h2>Workflow Records</h2><table class="pr-table"><thead><tr><th>#</th><th>Date</th><th>Style</th><th>Dept</th><th>Process</th><th>Target</th><th>Actual</th><th>Eff%</th><th>Status</th></tr></thead><tbody>${state.workflow.map((w,i)=>`<tr><td>${i+1}</td><td>${w.date}</td><td>${w.style}</td><td>${w.dept}</td><td>${w.process}</td><td>${w.target}</td><td>${w.actual}</td><td>${w.eff}%</td><td>${w.status}</td></tr>`).join('')}</tbody></table></div>`;}
+if(section==='responsibility'&&state.responsibility.length){body+=`<div class="pr-section"><h2>Responsibility Matrix</h2><table class="pr-table"><thead><tr><th>#</th><th>Task</th><th>Dept</th><th>Person</th><th>RACI</th><th>Frequency</th><th>Priority</th></tr></thead><tbody>${state.responsibility.map((r,i)=>`<tr><td>${i+1}</td><td>${r.task}</td><td>${r.dept}</td><td>${r.person}</td><td>${r.role}</td><td>${r.freq}</td><td>${r.priority}</td></tr>`).join('')}</tbody></table></div>`;}
+body+=`<div class="pr-footer">Generated by ${state.company} — Lean Management System v3.0 | ${state.dev} — ${now}</div></div>`;
+document.getElementById('report-modal-body').innerHTML=body;document.getElementById('report-modal').classList.add('show');}
+function closeReport(){document.getElementById('report-modal').classList.remove('show');}
+function printReport(){window.print();}
+function savePDF(){window.print();}
+
+// ═══════════════════════════════════════
+// GEMINI AI ENGINE
+// ═══════════════════════════════════════
+
+// Key Management
+function getAIKey(){return localStorage.getItem('gemini_api_key')||'';}
+function openAIKeySetup(){
+  document.getElementById('aikey-modal').classList.add('show');
+  const k=getAIKey();
+  if(k)document.getElementById('gemini-key-input').value=k;
+  updateAIKeyStatus();
+}
+function saveAIKey(){
+  const k=document.getElementById('gemini-key-input').value.trim();
+  if(!k)return alert('Key enter karein!');
+  localStorage.setItem('gemini_api_key',k);
+  updateAIKeyStatus();
+  document.getElementById('aikey-modal').classList.remove('show');
+  fbToast('🔑 Gemini AI Key save ho gayi!','#a78bfa');
+}
+function removeAIKey(){
+  localStorage.removeItem('gemini_api_key');
+  document.getElementById('gemini-key-input').value='';
+  updateAIKeyStatus();
+  fbToast('🗑️ Key hata di gayi','#ff1744');
+}
+function updateAIKeyStatus(){
+  const k=getAIKey();
+  const el=document.getElementById('ai-key-info');
+  if(el){el.textContent=k?'✅ Key set hai — AI ready!':'⚠️ Key set nahi — aistudio.google.com se free key lein';el.style.color=k?'var(--acc)':'var(--acc3)';}
+  const navTab=document.getElementById('ai-nav-tab');
+  if(navTab)navTab.style.color=k?'var(--acc)':'#a78bfa';
+}
+async function testAIKey(){
+  const k=document.getElementById('gemini-key-input').value.trim()||getAIKey();
+  if(!k){document.getElementById('key-test-result').innerHTML='<span style="color:var(--acc3);">Key enter karein pehle!</span>';return;}
+  document.getElementById('key-test-result').innerHTML='<span style="color:var(--acc2);">⏳ Testing...</span>';
+  try{
+    const r=await callGemini('Say "Key working!" in Urdu in one line.',k);
+    document.getElementById('key-test-result').innerHTML='<span style="color:var(--acc);">✅ Key kaam kar rahi hai! — '+r+'</span>';
+  }catch(e){document.getElementById('key-test-result').innerHTML='<span style="color:var(--acc3);">❌ Key galat hai ya internet nahi — '+e.message+'</span>';}
+}
+
+// Core Gemini API Call
+async function callGemini(prompt, keyOverride){
+  const key=keyOverride||getAIKey();
+  if(!key)throw new Error('AI Key set nahi — Settings mein key enter karein');
+  const attempts=[
+    {ver:'v1beta',model:'gemini-2.5-flash-preview-05-20'},
+    {ver:'v1beta',model:'gemini-2.5-flash'},
+    {ver:'v1beta',model:'gemini-2.0-flash'},
+    {ver:'v1',model:'gemini-2.0-flash'},
+    {ver:'v1beta',model:'gemini-2.0-flash-lite'},
+    {ver:'v1',model:'gemini-2.0-flash-lite'},
+    {ver:'v1beta',model:'gemini-1.5-flash'},
+    {ver:'v1',model:'gemini-1.5-flash'},
+    {ver:'v1beta',model:'gemini-1.5-pro'},
+    {ver:'v1',model:'gemini-1.5-pro'},
+  ];
+  let lastErr='Unknown error';
+  for(const a of attempts){
+    try{
+      const resp=await fetch(
+        `https://generativelanguage.googleapis.com/${a.ver}/models/${a.model}:generateContent?key=${key}`,
+        {method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:800}})}
+      );
+      const data=await resp.json();
+      // Key invalid check — alag error
+      if(data.error){
+        const msg=data.error.message||'';
+        if(msg.toLowerCase().includes('api key not valid')||msg.toLowerCase().includes('api_key_invalid')){
+          throw new Error('KEY_INVALID');
+        }
+        lastErr=msg; continue; // Model nahi mila — agli try
+      }
+      const result=data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(result)return result;
+    }catch(e){
+      if(e.message==='KEY_INVALID'){
+        throw new Error('❌ Key Google ne reject ki — AI Studio mein nai key banao');
+      }
+      lastErr=e.message; continue;
+    }
+  }
+  throw new Error('⚠️ AI connect nahi hua: '+lastErr+' | Internet check karein ya AI Studio mein key check karein');
+}
+
+// Show AI Result Helper
+function showAIResult(elId, text){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.style.display='block';
+  el.innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+}
+function setAILoading(elId,msg='🤖 AI soch raha hai...'){
+  const el=document.getElementById(elId);
+  if(el){el.style.display='block';el.innerHTML=`<span style="color:var(--acc4);">${msg}</span>`;}
+}
+
+// ── AI Daily Insights (Dashboard) ──
+async function aiDailyInsights(){
+  const el=document.getElementById('ai-daily-result');
+  el.innerHTML='<span style="color:var(--acc4);">⏳ AI data analyze kar raha hai...</span>';
+  const prodSummary=state.production.length?`Production entries: ${state.production.length}, Recent avg efficiency: ${state.kpis.eff}%, Avg output: ${state.kpis.output} pcs`:'No production data';
+  const qualSummary=state.quality.length?`Quality entries: ${state.quality.length}, DHU: ${state.kpis.def}%, Top defect: ${getTopDefect()}`:'No quality data';
+  const oeeSum=state.oee.length?`OEE avg: ${(state.oee.reduce((s,o)=>s+parseFloat(o.oee),0)/state.oee.length).toFixed(1)}%`:'No OEE data';
+  try{
+    const r=await callGemini(`Garments factory IE Manager hain. Yeh aaj ka data hai:\n- ${prodSummary}\n- ${qualSummary}\n- OTD: ${state.kpis.otd}%, Absenteeism: ${state.kpis.abs}%\n- ${oeeSum}\n\nShort mein (5-6 lines) main issues batao aur 3 priority actions suggest karo. Roman Urdu mein jawab do.`);
+    el.innerHTML=r.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--acc4);">$1</strong>').replace(/\n/g,'<br>');
+  }catch(e){el.innerHTML=`<span style="color:var(--acc3);">⚠️ ${e.message}</span>`;}
+}
+
+function getTopDefect(){
+  if(!state.quality.length)return 'N/A';
+  const c={};state.quality.forEach(q=>{c[q.deftype]=(c[q.deftype]||0)+parseInt(q.qty||0);});
+  return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'N/A';
+}
+
+// ── AI Quality CAPA ──
+async function aiQualityAnalysis(){
+  const deftype=document.getElementById('q-deftype').value;
+  const line=document.getElementById('q-line').value||'Sewing';
+  const qty=document.getElementById('q-qty').value||'unknown';
+  setAILoading('ai-quality-result');
+  try{
+    const r=await callGemini(`Garments quality expert hain. Defect: "${deftype}", Line: ${line}, Qty: ${qty} pcs.\n\n1. Is defect ke 3 main causes batao\n2. Immediate CAPA action kya hoga\n3. Long-term solution kya hai\nRoman Urdu mein, short aur practical jawab do.`);
+    showAIResult('ai-quality-result',r);
+  }catch(e){showAIResult('ai-quality-result',`⚠️ ${e.message}`);}
+}
+
+// ── AI Production Insights ──
+async function aiProductionInsights(){
+  const line=document.getElementById('pr-line').value||'Line';
+  const target=document.getElementById('pr-target').value||0;
+  const actual=document.getElementById('pr-actual').value||0;
+  const workers=document.getElementById('pr-workers').value||0;
+  const smv=document.getElementById('pr-smv').value||0;
+  const eff=target>0?((actual/target)*100).toFixed(1):'unknown';
+  setAILoading('ai-production-result');
+  try{
+    const r=await callGemini(`Garments IE expert hain. ${line} ka data:\n- Target: ${target} pcs, Actual: ${actual} pcs, Efficiency: ${eff}%\n- Workers: ${workers}, SMV: ${smv} min\n\nEfficiency ${eff<75?'kam':'theek'} hai. Is data ke basis par:\n1. Main problem kya ho sakti hai\n2. Efficiency badhane ke 3 practical steps\nRoman Urdu mein short jawab do.`);
+    showAIResult('ai-production-result',r);
+  }catch(e){showAIResult('ai-production-result',`⚠️ ${e.message}`);}
+}
+
+// ── AI Kaizen Ideas ──
+async function aiKaizenIdeas(){
+  const title=document.getElementById('kz-title').value||'Process improvement';
+  const dept=document.getElementById('kz-dept').value||'Sewing';
+  const before=document.getElementById('kz-before').value||'Current situation';
+  setAILoading('ai-kaizen-result');
+  try{
+    const r=await callGemini(`Lean manufacturing Kaizen expert hain. Garments factory mein:\n- Problem: ${title}\n- Department: ${dept}\n- Current situation: ${before}\n\n3 specific Kaizen improvement ideas do with expected results. Roman Urdu mein practical jawab do.`);
+    showAIResult('ai-kaizen-result',r);
+  }catch(e){showAIResult('ai-kaizen-result',`⚠️ ${e.message}`);}
+}
+
+// ── AI OEE Analysis ──
+async function aiOEESuggestion(){
+  const avail=document.getElementById('oee-p-avail')?.textContent||'unknown';
+  const perf=document.getElementById('oee-p-perf')?.textContent||'unknown';
+  const qual=document.getElementById('oee-p-qual')?.textContent||'unknown';
+  const oee=document.getElementById('oee-p-oee')?.textContent||'unknown';
+  const machine=document.getElementById('oee-machine').value||'Machine';
+  setAILoading('ai-oee-result');
+  try{
+    const r=await callGemini(`OEE expert hain. ${machine} ka OEE data:\n- Availability: ${avail}, Performance: ${perf}, Quality: ${qual}\n- Total OEE: ${oee}\n\nWorld class OEE 85% hoti hai. Sabse kam component identify karo aur usse improve karne ke 3 specific steps batao. Roman Urdu mein jawab do.`);
+    showAIResult('ai-oee-result',r);
+  }catch(e){showAIResult('ai-oee-result',`⚠️ ${e.message}`);}
+}
+
+// ── AI Chat ──
+const chatHistory=[];
+async function sendAIChat(){
+  const inp=document.getElementById('ai-chat-inp');
+  const msg=inp.value.trim();
+  if(!msg)return;
+  inp.value='';
+  addChatMsg(msg,'user');
+  const factoryContext=`Factory: ${state.company}. KPIs: Efficiency ${state.kpis.eff}%, DHU ${state.kpis.def}%, Output ${state.kpis.output} pcs, OTD ${state.kpis.otd}%. Production entries: ${state.production.length}. Quality entries: ${state.quality.length}. Top defect: ${getTopDefect()}.`;
+  const thinkingId='thinking_'+Date.now();
+  addChatMsg('⏳ Soch raha hai...','bot',thinkingId);
+  try{
+    chatHistory.push({role:'user',text:msg});
+    const fullPrompt=`Tum garments factory IE Assistant ho. Sirf factory, lean manufacturing, quality, production topics par jawab do. Factory data: ${factoryContext}\n\nUser: ${msg}\n\nRoman Urdu mein friendly aur practical jawab do (5-8 lines max).`;
+    const r=await callGemini(fullPrompt);
+    document.getElementById(thinkingId)?.remove();
+    addChatMsg(r,'bot');
+    chatHistory.push({role:'bot',text:r});
+  }catch(e){
+    document.getElementById(thinkingId)?.remove();
+    addChatMsg(`⚠️ ${e.message}`,'bot');
+  }
+}
+function addChatMsg(text,role,id){
+  const box=document.getElementById('ai-chat-msgs');
+  const div=document.createElement('div');
+  div.className=`ai-msg ai-msg-${role==='user'?'user':'bot'}`;
+  if(id)div.id=id;
+  div.innerHTML=(role==='bot'?'<strong>🤖 AI:</strong> ':'')+text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+}
+
+// ── AI Quick Actions ──
+async function aiQuickAction(type){
+  const prompts={
+    dashboard:`Factory data: Efficiency ${state.kpis.eff}%, DHU ${state.kpis.def}%, Output ${state.kpis.output}, OTD ${state.kpis.otd}%, Absenteeism ${state.kpis.abs}%. Ek comprehensive daily summary do aur top 3 priorities batao. Roman Urdu mein.`,
+    quality:`Quality data: ${state.quality.length} entries, DHU ${state.kpis.def}%, Top defect: ${getTopDefect()}. Defect reduction ke liye comprehensive action plan do. Roman Urdu mein.`,
+    production:`Production: ${state.production.length} entries, Avg efficiency ${state.kpis.eff}%, Output ${state.kpis.output} pcs. Line performance improve karne ke liye step-by-step guide do. Roman Urdu mein.`,
+    oee:`OEE data: ${state.oee.length} entries. ${state.oee.length?'Avg OEE: '+(state.oee.reduce((s,o)=>s+parseFloat(o.oee),0)/state.oee.length).toFixed(1)+'%':'No OEE data yet'}. OEE 85% tak kaise le jayen — detailed roadmap do. Roman Urdu mein.`,
+    smed:`SMED data: ${state.smed.length} changeovers. ${state.smed.length?'Avg: '+(state.smed.reduce((s,sm)=>s+parseFloat(sm.duration||0),0)/state.smed.length).toFixed(0)+' min':'No data yet'}. Style changeover time 2 hours se kam karne ke practical steps do. Roman Urdu mein.`,
+    kaizen:`Kaizen log: ${state.kaizen.length} entries. ${state.company} factory ke liye 5 high-impact Kaizen improvement ideas suggest karo jo abhi implement ki ja sakein. Roman Urdu mein.`
+  };
+  addChatMsg(`${type} analysis chaahiye...`,'user');
+  const thinkId='think_'+Date.now();
+  addChatMsg('⏳ Deep analysis kar raha hai...','bot',thinkId);
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('ai-assistant').classList.add('active');
+  document.getElementById('ai-nav-tab').classList.add('active');
+  try{
+    const r=await callGemini(prompts[type]||prompts.dashboard);
+    document.getElementById(thinkId)?.remove();
+    addChatMsg(r,'bot');
+  }catch(e){document.getElementById(thinkId)?.remove();addChatMsg(`⚠️ ${e.message}`,'bot');}
+}
+
+// ── AI WhatsApp/Email Message ──
+async function aiGenerateMessage(){
+  const type=document.getElementById('msg-type').value;
+  const tone=document.getElementById('msg-tone').value;
+  const detail=document.getElementById('msg-detail').value||'';
+  setAILoading('ai-msg-result','🤖 Message likh raha hai...');
+  const typeMap={delay:'delivery delay inform karna',quality:'quality issue report',buyer:'buyer ko update',supplier:'supplier ko complaint',internal:'internal team ko alert'};
+  try{
+    const r=await callGemini(`${state.company} garments factory ki taraf se ek ${typeMap[type]||type} message likho. Tone: ${tone}. Key detail: ${detail}. Professional ${tone} WhatsApp/Email message likho jo factory manager bhej sake. Roman Urdu ya English mein (tone ke hisaab se).`);
+    showAIResult('ai-msg-result',r);
+  }catch(e){showAIResult('ai-msg-result',`⚠️ ${e.message}`);}
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+initFbStatus();
+// Gemini API Key — Pre-loaded
+if(!localStorage.getItem('gemini_api_key')){
+  localStorage.setItem('gemini_api_key','AIzaSyCa1SAs0FGxqONI45rLIh_f1zkonQ5Pd5M');
+}
+// Force update if old wrong key was saved
+if(localStorage.getItem('gemini_api_key')==='AIzaSyD-Wn6NkD9-uVARC9DfialStbzzCpKCxCU'){
+  localStorage.setItem('gemini_api_key','AIzaSyCa1SAs0FGxqONI45rLIh_f1zkonQ5Pd5M');
+}
+updateAIKeyStatus();
+
+// ════════════════════════════════════════
+// AUTO-LOAD: Firebase connect hote hi
+// data automatically load ho jata hai
+// Koi manual step nahi chahiye
+// ════════════════════════════════════════
+let fbAutoLoadDone = false;
+function initAutoLoad() {
+  // Loading indicator dikhao
+  const dot = document.getElementById('fb-dot');
+  const txt = document.getElementById('fb-txt');
+  if(txt) { txt.textContent = 'Loading data...'; txt.style.color = '#ffd740'; }
+
+  fbDB.ref('.info/connected').on('value', snap => {
+    if(snap.val() === true && !fbAutoLoadDone) {
+      fbAutoLoadDone = true;
+      // Firebase connect hote hi auto-load
+      fbDB.ref('leanmaster/data').once('value').then(fbSnap => {
+        if(fbSnap.exists()) {
+          try {
+            const d = JSON.parse(fbSnap.val().data);
+            // Backward compatibility — naye fields add karo agar purane data mein nahi hain
+            if(!d.oee) d.oee = [];
+            if(!d.smed) d.smed = [];
+            if(!d.targets) d.targets = { eff:75, dhu:3, otd:90, abs:5 };
+            if(!d.whysList) d.whysList = [];
+            if(!d.kanban) d.kanban = { todo:[], prog:[], done:[] };
+            if(!d.kanban.todo) d.kanban.todo = [];
+            if(!d.kanban.prog) d.kanban.prog = [];
+            if(!d.kanban.done) d.kanban.done = [];
+            if(!d.kpis) d.kpis = state.kpis;
+            if(!d.auditScores) d.auditScores = {};
+            // State update karo
+            Object.assign(state, d);
+            // Poora UI refresh karo
+            refreshDashboard();
+            fbToast('✅ Data auto-load ho gaya!');
+          } catch(e) {
+            fbToast('⚠️ Data load error — manual Load try karein', '#ff1744');
+          }
+        } else {
+          // Pehli baar — koi data nahi Firebase mein
+          fbToast('🆕 Pehli baar — data enter karein aur Save karein', '#ffd740');
+          refreshDashboard();
+        }
+      }).catch(() => {
+        fbToast('⚠️ Auto-load fail — internet check karein', '#ff1744');
+        refreshDashboard();
+      });
+    }
+  });
+}
+initAutoLoad();
+
+// ════════════════════════════════════════
+// AUTO-SAVE: Har important action ke bad
+// Firebase automatically save karo
+// ════════════════════════════════════════
+function autoSave() {
+  // 2 second baad save — multiple changes ek saath save hon
+  clearTimeout(window.autoSaveTimer);
+  window.autoSaveTimer = setTimeout(() => {
+    fbSaveNow();
+  }, 2000);
+}
+setTimeout(()=>{
+  if(state.company)document.getElementById('companyNameDisplay').textContent=state.company;
+  document.getElementById('devDisplay').textContent='Developed by: '+(state.dev||'')+' | '+(state.dept||'')+' | '+(state.ver||'v3.0');
+  const km2={'kpi-output':state.kpis.output,'kpi-eff':state.kpis.eff,'kpi-def':state.kpis.def,'kpi-smv':state.kpis.smv,'kpi-otd':state.kpis.otd,'kpi-abs':state.kpis.abs};
+  Object.entries(km2).forEach(([id,val])=>{const el=document.getElementById(id);if(el&&val!==undefined)el.textContent=val;});
+  renderChart();updateSigmaLevel();colorCodeKPIs();updateTargetDisplay();
+},300);
+</script>
+
+<!-- ════════════════════════════════════════════════════
+     🌸 CHANDU — AI ASSISTANT  (Groq API)
+════════════════════════════════════════════════════ -->
+<style>
+/* ── Chandu Root Variables ── */
+:root {
+  --ch-pink:#ff6eb4;--ch-pink2:#ff9dd2;--ch-purple:#7c3aed;
+  --ch-purple2:#a78bfa;
+}
+
+/* ── Floating Button ── */
+#chanduFab {
+  position:fixed;bottom:28px;right:28px;z-index:9000;
+  width:66px;height:66px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--ch-purple),var(--ch-pink));
+  box-shadow:0 8px 32px rgba(124,58,237,.5),0 0 0 3px rgba(255,110,180,.25);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  animation:fabPulse 3s ease-in-out infinite;
+}
+#chanduFab:hover{transform:scale(1.12);box-shadow:0 12px 40px rgba(124,58,237,.7),0 0 0 5px rgba(255,110,180,.3);}
+@keyframes fabPulse{0%,100%{box-shadow:0 8px 32px rgba(124,58,237,.5),0 0 0 3px rgba(255,110,180,.25);}
+  50%{box-shadow:0 8px 32px rgba(124,58,237,.7),0 0 0 7px rgba(255,110,180,.12);}}
+#chanduFab svg{width:34px;height:34px;}
+
+/* ── Main Chat Panel ── */
+#chanduPanel {
+  position:fixed;bottom:108px;right:28px;z-index:9000;
+  width:420px;max-width:calc(100vw - 40px);
+  background:linear-gradient(145deg,#0d0f1a,#111827);
+  border:1px solid rgba(124,58,237,.4);border-radius:24px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(255,110,180,.1),inset 0 1px 0 rgba(255,255,255,.05);
+  display:none;flex-direction:column;overflow:hidden;
+  font-family:'Barlow',sans-serif;
+  animation:panelIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+#chanduPanel.open{display:flex;}
+@keyframes panelIn{from{opacity:0;transform:translateY(30px) scale(.92);}to{opacity:1;transform:none;}}
+
+/* ── Panel Header ── */
+.ch-header {
+  background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(255,110,180,.2));
+  padding:12px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(124,58,237,.25);flex-shrink:0;
+}
+.ch-avatar {
+  width:48px;height:48px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#7c3aed,#ff6eb4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;box-shadow:0 4px 16px rgba(124,58,237,.4);
+  position:relative;overflow:hidden;
+}
+.ch-avatar::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.25),transparent 60%);}
+.ch-avatar-face{font-size:26px;z-index:1;position:relative;}
+.ch-info{flex:1;min-width:0;}
+.ch-name{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;}
+.ch-status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;}
+.ch-status-dot.thinking{background:#f59e0b;animation:thinkPulse .6s infinite;}
+.ch-status-dot.offline{background:#ef4444;box-shadow:none;animation:none;}
+@keyframes thinkPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.ch-subtitle{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;letter-spacing:.5px;}
+.ch-header-btns{display:flex;gap:6px;margin-left:auto;flex-shrink:0;}
+.ch-icon-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);
+  width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:.2s;}
+.ch-icon-btn:hover{background:rgba(255,255,255,.16);color:#fff;}
+
+/* ── Status Bar ── */
+.ch-statusbar{
+  padding:6px 14px;display:flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,.3);border-bottom:1px solid rgba(124,58,237,.15);
+  font-size:11px;flex-wrap:wrap;flex-shrink:0;
+}
+.ch-ind{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.ch-ind.online{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+.ch-ind.offline{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+.ch-ind.thinking{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fbbf24;}
+.ch-api-status{margin-left:auto;font-size:10px;color:rgba(255,255,255,.35);font-weight:600;}
+
+/* ── Messages Area ── */
+.ch-messages {
+  flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;
+  min-height:200px;max-height:260px;
+  scrollbar-width:thin;scrollbar-color:rgba(124,58,237,.3) transparent;
+}
+.ch-messages::-webkit-scrollbar{width:4px;}
+.ch-messages::-webkit-scrollbar-thumb{background:rgba(124,58,237,.4);border-radius:4px;}
+
+/* ── Message Bubbles ── */
+.ch-msg{display:flex;gap:8px;align-items:flex-end;animation:msgIn .25s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.ch-msg.user{flex-direction:row-reverse;}
+.ch-bubble{max-width:82%;padding:10px 13px;border-radius:18px;font-size:13px;line-height:1.5;word-break:break-word;}
+.ch-msg.bot .ch-bubble{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(124,58,237,.12));border:1px solid rgba(124,58,237,.3);color:#e2d9f3;border-bottom-left-radius:4px;}
+.ch-msg.user .ch-bubble{background:linear-gradient(135deg,var(--ch-purple),var(--ch-pink));color:#fff;border-bottom-right-radius:4px;box-shadow:0 4px 16px rgba(124,58,237,.3);}
+.ch-msg-time{font-size:9px;color:rgba(255,255,255,.25);margin-top:3px;text-align:right;}
+.ch-mini-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--ch-purple),var(--ch-pink));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+
+/* Typing indicator */
+.ch-typing-dots{display:flex;gap:5px;padding:4px 0;}
+.ch-typing-dots span{width:7px;height:7px;border-radius:50%;background:var(--ch-pink2);animation:dotBounce 1.2s infinite;}
+.ch-typing-dots span:nth-child(2){animation-delay:.2s;}
+.ch-typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes dotBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-7px);}}
+
+/* ── Input Area ── */
+.ch-input-area{padding:10px 12px;border-top:1px solid rgba(124,58,237,.2);background:rgba(0,0,0,.25);flex-shrink:0;}
+.ch-textarea-wrap{position:relative;display:flex;align-items:flex-end;background:rgba(255,255,255,.05);border:1px solid rgba(124,58,237,.3);border-radius:14px;overflow:hidden;transition:.2s;}
+.ch-textarea-wrap:focus-within{border-color:var(--ch-pink);box-shadow:0 0 0 3px rgba(255,110,180,.12);}
+#chanduInput{flex:1;background:transparent;border:none;outline:none;color:#e2e8f0;font-family:'Barlow',sans-serif;font-size:13px;padding:10px 12px;resize:none;min-height:42px;max-height:100px;line-height:1.5;}
+#chanduInput::placeholder{color:rgba(255,255,255,.25);}
+.ch-send-btn{background:linear-gradient(135deg,var(--ch-purple),var(--ch-pink));border:none;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:3px;transition:.2s;flex-shrink:0;font-size:16px;}
+.ch-send-btn:hover{transform:scale(1.08);}
+.ch-send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* ── Bottom Controls ── */
+.ch-controls{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap;}
+.ch-ctrl-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);padding:4px 9px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Barlow',sans-serif;display:flex;align-items:center;gap:4px;transition:.2s;}
+.ch-ctrl-btn:hover{background:rgba(255,255,255,.12);color:#fff;}
+.ch-ctrl-btn.active{background:rgba(255,110,180,.2);border-color:rgba(255,110,180,.4);color:var(--ch-pink2);}
+#chanduMicBtn.recording{background:rgba(239,68,68,.25);border-color:rgba(239,68,68,.5);color:#f87171;animation:recPulse .8s infinite;}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}50%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
+.ch-char-count{margin-left:auto;font-size:10px;color:rgba(255,255,255,.2);}
+
+/* ── Settings Panel ── */
+#chanduSettings{padding:12px 14px;border-top:1px solid rgba(124,58,237,.2);background:rgba(0,0,0,.35);display:none;flex-direction:column;gap:9px;flex-shrink:0;}
+#chanduSettings.open{display:flex;}
+.ch-set-row{display:flex;align-items:center;gap:8px;}
+.ch-set-label{font-size:10px;color:rgba(255,255,255,.45);flex-shrink:0;min-width:70px;text-transform:uppercase;letter-spacing:.5px;}
+.ch-set-inp{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#e2e8f0;padding:6px 10px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:12px;outline:none;transition:.2s;}
+.ch-set-inp:focus{border-color:var(--ch-pink);}
+.ch-set-inp[type=password]{letter-spacing:2px;}
+.ch-set-actions{display:flex;gap:6px;margin-top:2px;}
+.ch-set-btn{padding:6px 13px;border-radius:7px;border:none;cursor:pointer;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;transition:.2s;letter-spacing:.5px;}
+.ch-set-save{background:linear-gradient(135deg,var(--ch-purple),var(--ch-pink));color:#fff;}
+.ch-set-save:hover{opacity:.85;}
+.ch-set-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+.ch-set-del:hover{background:rgba(239,68,68,.28);}
+.ch-set-test{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+.ch-set-test:hover{background:rgba(34,197,94,.28);}
+.ch-set-msg{font-size:11px;margin-top:3px;padding:5px 9px;border-radius:6px;display:none;}
+.ch-set-msg.ok{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.25);display:block;}
+.ch-set-msg.err{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);display:block;}
+.ch-set-msg.info{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25);display:block;}
+
+/* ── Welcome card ── */
+.ch-welcome{text-align:center;padding:18px 10px;}
+.ch-welcome-avatar{font-size:48px;margin-bottom:8px;display:block;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.ch-welcome h3{font-size:16px;font-weight:700;color:var(--ch-pink2);margin-bottom:5px;}
+.ch-welcome p{font-size:12px;color:rgba(255,255,255,.45);line-height:1.6;}
+
+/* ── TTS Indicator ── */
+.ch-tts-bar{display:none;align-items:center;gap:8px;padding:5px 12px;background:rgba(124,58,237,.15);border-bottom:1px solid rgba(124,58,237,.25);font-size:11px;color:var(--ch-pink2);flex-shrink:0;}
+.ch-tts-bar.active{display:flex;}
+.ch-tts-waves{display:flex;gap:3px;align-items:center;}
+.ch-tts-waves span{width:3px;border-radius:3px;background:var(--ch-pink2);animation:ttsWave 1s ease-in-out infinite;}
+.ch-tts-waves span:nth-child(1){height:8px;}.ch-tts-waves span:nth-child(2){height:14px;animation-delay:.1s;}
+.ch-tts-waves span:nth-child(3){height:10px;animation-delay:.2s;}.ch-tts-waves span:nth-child(4){height:16px;animation-delay:.3s;}
+.ch-tts-waves span:nth-child(5){height:8px;animation-delay:.4s;}
+@keyframes ttsWave{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.8);}}
+.ch-tts-stop{background:none;border:1px solid rgba(255,110,180,.4);color:var(--ch-pink2);padding:2px 8px;border-radius:5px;cursor:pointer;font-size:10px;}
+
+/* Hide in print */
+@media print{#chanduFab,#chanduPanel{display:none!important;}}
+@media(max-width:480px){#chanduPanel{width:calc(100vw - 24px);right:12px;bottom:100px;}#chanduFab{right:16px;bottom:20px;}}
+</style>
+
+<!-- ════════ CHANDU FAB BUTTON ════════ -->
+<button id="chanduFab" onclick="chanduToggle()" title="Chandu se baat karein">
+  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="34" r="22" fill="#FDDBB4"/>
+    <ellipse cx="40" cy="16" rx="18" ry="10" fill="#3b1f0a"/>
+    <ellipse cx="22" cy="30" rx="6" ry="14" fill="#3b1f0a"/>
+    <ellipse cx="58" cy="30" rx="6" ry="14" fill="#3b1f0a"/>
+    <ellipse cx="36" cy="13" rx="6" ry="3" fill="#5c3317" opacity=".6"/>
+    <ellipse cx="32" cy="33" rx="4" ry="4.5" fill="#2c1810"/>
+    <ellipse cx="48" cy="33" rx="4" ry="4.5" fill="#2c1810"/>
+    <circle cx="33.5" cy="31.5" r="1.5" fill="white"/>
+    <circle cx="49.5" cy="31.5" r="1.5" fill="white"/>
+    <path d="M28 29 Q32 26 36 29" stroke="#2c1810" stroke-width="1.2" fill="none"/>
+    <path d="M44 29 Q48 26 52 29" stroke="#2c1810" stroke-width="1.2" fill="none"/>
+    <ellipse cx="26" cy="39" rx="5" ry="3" fill="#ffb7c5" opacity=".55"/>
+    <ellipse cx="54" cy="39" rx="5" ry="3" fill="#ffb7c5" opacity=".55"/>
+    <ellipse cx="40" cy="38" rx="2" ry="1.5" fill="#e8a882"/>
+    <path d="M34 43 Q40 48 46 43" stroke="#c17a5a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="40" cy="44.5" rx="5" ry="2" fill="#ff8fab" opacity=".7"/>
+    <circle cx="20" cy="36" r="3" fill="#ff6eb4" opacity=".8"/>
+    <circle cx="60" cy="36" r="3" fill="#ff6eb4" opacity=".8"/>
+    <text x="56" y="14" font-size="10" fill="#fbbf24">✨</text>
+  </svg>
+</button>
+
+<!-- ════════ CHANDU CHAT PANEL ════════ -->
+<div id="chanduPanel">
+
+  <!-- Header -->
+  <div class="ch-header">
+    <div class="ch-avatar"><span class="ch-avatar-face">👩‍💼</span></div>
+    <div class="ch-info">
+      <div class="ch-name">
+        <span>Chandu</span>
+        <div class="ch-status-dot" id="chanduDot"></div>
+      </div>
+      <div class="ch-subtitle" id="chanduSubtitle">Garments Lean AI · Groq Powered</div>
+    </div>
+    <div class="ch-header-btns">
+      <button class="ch-icon-btn" onclick="chanduOpenSettings()" title="Settings">⚙️</button>
+      <button class="ch-icon-btn" onclick="chanduClearChat()" title="Chat saaf karein">🗑</button>
+      <button class="ch-icon-btn" onclick="chanduToggle()" title="Band karein">✕</button>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="ch-statusbar">
+    <div class="ch-ind offline" id="chanduApiInd">
+      <span id="chanduApiIndDot">⚫</span>&nbsp;<span id="chanduApiIndText">No API Key</span>
+    </div>
+    <div class="ch-api-status" id="chanduModelInfo">Model: —</div>
+  </div>
+
+  <!-- TTS Bar -->
+  <div class="ch-tts-bar" id="chanduTtsBar">
+    <div class="ch-tts-waves"><span></span><span></span><span></span><span></span><span></span></div>
+    <span>Chandu bol rahi hai...</span>
+    <button class="ch-tts-stop" onclick="chanduStopTts()">⏹ Rokein</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="ch-messages" id="chanduMessages">
+    <div class="ch-welcome">
+      <span class="ch-welcome-avatar">👩‍💼</span>
+      <h3>Namaste! Main Chandu hoon 🌸</h3>
+      <p>Aapki Garments Lean System mein<br>madad karne ke liye hamesha tayyar hoon.<br><br>
+      <span style="color:rgba(255,255,255,.3);font-size:11px;">Pahle ⚙️ mein Groq API key save karein</span></p>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="ch-input-area">
+    <div class="ch-textarea-wrap">
+      <textarea id="chanduInput" placeholder="Chandu se kuch poochhein..." rows="1"
+        onkeydown="chanduKeyDown(event)" oninput="chanduAutoResize(this)"></textarea>
+      <button class="ch-send-btn" id="chanduSendBtn" onclick="chanduSend()">➤</button>
+    </div>
+    <div class="ch-controls">
+      <button class="ch-ctrl-btn" id="chanduMicBtn" onclick="chanduToggleMic()">🎤 <span id="chanduMicLabel">Bol ke poochhein</span></button>
+      <button class="ch-ctrl-btn" id="chanduTtsToggle" onclick="chanduToggleTts()">🔊 <span id="chanduTtsLabel">Awaaz On</span></button>
+      <button class="ch-ctrl-btn" onclick="chanduSoundTest()">🔔 Test</button>
+      <span class="ch-char-count" id="chanduCharCount">0</span>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="chanduSettings">
+    <div style="font-size:12px;font-weight:700;color:var(--ch-pink2);margin-bottom:2px;">⚙️ Groq API Settings</div>
+    <div class="ch-set-row">
+      <span class="ch-set-label">API Key</span>
+      <input class="ch-set-inp" type="password" id="chanduApiKeyInp" placeholder="gsk_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="ch-set-row" style="margin-top:4px;">
+      <span class="ch-set-label">Model</span>
+      <select class="ch-set-inp" id="chanduModelSelect">
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Best)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B (Fast)</option>
+        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+        <option value="gemma2-9b-it">Gemma2 9B</option>
+      </select>
+    </div>
+    <div class="ch-set-actions">
+      <button class="ch-set-btn ch-set-save" onclick="chanduSaveKey()">💾 Save</button>
+      <button class="ch-set-btn ch-set-test" onclick="chanduTestKey()">🧪 Test</button>
+      <button class="ch-set-btn ch-set-del" onclick="chanduDeleteKey()">🗑 Delete</button>
+    </div>
+    <div class="ch-set-msg" id="chanduSetMsg"></div>
+  </div>
+
+</div><!-- end #chanduPanel -->
+
+<!-- ════════ CHANDU JAVASCRIPT ════════ -->
+<script>
+(function(){
+'use strict';
+
+let chanduOpen=false,chanduMsgs=[],chanduTtsOn=true,chanduMicActive=false,chanduSpeaking=false,chanduRec=null,chanduSetOpen=false,chanduBusy=false;
+const CKEY='chandu_groq_key',CMODEL='chandu_groq_model',CTTS='chandu_tts_pref';
+
+/* ── Sound ── */
+function cSound(type){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(type==='notify'){
+      [523.25,659.25,783.99].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);o.type='sine';o.frequency.value=f;
+        const t=ctx.currentTime+i*.12;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.04);g.gain.exponentialRampToValueAtTime(.001,t+.4);
+        o.start(t);o.stop(t+.4);
+      });
+    }else if(type==='send'){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.type='sine';o.frequency.value=880;
+      g.gain.setValueAtTime(.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.18);
+      o.start();o.stop(ctx.currentTime+.18);
+    }else if(type==='error'){
+      [220,180].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);o.type='sawtooth';o.frequency.value=f;
+        const t=ctx.currentTime+i*.15;
+        g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.start(t);o.stop(t+.25);
+      });
+    }
+  }catch(e){}
+}
+
+/* ── TTS ── */
+function cSpeak(text){
+  if(!chanduTtsOn||!window.speechSynthesis)return;
+  cStopTts();
+  const clean=text.replace(/[*_`#>~]/g,'').replace(/\n+/g,' ').trim();
+  if(!clean)return;
+  const utt=new SpeechSynthesisUtterance(clean);
+  utt.lang='hi-IN';utt.rate=1.05;utt.pitch=1.2;utt.volume=.9;
+  const voices=speechSynthesis.getVoices();
+  const v=voices.find(v=>v.lang==='hi-IN'&&v.name.toLowerCase().includes('female'))||voices.find(v=>v.lang==='hi-IN')||null;
+  if(v)utt.voice=v;
+  utt.onstart=()=>{chanduSpeaking=true;document.getElementById('chanduTtsBar').classList.add('active');};
+  utt.onend=utt.onerror=()=>{chanduSpeaking=false;document.getElementById('chanduTtsBar').classList.remove('active');};
+  speechSynthesis.speak(utt);
+}
+function cStopTts(){
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  chanduSpeaking=false;document.getElementById('chanduTtsBar').classList.remove('active');
+}
+window.chanduStopTts=cStopTts;
+function chanduToggleTts(){
+  chanduTtsOn=!chanduTtsOn;localStorage.setItem(CTTS,chanduTtsOn?'1':'0');
+  document.getElementById('chanduTtsLabel').textContent=chanduTtsOn?'Awaaz On':'Awaaz Off';
+  document.getElementById('chanduTtsToggle').classList.toggle('active',chanduTtsOn);
+  if(!chanduTtsOn)cStopTts();cSound('send');
+}
+window.chanduToggleTts=chanduToggleTts;
+
+/* ── Mic ── */
+function chanduToggleMic(){
+  if(!('webkitSpeechRecognition'in window||'SpeechRecognition'in window)){cSetMsg('❌ Browser speech support nahi karta.','err');return;}
+  if(chanduMicActive){cStopMic();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  chanduRec=new SR();chanduRec.continuous=false;chanduRec.interimResults=true;chanduRec.lang='hi-IN';
+  chanduMicActive=true;
+  document.getElementById('chanduMicBtn').classList.add('recording');
+  document.getElementById('chanduMicLabel').textContent='Bol rahi hoon...';cSound('send');
+  chanduRec.onresult=e=>{
+    let interim='',final='';
+    for(let r of e.results){if(r.isFinal)final+=r[0].transcript;else interim+=r[0].transcript;}
+    const inp=document.getElementById('chanduInput');
+    inp.value=final||interim;chanduAutoResize(inp);cUpdateCount();
+  };
+  chanduRec.onend=chanduRec.onerror=()=>cStopMic();
+  chanduRec.start();
+}
+function cStopMic(){
+  chanduMicActive=false;if(chanduRec){try{chanduRec.stop();}catch(e){}chanduRec=null;}
+  document.getElementById('chanduMicBtn').classList.remove('recording');
+  document.getElementById('chanduMicLabel').textContent='Bol ke poochhein';
+}
+window.chanduToggleMic=chanduToggleMic;
+
+/* ── Panel ── */
+function chanduToggle(){
+  chanduOpen=!chanduOpen;
+  const p=document.getElementById('chanduPanel');
+  if(chanduOpen){p.classList.add('open');cScrollBottom();cLoadPrefs();}
+  else{p.classList.remove('open');cStopTts();cStopMic();}
+}
+window.chanduToggle=chanduToggle;
+
+/* ── Settings ── */
+function chanduOpenSettings(){
+  chanduSetOpen=!chanduSetOpen;
+  document.getElementById('chanduSettings').classList.toggle('open',chanduSetOpen);
+  if(chanduSetOpen){
+    document.getElementById('chanduApiKeyInp').value=localStorage.getItem(CKEY)||'';
+    document.getElementById('chanduModelSelect').value=localStorage.getItem(CMODEL)||'llama-3.3-70b-versatile';
+  }
+}
+window.chanduOpenSettings=chanduOpenSettings;
+
+function chanduSaveKey(){
+  const k=document.getElementById('chanduApiKeyInp').value.trim();
+  const m=document.getElementById('chanduModelSelect').value;
+  if(!k){cSetMsg('❌ API key daalna zaroori hai!','err');return;}
+  if(!k.startsWith('gsk_')){cSetMsg('⚠️ Groq key "gsk_" se shuru honi chahiye.','err');return;}
+  localStorage.setItem(CKEY,k);localStorage.setItem(CMODEL,m);
+  cSetMsg('✅ API key save ho gayi! Chandu ready hai 🌸','ok');cUpdateInd();cSound('notify');
+}
+window.chanduSaveKey=chanduSaveKey;
+
+async function chanduTestKey(){
+  const k=document.getElementById('chanduApiKeyInp').value.trim()||localStorage.getItem(CKEY)||'';
+  if(!k){cSetMsg('❌ Pehle API key daalo.','err');return;}
+  cSetMsg('🔄 Test ho raha hai...','info');
+  const m=document.getElementById('chanduModelSelect').value||'llama-3.3-70b-versatile';
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
+      body:JSON.stringify({model:m,messages:[{role:'user',content:'Say OK'}],max_tokens:5})
+    });
+    const d=await r.json();
+    if(d.choices&&d.choices[0]){cSetMsg('✅ Connection successful! Chandu tayaar hai 🌸','ok');cSound('notify');}
+    else{cSetMsg('❌ Error: '+(d.error?.message||'Unknown'),'err');cSound('error');}
+  }catch(e){cSetMsg('❌ Network error: '+e.message,'err');cSound('error');}
+}
+window.chanduTestKey=chanduTestKey;
+
+function chanduDeleteKey(){
+  if(!confirm('API key delete karna chahte hain?'))return;
+  localStorage.removeItem(CKEY);document.getElementById('chanduApiKeyInp').value='';
+  cSetMsg('🗑 API key delete ho gayi.','err');cUpdateInd();cSound('error');
+}
+window.chanduDeleteKey=chanduDeleteKey;
+
+function cSetMsg(msg,type){
+  const el=document.getElementById('chanduSetMsg');
+  el.textContent=msg;el.className='ch-set-msg '+type;
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.className='ch-set-msg';},5000);
+}
+function cUpdateInd(){
+  const k=localStorage.getItem(CKEY),m=localStorage.getItem(CMODEL)||'llama-3.3-70b-versatile';
+  const ind=document.getElementById('chanduApiInd'),dot=document.getElementById('chanduDot');
+  if(k){
+    ind.className='ch-ind online';document.getElementById('chanduApiIndDot').textContent='🟢';
+    document.getElementById('chanduApiIndText').textContent='Ready';dot.className='ch-status-dot';
+    document.getElementById('chanduModelInfo').textContent='Model: '+m.split('-').slice(0,2).join(' ').toUpperCase();
+  }else{
+    ind.className='ch-ind offline';document.getElementById('chanduApiIndDot').textContent='⚫';
+    document.getElementById('chanduApiIndText').textContent='No API Key';dot.className='ch-status-dot offline';
+    document.getElementById('chanduModelInfo').textContent='Model: —';
+  }
+}
+function cLoadPrefs(){
+  chanduTtsOn=localStorage.getItem(CTTS)!=='0';
+  document.getElementById('chanduTtsLabel').textContent=chanduTtsOn?'Awaaz On':'Awaaz Off';
+  document.getElementById('chanduTtsToggle').classList.toggle('active',chanduTtsOn);
+  cUpdateInd();
+}
+
+/* ── Chat ── */
+function cAddMsg(role,text){
+  const msgs=document.getElementById('chanduMessages');
+  const wc=msgs.querySelector('.ch-welcome');if(wc)wc.remove();
+  const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const div=document.createElement('div');div.className='ch-msg '+(role==='user'?'user':'bot');
+  if(role==='bot'){
+    div.innerHTML=`<div class="ch-mini-avatar">🌸</div><div><div class="ch-bubble">${cFmt(text)}</div><div class="ch-msg-time">${now}</div></div>`;
+  }else{
+    div.innerHTML=`<div><div class="ch-bubble">${cEsc(text)}</div><div class="ch-msg-time">${now}</div></div><div class="ch-mini-avatar" style="background:linear-gradient(135deg,#07090f,#00c896);">👤</div>`;
+  }
+  msgs.appendChild(div);cScrollBottom();return div;
+}
+function cShowTyping(){
+  const msgs=document.getElementById('chanduMessages');
+  const div=document.createElement('div');div.className='ch-msg bot';div.id='chanduTyping';
+  div.innerHTML=`<div class="ch-mini-avatar">🌸</div><div class="ch-bubble"><div class="ch-typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);cScrollBottom();
+}
+function cRemTyping(){const t=document.getElementById('chanduTyping');if(t)t.remove();}
+function cFmt(t){
+  return cEsc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code style="background:rgba(124,58,237,.25);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>').replace(/\n/g,'<br>');
+}
+function cEsc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function cScrollBottom(){const m=document.getElementById('chanduMessages');setTimeout(()=>{m.scrollTop=m.scrollHeight;},50);}
+function cSetStatus(s){
+  const dot=document.getElementById('chanduDot'),sub=document.getElementById('chanduSubtitle');
+  if(s==='thinking'){dot.className='ch-status-dot thinking';sub.textContent='Soch rahi hoon... 💭';}
+  else if(s==='speaking'){dot.className='ch-status-dot';sub.textContent='Bol rahi hoon... 🎙';}
+  else{dot.className='ch-status-dot';sub.textContent='Garments Lean AI · Groq Powered';}
+}
+
+/* ── Send ── */
+async function chanduSend(){
+  if(chanduBusy)return;
+  const inp=document.getElementById('chanduInput'),text=inp.value.trim();
+  if(!text)return;
+  const key=localStorage.getItem(CKEY);
+  if(!key){cAddMsg('bot','⚙️ Pehle **⚙️ settings** mein Groq API key save karein!');cSound('error');if(!chanduSetOpen)chanduOpenSettings();return;}
+  chanduBusy=true;cStopTts();cSound('send');
+  chanduMsgs.push({role:'user',content:text});cAddMsg('user',text);
+  inp.value='';chanduAutoResize(inp);cUpdateCount();
+  cShowTyping();cSetStatus('thinking');document.getElementById('chanduSendBtn').disabled=true;
+  const model=localStorage.getItem(CMODEL)||'llama-3.3-70b-versatile';
+  const sys=`Tu Chandu hai — ek smart aur helpful AI assistant jo Garments Lean System v3.0 mein kaam karti hai.
+Tu garment manufacturing ke baare mein expert hai: production efficiency, lean manufacturing, KPIs (output, efficiency, defects, SMV, OTD, absenteeism), quality control, six sigma, TNA, etc.
+Tu Hindi aur Hinglish mein baat karti hai, friendly aur warm style mein.
+Chhote aur clear jawab do. Kabhi kabhi cute emojis use karti hai 🌸`;
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model,messages:[{role:'system',content:sys},...chanduMsgs.slice(-12)],max_tokens:900,temperature:.72})
+    });
+    const data=await res.json();cRemTyping();
+    if(data.choices&&data.choices[0]){
+      const reply=data.choices[0].message.content;
+      chanduMsgs.push({role:'assistant',content:reply});cAddMsg('bot',reply);
+      cSetStatus('ready');cUpdateInd();cSound('notify');
+      if(chanduTtsOn){cSetStatus('speaking');cSpeak(reply);}
+    }else{
+      cAddMsg('bot','❌ Error: '+(data.error?.message||'Kuch gadbad ho gayi!'));cSound('error');cSetStatus('ready');
+    }
+  }catch(e){cRemTyping();cAddMsg('bot','❌ Network error: '+e.message);cSound('error');cSetStatus('ready');}
+  finally{chanduBusy=false;document.getElementById('chanduSendBtn').disabled=false;}
+}
+window.chanduSend=chanduSend;
+
+function chanduKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chanduSend();}}
+window.chanduKeyDown=chanduKeyDown;
+function chanduAutoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+window.chanduAutoResize=chanduAutoResize;
+function cUpdateCount(){const v=document.getElementById('chanduInput').value.length;document.getElementById('chanduCharCount').textContent=v>0?v+' chars':'';}
+document.getElementById('chanduInput').addEventListener('input',()=>{chanduAutoResize(document.getElementById('chanduInput'));cUpdateCount();});
+
+function chanduClearChat(){
+  if(!confirm('Chat clear karna chahte hain?'))return;
+  chanduMsgs=[];cStopTts();
+  document.getElementById('chanduMessages').innerHTML=`<div class="ch-welcome"><span class="ch-welcome-avatar">👩‍💼</span><h3>Namaste! Main Chandu hoon 🌸</h3><p>Aapki Garments Lean System mein<br>madad karne ke liye hamesha tayyar hoon.<br><br><span style="color:rgba(255,255,255,.3);font-size:11px;">Pahle ⚙️ mein Groq API key save karein</span></p></div>`;
+  cSound('send');
+}
+window.chanduClearChat=chanduClearChat;
+
+function chanduSoundTest(){cSound('notify');}
+window.chanduSoundTest=chanduSoundTest;
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded',()=>{cLoadPrefs();if(window.speechSynthesis)speechSynthesis.getVoices();});
+window.speechSynthesis&&speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',()=>speechSynthesis.getVoices());
+
+})();
+</script>
+
+</body>
+</html>

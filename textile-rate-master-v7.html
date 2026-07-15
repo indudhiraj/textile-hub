@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Textile Rate Master Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --surface:#13131a; --card:#1a1a24; --card2:#20202e;
+  --border:#2a2a3a; --border2:#353548;
+  --text:#e8e8f0; --muted:#7070a0; --muted2:#4a4a6a;
+  --blue:#4d9fff; --blue2:#2979cc; --bluebg:#0d1f3a;
+  --green:#00e97a; --greenbg:#001f12;
+  --orange:#ff8c42; --orangebg:#1f0f00;
+  --red:#ff4d6d; --redbg:#1f000a;
+  --yellow:#ffd84d; --yellowbg:#1f1700;
+  --purple:#a87cff; --purplebg:#120d1f;
+  --teal:#00dfc0; --tealbg:#001f1a;
+  --pink:#ff6bb3;
+  --fab:#4d9fff; --acc:#00e97a; --pack:#ff8c42; --dye:#a87cff; --local:#ffd84d; --mfg:#00dfc0;
+  --r:10px; --r2:14px; --r3:20px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --glow-b:0 0 20px rgba(77,159,255,0.15);
+  --glow-g:0 0 20px rgba(0,233,122,0.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-ico{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.brand-name{font-size:17px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-ver{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* ── NAV ── */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:2px;overflow-x:auto;}
+.nav::-webkit-scrollbar{height:0;}
+.ntab{background:transparent;border:none;color:var(--muted);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;padding:14px 16px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:all .2s;letter-spacing:0.3px;}
+.ntab:hover{color:var(--text);}
+.ntab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* ── MAIN ── */
+.main{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:16px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-b{background:var(--blue);}
+.dot-g{background:var(--green);}
+.dot-o{background:var(--orange);}
+.dot-p{background:var(--purple);}
+.dot-y{background:var(--yellow);}
+.dot-t{background:var(--teal);}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat.s-b::before{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.stat.s-g::before{background:linear-gradient(90deg,var(--green),var(--teal));}
+.stat.s-o::before{background:linear-gradient(90deg,var(--orange),var(--yellow));}
+.stat.s-p::before{background:linear-gradient(90deg,var(--purple),var(--pink));}
+.stat.s-t::before{background:linear-gradient(90deg,var(--teal),var(--green));}
+.stat.s-y::before{background:linear-gradient(90deg,var(--yellow),var(--orange));}
+.stat-ico{font-size:22px;opacity:0.3;position:absolute;right:12px;top:14px;}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.stat-val{font-size:26px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;}
+.btn-primary:hover{opacity:0.85;transform:translateY(-1px);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);}
+.btn-green{background:var(--greenbg);border:1px solid var(--green);color:var(--green);}
+.btn-orange{background:var(--orangebg);border:1px solid var(--orange);color:var(--orange);}
+.btn-red{background:var(--redbg);border:1px solid var(--red);color:var(--red);}
+.btn-yellow{background:var(--yellowbg);border:1px solid var(--yellow);color:var(--yellow);}
+.btn-purple{background:var(--purplebg);border:1px solid var(--purple);color:var(--purple);}
+.btn-wa{background:#25d36620;border:1px solid #25d366;color:#25d366;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-xs{padding:4px 8px;font-size:10px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--card2);}
+th{padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--card2);}
+.td-mono{font-family:'JetBrains Mono',monospace;}
+.td-num{font-family:'JetBrains Mono',monospace;text-align:right;}
+.td-center{text-align:center;}
+
+/* ── TAGS / BADGES ── */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+.tag-fab{background:var(--bluebg);color:var(--blue);border:1px solid #4d9fff25;}
+.tag-acc{background:var(--greenbg);color:var(--green);border:1px solid #00e97a25;}
+.tag-pack{background:var(--orangebg);color:var(--orange);border:1px solid #ff8c4225;}
+.tag-dye{background:var(--purplebg);color:var(--purple);border:1px solid #a87cff25;}
+.tag-local{background:var(--yellowbg);color:var(--yellow);border:1px solid #ffd84d25;}
+.tag-mfg{background:var(--tealbg);color:var(--teal);border:1px solid #00dfc025;}
+.badge{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;}
+
+/* ── INPUTS ── */
+.inp{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--r);padding:9px 12px;font-family:'Space Grotesk',sans-serif;font-size:13px;width:100%;outline:none;transition:border .2s;}
+.inp:focus{border-color:var(--blue);}
+.inp-sm{padding:6px 10px;font-size:12px;}
+select.inp option{background:var(--card);}
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff label{font-size:11px;color:var(--muted);font-weight:600;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.span2{grid-column:span 2;}
+
+/* ── SEARCH BAR ── */
+.searchbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.search-inp{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--r);padding:9px 14px;font-size:13px;font-family:'Space Grotesk',sans-serif;flex:1;min-width:180px;outline:none;}
+.search-inp:focus{border-color:var(--blue);}
+
+/* ── RATE ITEM CARD ── */
+.rate-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;transition:border .2s;}
+.rate-card:hover{border-color:var(--border2);}
+.rate-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.rate-name{font-size:13px;font-weight:700;}
+.rate-brand{font-size:11px;color:var(--muted);margin-top:2px;}
+.rate-price{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text);text-align:right;}
+.rate-unit{font-size:10px;color:var(--muted);}
+.rate-change{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.rate-change.up{color:var(--red);}
+.rate-change.down{color:var(--green);}
+.rate-change.same{color:var(--muted);}
+.rate-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.rate-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.quick-inp{width:90px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;}
+.quick-inp:focus{border-color:var(--green);}
+
+/* ── PARTY CARDS ── */
+.party-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.party-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;transition:border .2s;}
+.party-card:hover{border-color:var(--border2);}
+.party-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.party-name{font-size:14px;font-weight:700;}
+.party-city{font-size:11px;color:var(--muted);margin-top:3px;}
+.party-stars{color:var(--yellow);font-size:13px;margin:6px 0;}
+.party-meta{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);}
+.party-meta strong{color:var(--text);}
+.party-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+
+/* ── COMPARE ── */
+.compare-select-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.compare-vs{color:var(--muted);font-weight:800;align-self:flex-end;padding-bottom:9px;}
+.compare-result{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-top:16px;}
+.compare-bar{display:flex;align-items:center;gap:10px;margin:10px 0;}
+.compare-bar-fill{height:10px;border-radius:99px;transition:width .5s;}
+.compare-best{border:1px solid var(--green)!important;background:var(--greenbg)!important;}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r3);padding:28px;width:min(560px,95vw);max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* ── RECORD TABLE ── */
+.record-row{background:var(--card2);}
+.record-row.up-row{background:#1f000a;}
+.record-row.down-row{background:#001f0a;}
+
+/* ── TOAST ── */
+#toastWrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--card2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;display:flex;align-items:flex-start;gap:12px;max-width:320px;box-shadow:var(--shadow);animation:toastIn .3s ease;}
+.toast.up{border-color:var(--red);}
+.toast.down{border-color:var(--green);}
+.toast.info{border-color:var(--blue);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.toast-body{flex:1;font-size:12px;}
+.toast-title{font-weight:700;margin-bottom:3px;}
+.toast-msg{color:var(--muted);}
+.toast-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--muted);}
+.empty-ico{font-size:48px;margin-bottom:12px;opacity:0.5;}
+
+/* ── TABS FILTER ROW ── */
+.cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.cat-tab{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:var(--r);padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;}
+.cat-tab.active{border-color:var(--blue);color:var(--blue);background:var(--bluebg);}
+.cat-tab.c-g.active{border-color:var(--green);color:var(--green);background:var(--greenbg);}
+.cat-tab.c-o.active{border-color:var(--orange);color:var(--orange);background:var(--orangebg);}
+.cat-tab.c-p.active{border-color:var(--purple);color:var(--purple);background:var(--purplebg);}
+.cat-tab.c-y.active{border-color:var(--yellow);color:var(--yellow);background:var(--yellowbg);}
+.cat-tab.c-t.active{border-color:var(--teal);color:var(--teal);background:var(--tealbg);}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff!important;color:#000!important;}
+  .topbar,.nav,.no-print,.btn-row,.party-actions,.rate-actions{display:none!important;}
+  .card{border:1px solid #ddd!important;background:#fff!important;break-inside:avoid;}
+  table{font-size:11px;}
+  th{background:#f5f5f5!important;color:#333!important;}
+  .stat{border:1px solid #ddd!important;background:#fff!important;}
+  @page{margin:15mm;}
+}
+
+/* ── SOURCE TYPE BADGES ── */
+.src-sup{background:#4d9fff20;border:1px solid #4d9fff40;color:var(--blue);}
+.src-weaver{background:#00e97a20;border:1px solid #00e97a40;color:var(--green);}
+.src-mfg{background:#00dfc020;border:1px solid #00dfc040;color:var(--teal);}
+.src-local{background:#ffd84d20;border:1px solid #ffd84d40;color:var(--yellow);}
+.src-import{background:#a87cff20;border:1px solid #a87cff40;color:var(--purple);}
+.src-agent{background:#ff8c4220;border:1px solid #ff8c4240;color:var(--orange);}
+
+/* ── HISTORY CHIP ── */
+.hist-chip{display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;font-family:'JetBrains Mono',monospace;margin:2px;}
+
+/* ── RATE GRID ── */
+.rate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+
+/* ── ALERT SETTINGS ── */
+.alert-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;}
+.alert-inp{width:70px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+
+/* ── RECORD LOG ── */
+.rlog{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:12px;}
+.rlog-ico{font-size:18px;flex-shrink:0;}
+.rlog-body{flex:1;font-size:12px;}
+.rlog-name{font-weight:700;}
+.rlog-detail{color:var(--muted);font-size:11px;margin-top:2px;}
+.rlog-time{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-ico">🧵</div>
+    <div>
+      <div class="brand-name">Textile Rate Master Pro</div>
+      <div class="brand-ver">v5.0 · Dark Edition</div>
+    </div>
+  </div>
+  <div class="topbar-right no-print">
+    <!-- FIREBASE BIG INDICATOR -->
+    <div id="fb-indicator" onclick="pingFirebase()" title="Firebase tap karein — connection check karein" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:12px;border:1.5px solid rgba(255,163,0,0.4);background:linear-gradient(135deg,rgba(255,140,0,0.1),rgba(255,100,0,0.06));cursor:pointer;transition:all .2s;position:relative;overflow:hidden;">
+      <div style="position:relative;flex-shrink:0">
+        <div style="font-size:28px;line-height:1;filter:drop-shadow(0 0 8px rgba(255,140,0,0.6))">🔥</div>
+        <div id="fb-dot" style="width:11px;height:11px;border-radius:50%;background:#00e97a;position:absolute;bottom:-1px;right:-3px;box-shadow:0 0 0 3px rgba(0,233,122,0.3);animation:fb-pulse 2s infinite"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:800;color:#ffa500;letter-spacing:0.5px;font-family:'Space Grotesk',sans-serif">Firebase</span>
+          <span id="fb-badge" style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(0,233,122,0.15);border:1px solid rgba(0,233,122,0.4);color:#00e97a;letter-spacing:0.5px">CONNECTED</span>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#e8e8f0;font-family:'JetBrains Mono',monospace;letter-spacing:-0.3px" id="fb-project">textile-rate-master</div>
+        <div style="font-size:9px;color:#7070a0;font-family:'JetBrains Mono',monospace;white-space:nowrap" id="fb-url">textile-rate-master.firebaseapp.com</div>
+      </div>
+    </div>
+    <style>
+    @keyframes fb-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,233,122,0.5)}70%{box-shadow:0 0 0 7px rgba(0,233,122,0)}}
+    #fb-indicator:hover{border-color:rgba(255,163,0,0.7);background:linear-gradient(135deg,rgba(255,140,0,0.16),rgba(255,100,0,0.1));transform:translateY(-1px)}
+    </style>
+    <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Ctrl+1-5 · Ctrl+N</span>
+    <button class="btn btn-ghost btn-sm" onclick="importCSV()">📥 Import CSV/Excel</button>
+    <button class="btn btn-ghost btn-sm" onclick="openExportPanel()">📤 Export</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddItem()">➕ Add Rate</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav no-print">
+  <button class="ntab active" id="nt-dashboard" onclick="showTab('dashboard')">📊 Dashboard & History</button>
+  <button class="ntab" id="nt-directory" onclick="showTab('directory')">📚 Directory & Rates</button>
+  <button class="ntab" id="nt-parties" onclick="showTab('parties')">🏭 Sources & Parties</button>
+  <button class="ntab" id="nt-compare" onclick="showTab('compare')">⚖️ Rate Compare</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ══ DIRECTORY TAB ══ -->
+<div class="section" id="tab-directory">
+
+  <!-- Search Bar -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:14px"><span class="dot dot-b"></span>📚 Textile Item Directory — Search & Add to Rate List</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <input class="search-inp" id="dir-search" placeholder="🔍 Item type karein — Cotton Yarn 2/10, Georgette, Zipper..." oninput="renderDirectory()" style="flex:1;min-width:220px;font-size:14px;padding:12px 16px">
+      <select class="inp" id="dir-cat" onchange="renderDirectory()" style="width:auto">
+        <option value="all">All Categories</option>
+        <option value="yarn">🧶 Yarn</option>
+        <option value="fabric">🪡 Fabric</option>
+        <option value="dyeing">🎨 Dyeing & Printing</option>
+        <option value="packing">📦 Packing Material</option>
+        <option value="accessories">🧷 Accessories</option>
+        <option value="waste">♻️ Cotton Waste</option>
+        <option value="weaving">🪢 Weaving Charges</option>
+        <option value="chemical">⚗️ Chemicals</option>
+      </select>
+      <select class="inp" id="dir-fiber" onchange="renderDirectory()" style="width:auto">
+        <option value="all">All Fibers</option>
+        <option value="cotton">🌿 Cotton</option>
+        <option value="polyester">🔵 Polyester</option>
+        <option value="acrylic">🟣 Acrylic</option>
+        <option value="blended">🔀 Blended</option>
+        <option value="viscose">⚪ Viscose</option>
+        <option value="nylon">🟡 Nylon</option>
+        <option value="silk">🟠 Silk</option>
+        <option value="wool">🟤 Wool</option>
+      </select>
+    </div>
+    <!-- Stats row -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="dir-stats-row"></div>
+  </div>
+
+  <!-- Directory Items Grid -->
+  <div id="dir-results"></div>
+
+  <!-- Add Custom Item to Directory -->
+  <div class="card" style="margin-top:16px;border:1px dashed var(--border2)">
+    <div class="card-title" style="margin-bottom:12px"><span class="dot dot-g"></span>➕ Naya Item Directory Mein Add Karein</div>
+    <div class="form-grid">
+      <div class="ff">
+        <label>Category *</label>
+        <select class="inp" id="dir-add-cat">
+          <option value="yarn">🧶 Yarn</option>
+          <option value="fabric">🪡 Fabric</option>
+          <option value="dyeing">🎨 Dyeing & Printing</option>
+          <option value="packing">📦 Packing Material</option>
+          <option value="accessories">🧷 Accessories</option>
+          <option value="waste">♻️ Cotton Waste</option>
+          <option value="weaving">🪢 Weaving Charges</option>
+          <option value="chemical">⚗️ Chemicals</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Fiber Type</label>
+        <select class="inp" id="dir-add-fiber">
+          <option value="cotton">🌿 Cotton</option>
+          <option value="polyester">🔵 Polyester</option>
+          <option value="acrylic">🟣 Acrylic</option>
+          <option value="blended">🔀 Blended</option>
+          <option value="viscose">⚪ Viscose</option>
+          <option value="nylon">🟡 Nylon</option>
+          <option value="silk">🟠 Silk</option>
+          <option value="wool">🟤 Wool</option>
+          <option value="na">— N/A —</option>
+        </select>
+      </div>
+      <div class="ff span2">
+        <label>Item Name *</label>
+        <input class="inp" id="dir-add-name" placeholder="e.g. Cotton Yarn 2/10, Georgette 44 inch...">
+      </div>
+      <div class="ff">
+        <label>Unit</label>
+        <select class="inp" id="dir-add-unit">
+          <option>per kg</option>
+          <option>per meter</option>
+          <option>per piece</option>
+          <option>per liter</option>
+          <option>per dozen</option>
+          <option>per roll</option>
+          <option>per cone</option>
+          <option>per bag</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Description / Count / Count</label>
+        <input class="inp" id="dir-add-desc" placeholder="e.g. 2/10 Count, 44 inch, 40 den...">
+      </div>
+      <div class="ff">
+        <label>Notes</label>
+        <input class="inp" id="dir-add-notes" placeholder="Extra info...">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addToDirectory()">➕ Directory Mein Add Karein</button>
+    </div>
+  </div>
+
+  <div class="btn-row no-print">
+    <button class="btn btn-ghost btn-sm" onclick="printDir()">🖨️ Print Directory</button>
+    <button class="btn btn-ghost btn-sm" onclick="pdfDir()">📄 PDF</button>
+    <button class="btn btn-wa btn-sm" onclick="waDir()">📲 WhatsApp</button>
+    <button class="btn btn-yellow btn-sm" onclick="excelDir()">📊 Excel</button>
+  </div>
+</div><!-- end tab-directory -->
+
+<!-- ADD TO RATE LIST MODAL -->
+<div class="modal-bg" id="add-rate-modal">
+  <div class="modal">
+    <div class="modal-title">💰 Rate List Mein Add Karein</div>
+    <button class="modal-close" onclick="closeModal('add-rate-modal')">✕</button>
+    <div id="arm-item-info" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:13px"></div>
+
+    <!-- Party Rate Section -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🏭 Party Ka Rate Daalo (Optional — Multiple Parties)</div>
+      <div id="arm-party-rates">
+        <div class="party-rate-row" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <select class="inp" style="flex:1;min-width:140px" onchange="armUpdatePartyLink(this)">
+            <option value="">— Party Select —</option>
+          </select>
+          <input type="number" class="inp" style="width:100px" placeholder="Rate ₹">
+          <button class="btn btn-ghost btn-xs" onclick="addPartyRateRow()">➕</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">💡 IndiaMart mein search karein → <span id="arm-indiamart-link" style="color:var(--blue);cursor:pointer;text-decoration:underline" onclick="openIndiamart()">IndiaMart pe Rate Dekhein →</span></div>
+    </div>
+
+    <div class="form-grid">
+      <div class="ff">
+        <label>Your Rate (₹) *</label>
+        <input class="inp" type="number" id="arm-price" placeholder="Current market rate">
+      </div>
+      <div class="ff">
+        <label>Status</label>
+        <select class="inp" id="arm-status">
+          <option value="verified">✅ Verified / Confirmed</option>
+          <option value="draft">📝 Draft / Unverified</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Source</label>
+        <select class="inp" id="arm-source">
+          <option value="market">🛒 Market Visit</option>
+          <option value="supplier">🏪 Supplier Quote</option>
+          <option value="indiamart">🌐 IndiaMart</option>
+          <option value="whatsapp">📲 WhatsApp Rate</option>
+          <option value="phone">📞 Phone Inquiry</option>
+          <option value="weaver">🧶 Weaver Direct</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Date</label>
+        <input class="inp" type="date" id="arm-date">
+      </div>
+      <div class="ff span2">
+        <label>Notes / Remarks</label>
+        <input class="inp" id="arm-notes" placeholder="Koi khaas baat...">
+      </div>
+    </div>
+    <input type="hidden" id="arm-dir-id">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmAddToRateList()">✅ Rate List Mein Add Karein</button>
+      <button class="btn btn-ghost" onclick="closeModal('add-rate-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD + HISTORY ══ -->
+<div class="section active" id="tab-dashboard">
+  <div class="stats-grid" id="dash-stats"></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-hd"><div class="card-title"><span class="dot dot-b"></span>📈 Recent Rate Updates</div></div>
+      <div id="dash-recent-updates"><div class="empty"><div class="empty-ico">📈</div><p>Koi update nahi</p></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-title"><span class="dot dot-g"></span>🏭 Sources Summary</div></div>
+      <div id="dash-sources-summary"></div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY SECTION ── -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd">
+      <div class="card-title"><span class="dot dot-p"></span>📋 Rate Change History</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+        <input class="search-inp" id="rec-search" placeholder="🔍 Item..." oninput="renderRecords()" style="width:160px;padding:6px 10px;font-size:12px">
+        <select class="inp inp-sm" id="rec-cat" onchange="renderRecords()" style="width:auto">
+          <option value="all">All</option>
+          <option value="yarn">Yarn</option>
+          <option value="fabric">Fabric</option>
+          <option value="dyeing">Dyeing</option>
+          <option value="packing">Packing</option>
+          <option value="accessories">Accessories</option>
+          <option value="waste">Waste</option>
+          <option value="weaving">Weaving</option>
+        </select>
+        <select class="inp inp-sm" id="rec-dir" onchange="renderRecords()" style="width:auto">
+          <option value="all">All Changes</option>
+          <option value="up">Price Up ↑</option>
+          <option value="down">Price Down ↓</option>
+        </select>
+        <input type="date" class="inp inp-sm" id="rec-from" onchange="renderRecords()" style="width:auto">
+        <input type="date" class="inp inp-sm" id="rec-to" onchange="renderRecords()" style="width:auto">
+      </div>
+    </div>
+    <div id="rec-stats" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Date / Time</th><th>Item</th><th>Category</th><th>Old Rate</th><th>New Rate</th><th>Change ₹</th><th>Change %</th><th>Direction</th><th>Source</th></tr></thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-row no-print">
+      <button class="btn btn-ghost btn-sm" onclick="printRecords()">🖨️ Print</button>
+      <button class="btn btn-ghost btn-sm" onclick="pdfRecords()">📄 PDF</button>
+      <button class="btn btn-wa btn-sm" onclick="waRecords()">📲 WhatsApp</button>
+      <button class="btn btn-yellow btn-sm" onclick="excelRecords()">📊 Excel</button>
+      <button class="btn btn-red btn-sm" onclick="clearRecords()">🗑 Clear History</button>
+    </div>
+  </div>
+
+  <div class="btn-row no-print">
+    <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print Dashboard</button>
+    <button class="btn btn-wa btn-sm" onclick="waDashboard()">📲 WhatsApp Summary</button>
+    <button class="btn btn-yellow btn-sm" onclick="excelAll()">📊 Excel Export</button>
+  </div>
+</div>
+
+<!-- ══ SOURCES & PARTIES ══ -->
+<div class="section" id="tab-parties">
+  <div class="searchbar no-print">
+    <input class="search-inp" id="party-search" placeholder="🔍 Name, city, speciality..." oninput="renderParties()">
+    <select class="inp inp-sm" id="party-type" onchange="renderParties()" style="width:auto">
+      <option value="all">All Types</option>
+      <option value="supplier">🏪 Supplier</option>
+      <option value="weaver">🧶 Weaver</option>
+      <option value="manufacturer">🏭 Manufacturer</option>
+      <option value="local">🛒 Local Market</option>
+      <option value="importer">🌐 Importer</option>
+      <option value="agent">🤝 Agent/Broker</option>
+      <option value="mill">🏗️ Direct Mill</option>
+    </select>
+    <select class="inp inp-sm" id="party-cat" onchange="renderParties()" style="width:auto">
+      <option value="all">All Categories</option>
+      <option value="fabric">🪡 Fabric</option>
+      <option value="acc">🧷 Accessories</option>
+      <option value="pack">📦 Packaging</option>
+      <option value="dye">🎨 Dyes</option>
+      <option value="handloom">🪢 Handloom</option>
+      <option value="knit">🧵 Knitting</option>
+    </select>
+    <select class="inp inp-sm" id="party-city" onchange="renderParties()" style="width:auto">
+      <option value="all">All Cities</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap" class="no-print">
+    <div class="stat s-b" style="flex:1;min-width:120px;padding:12px">
+      <div class="stat-lbl">Suppliers</div><div class="stat-val" id="cnt-sup">0</div>
+    </div>
+    <div class="stat s-g" style="flex:1;min-width:120px;padding:12px">
+      <div class="stat-lbl">Weavers/MFG</div><div class="stat-val" id="cnt-weaver">0</div>
+    </div>
+    <div class="stat s-o" style="flex:1;min-width:120px;padding:12px">
+      <div class="stat-lbl">Local Market</div><div class="stat-val" id="cnt-local">0</div>
+    </div>
+    <div class="stat s-p" style="flex:1;min-width:120px;padding:12px">
+      <div class="stat-lbl">Top Rated ⭐</div><div class="stat-val" id="cnt-top">0</div>
+    </div>
+  </div>
+  <div class="party-grid" id="party-list"></div>
+  <div class="btn-row no-print">
+    <button class="btn btn-primary btn-sm" onclick="openPartyModal()">➕ Add Party</button>
+    <button class="btn btn-ghost btn-sm" onclick="printParties()">🖨️ Print Directory</button>
+    <button class="btn btn-ghost btn-sm" onclick="pdfParties()">📄 PDF</button>
+    <button class="btn btn-wa btn-sm" onclick="waParties()">📲 WhatsApp</button>
+    <button class="btn btn-yellow btn-sm" onclick="excelParties()">📊 Excel</button>
+  </div>
+</div>
+
+<!-- ══ RATE COMPARE ══ -->
+<div class="section" id="tab-compare">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px"><span class="dot dot-b"></span>⚖️ Rate Compare — Item aur Party chunein</div>
+    <div class="form-grid" style="margin-bottom:14px">
+      <div class="ff">
+        <label>Item Select Karein</label>
+        <select class="inp" id="cmp-item" onchange="updateCompare()">
+          <option value="">— Item chunein —</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Compare Type</label>
+        <select class="inp" id="cmp-type" onchange="updateCompare()">
+          <option value="party">Party-wise Rates</option>
+          <option value="history">Price History</option>
+          <option value="category">Category Comparison</option>
+        </select>
+      </div>
+    </div>
+    <!-- Party multi-select -->
+    <div id="cmp-party-select" style="margin-bottom:14px">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:8px">Parties Select Karein (multi)</label>
+      <div id="cmp-party-checkboxes" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div id="compare-result"></div>
+    <div class="btn-row no-print" id="cmp-btns" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="printCompare()">🖨️ Print</button>
+      <button class="btn btn-ghost btn-sm" onclick="pdfCompare()">📄 PDF</button>
+      <button class="btn btn-wa btn-sm" onclick="waCompare()">📲 WhatsApp</button>
+      <button class="btn btn-yellow btn-sm" onclick="excelCompare()">📊 Excel</button>
+    </div>
+  </div>
+
+  <!-- Add Party Rate -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title"><span class="dot dot-g"></span>➕ Party Rate Add Karein</div></div>
+    <div class="form-grid">
+      <div class="ff">
+        <label>Item</label>
+        <select class="inp" id="pr-item"><option value="">— Item chunein —</option></select>
+      </div>
+      <div class="ff">
+        <label>Party</label>
+        <select class="inp" id="pr-party"><option value="">— Party chunein —</option></select>
+      </div>
+      <div class="ff">
+        <label>Rate (₹)</label>
+        <input class="inp" type="number" id="pr-rate" placeholder="Rate">
+      </div>
+      <div class="ff">
+        <label>Min Order</label>
+        <input class="inp" type="text" id="pr-minord" placeholder="e.g. 500 mtr">
+      </div>
+      <div class="ff">
+        <label>Delivery</label>
+        <input class="inp" type="text" id="pr-delivery" placeholder="e.g. 3-5 days">
+      </div>
+      <div class="ff">
+        <label>Remarks</label>
+        <input class="inp" type="text" id="pr-remarks" placeholder="Quality notes...">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="savePartyRate()">💾 Save Party Rate</button>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- EXPORT PANEL MODAL -->
+<div class="modal-bg" id="export-modal">
+  <div class="modal">
+    <div class="modal-title">📤 Export Options</div>
+    <button class="modal-close" onclick="closeModal('export-modal')">✕</button>
+    <div class="ff" style="margin-bottom:14px">
+      <label>Scope</label>
+      <select class="inp" id="exp-scope">
+        <option value="all">All Rates</option>
+        <option value="fabric">Fabric Only</option>
+        <option value="acc">Accessories Only</option>
+        <option value="pack">Packaging Only</option>
+        <option value="dye">Dyes Only</option>
+        <option value="local">Local Market</option>
+        <option value="mfg">MFG</option>
+        <option value="parties">Parties / Suppliers</option>
+        <option value="records">Rate History</option>
+        <option value="compare">Compare Sheet</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-ghost" onclick="doPrint()">🖨️ Print</button>
+      <button class="btn btn-ghost" onclick="doPDF()">📄 PDF</button>
+      <button class="btn btn-wa" onclick="doWA()">📲 WhatsApp</button>
+      <button class="btn btn-yellow" onclick="doExcel()">📊 Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT ITEM MODAL -->
+<div class="modal-bg" id="item-modal">
+  <div class="modal">
+    <div class="modal-title" id="item-modal-title">➕ Naya Rate Item</div>
+    <button class="modal-close" onclick="closeModal('item-modal')">✕</button>
+    <div class="form-grid">
+      <div class="ff">
+        <label>Category *</label>
+        <select class="inp" id="im-cat">
+          <option value="fabric">🪡 Fabric</option>
+          <option value="acc">🧷 Accessories</option>
+          <option value="pack">📦 Packaging</option>
+          <option value="dye">🎨 Dyes & Chemicals</option>
+          <option value="local">🛒 Local Market</option>
+          <option value="mfg">🏭 MFG Item</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Item Name *</label>
+        <input class="inp" type="text" id="im-name" placeholder="e.g. Cotton Poplin">
+      </div>
+      <div class="ff">
+        <label>Brand / Quality</label>
+        <input class="inp" type="text" id="im-brand" placeholder="Brand name">
+      </div>
+      <div class="ff">
+        <label>Unit</label>
+        <select class="inp" id="im-unit">
+          <option>per meter</option><option>per kg</option><option>per piece</option>
+          <option>per liter</option><option>per dozen</option><option>per roll</option><option>per yard</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Current Rate (₹) *</label>
+        <input class="inp" type="number" id="im-price" placeholder="Rate">
+      </div>
+      <div class="ff">
+        <label>Previous Rate (₹)</label>
+        <input class="inp" type="number" id="im-prev" placeholder="Previous rate">
+      </div>
+      <div class="ff span2">
+        <label>Widths (comma sep, fabric only)</label>
+        <input class="inp" type="text" id="im-widths" placeholder='36", 44", 58"'>
+      </div>
+      <div class="ff span2">
+        <label>Notes / Remarks</label>
+        <input class="inp" type="text" id="im-notes" placeholder="Any notes...">
+      </div>
+    </div>
+    <input type="hidden" id="im-edit-id">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveItem()">💾 Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('item-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PARTY MODAL -->
+<div class="modal-bg" id="party-modal">
+  <div class="modal">
+    <div class="modal-title" id="party-modal-title">➕ Naya Party / Source</div>
+    <button class="modal-close" onclick="closeModal('party-modal')">✕</button>
+    <div class="form-grid">
+      <div class="ff">
+        <label>Type *</label>
+        <select class="inp" id="pm-type">
+          <option value="supplier">🏪 Supplier</option>
+          <option value="weaver">🧶 Weaver</option>
+          <option value="manufacturer">🏭 Manufacturer</option>
+          <option value="local">🛒 Local Market</option>
+          <option value="importer">🌐 Importer/Exporter</option>
+          <option value="agent">🤝 Agent/Broker</option>
+          <option value="mill">🏗️ Direct Mill</option>
+        </select>
+      </div>
+      <div class="ff">
+        <label>Category *</label>
+        <select class="inp" id="pm-cat">
+          <option value="fabric">🪡 Fabric</option>
+          <option value="acc">🧷 Accessories</option>
+          <option value="pack">📦 Packaging</option>
+          <option value="dye">🎨 Dyes</option>
+          <option value="handloom">🪢 Handloom</option>
+          <option value="knit">🧵 Knitting</option>
+        </select>
+      </div>
+      <div class="ff span2">
+        <label>Party / Firm Name *</label>
+        <input class="inp" type="text" id="pm-name" placeholder="Firm name">
+      </div>
+      <div class="ff">
+        <label>City</label>
+        <input class="inp" type="text" id="pm-city" placeholder="Surat, Mumbai...">
+      </div>
+      <div class="ff">
+        <label>Contact / Phone</label>
+        <input class="inp" type="text" id="pm-contact" placeholder="98XXXXXXXX">
+      </div>
+      <div class="ff">
+        <label>GST No.</label>
+        <input class="inp" type="text" id="pm-gst" placeholder="GST number">
+      </div>
+      <div class="ff">
+        <label>Min Order</label>
+        <input class="inp" type="text" id="pm-minord" placeholder="500 meter">
+      </div>
+      <div class="ff">
+        <label>Rate Range</label>
+        <input class="inp" type="text" id="pm-rate" placeholder="₹80-120/mtr">
+      </div>
+      <div class="ff">
+        <label>Delivery Time</label>
+        <input class="inp" type="text" id="pm-delivery" placeholder="3-5 days">
+      </div>
+      <div class="ff">
+        <label>Rating (1-5)</label>
+        <select class="inp" id="pm-rating">
+          <option value="5">⭐⭐⭐⭐⭐ 5</option>
+          <option value="4">⭐⭐⭐⭐ 4</option>
+          <option value="3" selected>⭐⭐⭐ 3</option>
+          <option value="2">⭐⭐ 2</option>
+          <option value="1">⭐ 1</option>
+        </select>
+      </div>
+      <div class="ff span2">
+        <label>Speciality</label>
+        <input class="inp" type="text" id="pm-spec" placeholder="Cotton, Polyester, Georgette...">
+      </div>
+      <div class="ff span2">
+        <label>Notes</label>
+        <textarea class="inp" id="pm-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+    <input type="hidden" id="pm-edit-id">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveParty()">💾 Save Party</button>
+      <button class="btn btn-ghost" onclick="closeModal('party-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastWrap"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const STORE_ITEMS    = 'trm5_items';
+const STORE_PARTIES  = 'trm5_parties';
+const STORE_RECORDS  = 'trm5_records';
+const STORE_ALERTS   = 'trm5_alerts';
+const STORE_ALOG     = 'trm5_alog';
+const STORE_PRATINGS = 'trm5_pratings'; // party-item rates
+const STORE_LASTMOD  = 'trm5_lastmod';
+
+function ls(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+function ss(k,v){
+  localStorage.setItem(k,JSON.stringify(v));
+  if(k!==STORE_LASTMOD){
+    localStorage.setItem(STORE_LASTMOD, Date.now().toString());
+    if(typeof scheduleCloudSave==='function') scheduleCloudSave();
+  }
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function now(){ return new Date().toLocaleString('hi-IN'); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+
+// ── ITEMS ──
+let items = ls(STORE_ITEMS) || [];
+if(!items.length){
+  items = [
+    {id:uid(),cat:'fabric',name:'Cotton Poplin',brand:'Surat Grade A',unit:'per meter',price:85,prev:78,widths:['36"','44"','58"'],notes:'Plain weave shirt quality',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'fabric',name:'Georgette (Chiffon)',brand:'Surat Mill',unit:'per meter',price:110,prev:115,widths:['44"','54"'],notes:'Party wear quality',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'fabric',name:'Polyester Interlock',brand:'Tirupur Grade',unit:'per kg',price:195,prev:190,widths:[],notes:'T-shirt quality',status:'pending',updatedAt:today()},
+    {id:uid(),cat:'fabric',name:'Banarasi Silk',brand:'Varanasi',unit:'per meter',price:450,prev:420,widths:['44"'],notes:'Export quality',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'fabric',name:'Khadi Cotton',brand:'Gujarat Khadi',unit:'per meter',price:140,prev:140,widths:['36"','44"'],notes:'Handloom quality',status:'pending',updatedAt:today()},
+    {id:uid(),cat:'acc',name:'YKK Zipper 40cm',brand:'YKK',unit:'per piece',price:18,prev:16,widths:[],notes:'Brass, assorted colors',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'acc',name:'Button (Metal 18L)',brand:'Local',unit:'per dozen',price:45,prev:48,widths:[],notes:'Shirt quality',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'acc',name:'Velcro 1" White',brand:'Velcro Brand',unit:'per meter',price:28,prev:25,widths:[],notes:'Hook & loop',status:'pending',updatedAt:today()},
+    {id:uid(),cat:'pack',name:'LDPE Poly Bag',brand:'Local',unit:'per kg',price:180,prev:175,widths:[],notes:'40 micron transparent',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'pack',name:'Cardboard Box 12x8',brand:'Local',unit:'per piece',price:22,prev:20,widths:[],notes:'Export packing',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'dye',name:'Reactive Dye Red',brand:'Huntsman',unit:'per kg',price:680,prev:640,widths:[],notes:'HF grade',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'dye',name:'Disperse Dye Blue',brand:'DyStar',unit:'per kg',price:520,prev:530,widths:[],notes:'Polyester suitable',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'local',name:'Cotton Waste',brand:'Local Market',unit:'per kg',price:32,prev:30,widths:[],notes:'Local market rate',status:'updated',updatedAt:today()},
+    {id:uid(),cat:'mfg',name:'Stitching Charge',brand:'CMT',unit:'per piece',price:35,prev:32,widths:[],notes:'Basic shirt',status:'updated',updatedAt:today()},
+  ];
+  ss(STORE_ITEMS,items);
+}
+
+// ── PARTIES ──
+let parties = ls(STORE_PARTIES) || [];
+if(!parties.length){
+  parties = [
+    {id:uid(),type:'supplier',cat:'fabric',name:'Ramesh Fabric House',city:'Surat',contact:'9825XXXXXX',gst:'',minOrder:'500 meter',rate:'₹80-120/meter',delivery:'3-5 din',speciality:'Cotton, Polyester, Georgette',rating:5,notes:'Bahut reliable, 10 saal se kaam',added:today()},
+    {id:uid(),type:'weaver',cat:'handloom',name:'Karim Bhai Handloom',city:'Varanasi',contact:'9415XXXXXX',gst:'',minOrder:'100 meter',rate:'₹120-200/meter',delivery:'10-15 din',speciality:'Banarasi Silk, Khadi, Brocade',rating:4,notes:'Export quality, direct order',added:today()},
+    {id:uid(),type:'supplier',cat:'acc',name:'Shree Zipper Co.',city:'Mumbai',contact:'9820XXXXXX',gst:'27XXXXX',minOrder:'500 pcs',rate:'₹3-20/piece',delivery:'2-3 din',speciality:'YKK, Nylon, Metal, Velcro',rating:4,notes:'Mumbai ka bada zipper dealer',added:today()},
+    {id:uid(),type:'manufacturer',cat:'knit',name:'Tirupur Knits Pvt Ltd',city:'Tirupur',contact:'9842XXXXXX',gst:'33XXXXX',minOrder:'200 kg',rate:'₹180-280/kg',delivery:'7-10 din',speciality:'Interlock, Single Jersey, Rib',rating:5,notes:'OEKO-TEX certified',added:today()},
+    {id:uid(),type:'supplier',cat:'dye',name:'Atul Chem Traders',city:'Ahmedabad',contact:'9898XXXXXX',gst:'24XXXXX',minOrder:'25 kg',rate:'Market rate',delivery:'1-2 din',speciality:'Reactive, Disperse, Soda ash',rating:3,notes:'Thoda mehnga par quality ok',added:today()},
+    {id:uid(),type:'local',cat:'fabric',name:'Fancy Bazar Dealers',city:'Mumbai',contact:'9987XXXXXX',gst:'',minOrder:'1 meter',rate:'Market rate',delivery:'Same day',speciality:'All fabric types',rating:3,notes:'Local market best for small qty',added:today()},
+    {id:uid(),type:'importer',cat:'fabric',name:'Chandra Imports & Exports',city:'Delhi',contact:'9811XXXXXX',gst:'07XXXXX',minOrder:'500 meter',rate:'Negotiable',delivery:'15-20 din',speciality:'Chinese Fabric, Korea Fabric',rating:4,notes:'Import quality fabric available',added:today()},
+    {id:uid(),type:'agent',cat:'fabric',name:'Mehta Textile Agency',city:'Surat',contact:'9825YYYYYY',gst:'',minOrder:'Negotiable',rate:'Commission basis',delivery:'As per mill',speciality:'All types',rating:3,notes:'Agent - connects to mills',added:today()},
+    {id:uid(),type:'mill',cat:'fabric',name:'Reliance Textile Mill',city:'Surat',contact:'9898ZZZZZZ',gst:'24ZZZZZ',minOrder:'1000 meter',rate:'Mill rate',delivery:'7-14 din',speciality:'Polyester, Nylon',rating:5,notes:'Direct mill, best price large qty',added:today()},
+  ];
+  ss(STORE_PARTIES,parties);
+}
+
+// ── PARTY ITEM RATES ──
+let partyRates = ls(STORE_PRATINGS) || [];
+// partyRates: [{id, itemId, partyId, rate, minOrder, delivery, remarks, addedAt}]
+
+// ── RECORDS ──
+let records = ls(STORE_RECORDS) || [];
+
+// ── ALERTS ──
+let alertSettings = ls(STORE_ALERTS) || {};
+let alertLog      = ls(STORE_ALOG)   || [];
+let masterAlert   = true;
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+const TABS = ['dashboard','directory','parties','compare'];
+function showTab(id){
+  TABS.forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===id);
+    document.getElementById('nt-'+t).classList.toggle('active',t===id);
+  });
+  if(id==='dashboard') { renderDashboard(); renderRecords(); }
+  if(id==='directory')  renderDirectory();
+  if(id==='parties')   renderParties();
+  if(id==='compare')   initCompare();
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  const totalItems=items.length;
+  const totalParties=parties.length;
+  const upCount=items.filter(i=>i.price>i.prev).length;
+  const dnCount=items.filter(i=>i.price<i.prev).length;
+  const avgFabric=items.filter(i=>i.cat==='fabric'||i.cat==='yarn').reduce((s,i)=>s+i.price,0)/(items.filter(i=>i.cat==='fabric'||i.cat==='yarn').length||1);
+  const totalDirItems=getAllDirItems().length;
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat s-b"><div class="stat-ico">📚</div><div class="stat-lbl">Directory Items</div><div class="stat-val">${totalDirItems}</div><div class="stat-sub">Master list</div></div>
+    <div class="stat s-g"><div class="stat-ico">💰</div><div class="stat-lbl">Rates Added</div><div class="stat-val">${totalItems}</div><div class="stat-sub">Confirmed rates</div></div>
+    <div class="stat s-o"><div class="stat-ico">🏭</div><div class="stat-lbl">Parties/Sources</div><div class="stat-val">${totalParties}</div><div class="stat-sub">All sources</div></div>
+    <div class="stat s-p"><div class="stat-ico">📈</div><div class="stat-lbl">Price Up</div><div class="stat-val" style="color:var(--red)">${upCount}</div><div class="stat-sub">Items</div></div>
+    <div class="stat s-t"><div class="stat-ico">📉</div><div class="stat-lbl">Price Down</div><div class="stat-val" style="color:var(--green)">${dnCount}</div><div class="stat-sub">Items</div></div>
+    <div class="stat s-y"><div class="stat-ico">📋</div><div class="stat-lbl">Rate Records</div><div class="stat-val">${records.length}</div><div class="stat-sub">History entries</div></div>
+  `;
+
+  // Recent updates
+  const recent=records.slice(0,6);
+  document.getElementById('dash-recent-updates').innerHTML=recent.length?recent.map(r=>`
+    <div class="rlog">
+      <div class="rlog-ico">${r.dir==='up'?'📈':'📉'}</div>
+      <div class="rlog-body">
+        <div class="rlog-name">${r.name}</div>
+        <div class="rlog-detail" style="color:${r.dir==='up'?'var(--red)':'var(--green)'}">
+          ₹${r.oldPrice} → ₹${r.newPrice} &nbsp;(${r.dir==='up'?'+':''}₹${Number(r.diff).toFixed(2)})
+        </div>
+        <div style="font-size:10px;color:var(--muted2)">${r.source||'—'} · ${r.time}</div>
+      </div>
+    </div>`).join(''):`<div class="empty"><div class="empty-ico">📈</div><p>Koi update nahi<br><small>Directory se rate add karein</small></p></div>`;
+
+  // Sources summary
+  const types=['supplier','weaver','manufacturer','local','importer','agent','mill'];
+  const typeLabels={supplier:'🏪 Supplier',weaver:'🧶 Weaver',manufacturer:'🏭 Manufacturer',local:'🛒 Local',importer:'🌐 Importer',agent:'🤝 Agent',mill:'🏗️ Mill'};
+  document.getElementById('dash-sources-summary').innerHTML=types.map(t=>{
+    const cnt=parties.filter(p=>p.type===t).length; if(!cnt) return '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px">${typeLabels[t]}</span>
+      <span class="badge" style="background:var(--surface);color:var(--text)">${cnt}</span>
+    </div>`;
+  }).join('');
+
+  renderRecords();
+}
+
+// ══════════════════════════════════════════
+// RATE LIST
+// ══════════════════════════════════════════
+let catFilter='all';
+function setCatFilter(cat,btn){
+  catFilter=cat;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderRates();
+}
+
+const CAT_META={
+  fabric:{label:'🪡 Fabric',tag:'tag-fab',color:'var(--blue)'},
+  acc:{label:'🧷 Accessories',tag:'tag-acc',color:'var(--green)'},
+  pack:{label:'📦 Packaging',tag:'tag-pack',color:'var(--orange)'},
+  dye:{label:'🎨 Dyes',tag:'tag-dye',color:'var(--purple)'},
+  local:{label:'🛒 Local',tag:'tag-local',color:'var(--yellow)'},
+  mfg:{label:'🏭 MFG',tag:'tag-mfg',color:'var(--teal)'},
+};
+
+function renderRates(){
+  const q=(document.getElementById('rate-search')?.value||'').toLowerCase();
+  const sort=document.getElementById('rate-sort')?.value||'name';
+  const status=document.getElementById('rate-status')?.value||'all';
+  let list=[...items];
+  if(catFilter!=='all') list=list.filter(i=>i.cat===catFilter);
+  if(q) list=list.filter(i=>(i.name+i.brand+i.notes+(i.widths||[]).join()).toLowerCase().includes(q));
+  if(status==='updated') list=list.filter(i=>i.status==='updated');
+  if(status==='pending') list=list.filter(i=>i.status==='pending');
+  if(status==='up') list=list.filter(i=>i.price>i.prev);
+  if(status==='down') list=list.filter(i=>i.price<i.prev);
+  list.sort((a,b)=>{
+    if(sort==='name') return a.name.localeCompare(b.name);
+    if(sort==='price-h') return b.price-a.price;
+    if(sort==='price-l') return a.price-b.price;
+    if(sort==='change-up') return (b.price-b.prev)-(a.price-a.prev);
+    if(sort==='change-dn') return (a.price-a.prev)-(b.price-b.prev);
+    return 0;
+  });
+  const el=document.getElementById('rate-list');
+  if(!list.length){el.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-ico">💰</div><p>Koi item nahi mila</p></div>`;return;}
+  el.innerHTML=list.map(it=>{
+    const diff=it.price-it.prev;
+    const pct=it.prev?((diff/it.prev)*100).toFixed(1):0;
+    const dir=diff>0?'up':diff<0?'down':'same';
+    const meta=CAT_META[it.cat]||{label:it.cat,tag:'',color:'var(--muted)'};
+    const chgTxt=diff>0?`▲ +₹${diff.toFixed(2)} (+${pct}%)`:diff<0?`▼ ₹${diff.toFixed(2)} (${pct}%)`:'— No Change';
+    const partyCount=partyRates.filter(r=>r.itemId===it.id).length;
+    return `<div class="rate-card">
+      <div class="rate-card-top">
+        <div>
+          <div class="rate-name">${it.name}</div>
+          <div class="rate-brand">${it.brand||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="rate-price">₹${Number(it.price).toLocaleString('en-IN')}</div>
+          <div class="rate-unit">${it.unit}</div>
+          <div class="rate-change ${dir}">${chgTxt}</div>
+        </div>
+      </div>
+      <div class="rate-meta">
+        <span class="tag ${meta.tag}">${meta.label}</span>
+        ${it.status==='updated'?'<span class="tag" style="background:var(--greenbg);color:var(--green);border:1px solid #00e97a25">✅ Updated</span>':'<span class="tag" style="background:var(--yellowbg);color:var(--yellow);border:1px solid #ffd84d25">⏳ Pending</span>'}
+        ${it.widths&&it.widths.length?it.widths.map(w=>`<span class="hist-chip">${w}</span>`).join(''):''}
+        ${partyCount?`<span class="tag" style="background:var(--purplebg);color:var(--purple);border:1px solid #a87cff25">🏭 ${partyCount} parties</span>`:''}
+      </div>
+      ${it.notes?`<div style="font-size:11px;color:var(--muted);margin-top:8px">💬 ${it.notes}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+        <input class="quick-inp" type="number" id="qr-${it.id}" value="${it.price}" style="flex:1">
+        <button class="btn btn-green btn-xs" onclick="quickUpdate('${it.id}')">⚡ Update</button>
+        <button class="btn btn-ghost btn-xs" onclick="editItem('${it.id}')">✏️</button>
+        <button class="btn btn-red btn-xs" onclick="deleteItem('${it.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickUpdate(id){
+  const inp=document.getElementById('qr-'+id)||document.getElementById('qi-'+id);
+  if(!inp) return;
+  const newP=parseFloat(inp.value);
+  if(!newP||isNaN(newP)) return toast('⚠️ Valid rate daalein!','');
+  const idx=items.findIndex(i=>i.id===id); if(idx<0) return;
+  const it=items[idx];
+  const oldP=it.price;
+  if(oldP===newP) return toast('ℹ️ Rate same hai!','info');
+  // Record
+  const diff=newP-oldP;
+  const pct=oldP?((Math.abs(diff)/oldP)*100).toFixed(1):0;
+  records.unshift({id:uid(),itemId:id,name:it.name,cat:it.cat,oldPrice:oldP,newPrice:newP,diff,pct,dir:diff>0?'up':'down',time:now(),date:today()});
+  if(records.length>500) records.pop();
+  ss(STORE_RECORDS,records);
+  // Alert check
+  checkAlert(it,oldP,newP);
+  // Update item
+  items[idx]={...it,prev:oldP,price:newP,status:'updated',updatedAt:today()};
+  ss(STORE_ITEMS,items);
+  toast(`✅ ${it.name} → ₹${newP}`,'info');
+  renderRates();
+}
+
+function openAddItem(){
+  document.getElementById('item-modal-title').textContent='➕ Naya Rate Item';
+  document.getElementById('im-edit-id').value='';
+  ['im-name','im-brand','im-price','im-prev','im-widths','im-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('im-cat').value='fabric';
+  document.getElementById('im-unit').value='per meter';
+  openModal('item-modal');
+}
+function editItem(id){
+  const it=items.find(i=>i.id===id); if(!it) return;
+  document.getElementById('item-modal-title').textContent='✏️ Item Edit Karein';
+  document.getElementById('im-edit-id').value=id;
+  document.getElementById('im-cat').value=it.cat;
+  document.getElementById('im-name').value=it.name;
+  document.getElementById('im-brand').value=it.brand||'';
+  document.getElementById('im-unit').value=it.unit;
+  document.getElementById('im-price').value=it.price;
+  document.getElementById('im-prev').value=it.prev||'';
+  document.getElementById('im-widths').value=(it.widths||[]).join(', ');
+  document.getElementById('im-notes').value=it.notes||'';
+  openModal('item-modal');
+}
+function saveItem(){
+  const name=document.getElementById('im-name').value.trim();
+  if(!name) return toast('⚠️ Item name zaroori hai!','');
+  const price=parseFloat(document.getElementById('im-price').value);
+  if(!price) return toast('⚠️ Rate zaroori hai!','');
+  const editId=document.getElementById('im-edit-id').value;
+  const widths=document.getElementById('im-widths').value.split(',').map(w=>w.trim()).filter(Boolean);
+  if(editId){
+    const idx=items.findIndex(i=>i.id===editId); if(idx<0) return;
+    const old=items[idx];
+    if(old.price!==price){
+      records.unshift({id:uid(),itemId:editId,name,cat:old.cat,oldPrice:old.price,newPrice:price,diff:price-old.price,pct:old.price?((Math.abs(price-old.price)/old.price)*100).toFixed(1):0,dir:price>old.price?'up':'down',time:now(),date:today()});
+      ss(STORE_RECORDS,records);
+    }
+    items[idx]={...old,cat:document.getElementById('im-cat').value,name,brand:document.getElementById('im-brand').value,unit:document.getElementById('im-unit').value,prev:old.price,price,widths,notes:document.getElementById('im-notes').value,status:'updated',updatedAt:today()};
+  } else {
+    items.push({id:uid(),cat:document.getElementById('im-cat').value,name,brand:document.getElementById('im-brand').value,unit:document.getElementById('im-unit').value,price,prev:price,widths,notes:document.getElementById('im-notes').value,status:'updated',updatedAt:today()});
+  }
+  ss(STORE_ITEMS,items);
+  closeModal('item-modal');
+  renderRates();
+  toast(`✅ Item ${editId?'updated':'added'}!`,'info');
+}
+function deleteItem(id){
+  if(!confirm('Is item ko delete karein?')) return;
+  items=items.filter(i=>i.id!==id);
+  ss(STORE_ITEMS,items);
+  renderRates();
+  toast('🗑 Item deleted','');
+}
+
+// ══════════════════════════════════════════
+// PARTIES / SOURCES
+// ══════════════════════════════════════════
+const TYPE_LABELS={supplier:'🏪 Supplier',weaver:'🧶 Weaver',manufacturer:'🏭 Manufacturer',local:'🛒 Local Market',importer:'🌐 Importer/Exporter',agent:'🤝 Agent/Broker',mill:'🏗️ Direct Mill'};
+const TYPE_CLASS={supplier:'src-sup',weaver:'src-weaver',manufacturer:'src-mfg',local:'src-local',importer:'src-import',agent:'src-agent',mill:'src-mfg'};
+
+function renderParties(){
+  const q=(document.getElementById('party-search')?.value||'').toLowerCase();
+  const type=document.getElementById('party-type')?.value||'all';
+  const cat=document.getElementById('party-cat')?.value||'all';
+  const city=document.getElementById('party-city')?.value||'all';
+  let list=[...parties];
+  if(q) list=list.filter(p=>(p.name+p.city+p.speciality+p.notes).toLowerCase().includes(q));
+  if(type!=='all') list=list.filter(p=>p.type===type);
+  if(cat!=='all') list=list.filter(p=>p.cat===cat);
+  if(city!=='all') list=list.filter(p=>p.city===city);
+
+  // Populate city dropdown
+  const cities=[...new Set(parties.map(p=>p.city))].sort();
+  const cityEl=document.getElementById('party-city');
+  if(cityEl){
+    const prev=cityEl.value;
+    cityEl.innerHTML='<option value="all">All Cities</option>'+cities.map(c=>`<option value="${c}" ${prev===c?'selected':''}>${c}</option>`).join('');
+  }
+
+  // Stats
+  document.getElementById('cnt-sup').textContent=parties.filter(p=>p.type==='supplier').length;
+  document.getElementById('cnt-weaver').textContent=parties.filter(p=>p.type==='weaver'||p.type==='manufacturer').length;
+  document.getElementById('cnt-local').textContent=parties.filter(p=>p.type==='local').length;
+  document.getElementById('cnt-top').textContent=parties.filter(p=>p.rating>=4).length;
+
+  const el=document.getElementById('party-list');
+  if(!list.length){el.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🏭</div><p>Koi party nahi mili</p></div>`;return;}
+  el.innerHTML=list.map(p=>{
+    const stars='★'.repeat(p.rating||0)+'☆'.repeat(5-(p.rating||0));
+    const tc=TYPE_CLASS[p.type]||'src-sup';
+    const catMeta=CAT_META[p.cat]||{label:p.cat,tag:''};
+    const prCnt=partyRates.filter(r=>r.partyId===p.id).length;
+    return `<div class="party-card">
+      <div class="party-top">
+        <div>
+          <div class="party-name">${p.name}</div>
+          <div class="party-city">📍 ${p.city} · <span class="tag ${catMeta.tag}" style="font-size:9px">${catMeta.label}</span></div>
+        </div>
+        <span class="tag ${tc}">${TYPE_LABELS[p.type]||p.type}</span>
+      </div>
+      <div class="party-stars" style="font-size:14px">${stars}</div>
+      <div class="party-meta">
+        ${p.rate?`<div>💰 Rate: <strong>${p.rate}</strong></div>`:''}
+        ${p.minOrder?`<div>📦 Min: <strong>${p.minOrder}</strong></div>`:''}
+        ${p.delivery?`<div>🚚 Delivery: <strong>${p.delivery}</strong></div>`:''}
+        ${p.gst?`<div>📄 GST: <strong>${p.gst}</strong></div>`:''}
+        ${p.speciality?`<div>🎯 <strong>${p.speciality}</strong></div>`:''}
+        ${prCnt?`<div>📊 <strong>${prCnt} item rates</strong> linked</div>`:''}
+      </div>
+      ${p.notes?`<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">💬 ${p.notes}</div>`:''}
+      <div class="party-actions no-print">
+        ${p.contact?`<button class="btn btn-ghost btn-xs" onclick="callParty('${p.contact}','${p.name}')">📞 Call</button>
+        <button class="btn btn-wa btn-xs" onclick="waParty('${p.id}')">💬 WA</button>`:''}
+        <button class="btn btn-ghost btn-xs" onclick="editParty('${p.id}')">✏️ Edit</button>
+        <button class="btn btn-red btn-xs" onclick="deleteParty('${p.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPartyModal(){
+  document.getElementById('party-modal-title').textContent='➕ Naya Party / Source';
+  document.getElementById('pm-edit-id').value='';
+  ['pm-name','pm-city','pm-contact','pm-gst','pm-minord','pm-rate','pm-delivery','pm-spec','pm-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('pm-type').value='supplier';
+  document.getElementById('pm-cat').value='fabric';
+  document.getElementById('pm-rating').value='3';
+  openModal('party-modal');
+}
+function editParty(id){
+  const p=parties.find(x=>x.id===id); if(!p) return;
+  document.getElementById('party-modal-title').textContent='✏️ Party Edit Karein';
+  document.getElementById('pm-edit-id').value=id;
+  document.getElementById('pm-type').value=p.type;
+  document.getElementById('pm-cat').value=p.cat;
+  document.getElementById('pm-name').value=p.name;
+  document.getElementById('pm-city').value=p.city;
+  document.getElementById('pm-contact').value=p.contact||'';
+  document.getElementById('pm-gst').value=p.gst||'';
+  document.getElementById('pm-minord').value=p.minOrder||'';
+  document.getElementById('pm-rate').value=p.rate||'';
+  document.getElementById('pm-delivery').value=p.delivery||'';
+  document.getElementById('pm-rating').value=p.rating||3;
+  document.getElementById('pm-spec').value=p.speciality||'';
+  document.getElementById('pm-notes').value=p.notes||'';
+  openModal('party-modal');
+}
+function saveParty(){
+  const name=document.getElementById('pm-name').value.trim();
+  if(!name) return toast('⚠️ Party naam zaroori hai!','');
+  const editId=document.getElementById('pm-edit-id').value;
+  const data={type:document.getElementById('pm-type').value,cat:document.getElementById('pm-cat').value,name,city:document.getElementById('pm-city').value.trim()||'—',contact:document.getElementById('pm-contact').value.trim(),gst:document.getElementById('pm-gst').value.trim(),minOrder:document.getElementById('pm-minord').value.trim(),rate:document.getElementById('pm-rate').value.trim(),delivery:document.getElementById('pm-delivery').value.trim(),rating:parseInt(document.getElementById('pm-rating').value)||3,speciality:document.getElementById('pm-spec').value.trim(),notes:document.getElementById('pm-notes').value.trim(),added:today()};
+  if(editId){
+    const idx=parties.findIndex(p=>p.id===editId);
+    if(idx>=0) parties[idx]={...parties[idx],...data};
+  } else {
+    parties.push({id:uid(),...data});
+  }
+  ss(STORE_PARTIES,parties);
+  closeModal('party-modal');
+  renderParties();
+  toast(`✅ Party ${editId?'updated':'added'}!`,'info');
+}
+function deleteParty(id){
+  if(!confirm('Is party ko delete karein?')) return;
+  parties=parties.filter(p=>p.id!==id);
+  partyRates=partyRates.filter(r=>r.partyId!==id);
+  ss(STORE_PARTIES,parties);
+  ss(STORE_PRATINGS,partyRates);
+  renderParties();
+  toast('🗑 Party deleted','');
+}
+function callParty(contact,name){ if(confirm(`${name} ko call karein?\n📞 ${contact}`)) window.open('tel:'+contact); }
+function waParty(id){
+  const p=parties.find(x=>x.id===id); if(!p) return;
+  const msg=`Namaskar ${p.name}! 🙏\nHum aapke rates aur availability ke baare mein jaanna chahte hain.\nKripya latest rate list share karein.`;
+  window.open('https://wa.me/91'+p.contact.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ══════════════════════════════════════════
+// RATE COMPARE
+// ══════════════════════════════════════════
+function initCompare(){
+  // Populate item dropdown
+  const itemEl=document.getElementById('cmp-item');
+  const prEl=document.getElementById('pr-item');
+  const partyEl=document.getElementById('pr-party');
+  const opts='<option value="">— Item chunein —</option>'+items.map(i=>`<option value="${i.id}">${i.name} (${i.cat})</option>`).join('');
+  if(itemEl) itemEl.innerHTML=opts;
+  if(prEl) prEl.innerHTML=opts;
+  if(partyEl) partyEl.innerHTML='<option value="">— Party chunein —</option>'+parties.map(p=>`<option value="${p.id}">${p.name} (${p.city})</option>`).join('');
+  updateCompare();
+}
+
+function updateCompare(){
+  const itemId=document.getElementById('cmp-item')?.value;
+  const type=document.getElementById('cmp-type')?.value||'party';
+  const el=document.getElementById('compare-result');
+  const btns=document.getElementById('cmp-btns');
+
+  // Party checkboxes
+  const cbWrap=document.getElementById('cmp-party-checkboxes');
+  if(cbWrap){
+    cbWrap.innerHTML=parties.map(p=>`
+      <label style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;cursor:pointer;font-size:12px">
+        <input type="checkbox" value="${p.id}" class="cmp-party-cb" onchange="updateCompare()" checked style="accent-color:var(--blue)">
+        ${p.name} <span style="color:var(--muted);font-size:10px">${p.city}</span>
+      </label>`).join('');
+  }
+
+  if(!itemId){el.innerHTML='<div class="empty"><div class="empty-ico">⚖️</div><p>Pehle item select karein</p></div>';if(btns)btns.style.display='none';return;}
+  const it=items.find(i=>i.id===itemId); if(!it) return;
+
+  if(type==='party'){
+    // Selected parties
+    const selParties=[...document.querySelectorAll('.cmp-party-cb:checked')].map(cb=>cb.value);
+    const pRates=partyRates.filter(r=>r.itemId===itemId&&selParties.includes(r.partyId));
+    // Add main item rate as "Our Rate"
+    const allRates=[{partyName:'📊 Our Rate (Current)',rate:it.price,minOrder:'—',delivery:'—',remarks:'Current rate list rate'},...pRates.map(r=>{const p=parties.find(x=>x.id===r.partyId);return{partyName:(p?`${TYPE_LABELS[p.type]||''} ${p.name} (${p.city})`:r.partyId),rate:r.rate,minOrder:r.minOrder||'—',delivery:r.delivery||'—',remarks:r.remarks||'—'};})];
+    const minRate=Math.min(...allRates.map(r=>r.rate));
+    const maxRate=Math.max(...allRates.map(r=>r.rate));
+    const range=maxRate-minRate||1;
+
+    el.innerHTML=`
+      <div style="margin-bottom:14px">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">${it.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${it.unit} · ${CAT_META[it.cat]?.label||it.cat}</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Party / Source</th><th>Rate (₹)</th><th>vs Best</th><th>Bar</th><th>Min Order</th><th>Delivery</th><th>Remarks</th></tr></thead>
+          <tbody>
+            ${allRates.map(r=>{
+              const isBest=r.rate===minRate;
+              const diff=r.rate-minRate;
+              const barW=Math.round(((r.rate-minRate)/range)*100);
+              return `<tr ${isBest?'class="compare-best"':''}>
+                <td style="font-weight:700">${isBest?'🏆 ':''} ${r.partyName}</td>
+                <td class="td-mono" style="color:${isBest?'var(--green)':'var(--text)'};font-weight:${isBest?800:400}">₹${Number(r.rate).toLocaleString('en-IN')}</td>
+                <td class="td-mono" style="color:${diff>0?'var(--red)':'var(--green)'}">${diff>0?'+₹'+diff.toFixed(2):'✅ Best'}</td>
+                <td style="min-width:120px"><div style="background:var(--surface);border-radius:99px;overflow:hidden;height:8px"><div class="compare-bar-fill" style="width:${100-barW}%;background:${isBest?'var(--green)':'var(--blue)'};"></div></div></td>
+                <td style="font-size:11px;color:var(--muted)">${r.minOrder}</td>
+                <td style="font-size:11px;color:var(--muted)">${r.delivery}</td>
+                <td style="font-size:11px;color:var(--muted)">${r.remarks}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:var(--greenbg);border:1px solid var(--green);border-radius:var(--r);font-size:13px">
+        🏆 <strong>Best Rate:</strong> ₹${minRate} &nbsp;|&nbsp; 
+        📊 <strong>Highest:</strong> ₹${maxRate} &nbsp;|&nbsp; 
+        💰 <strong>Savings:</strong> ₹${(maxRate-minRate).toFixed(2)} per ${it.unit.replace('per ','')}
+      </div>`;
+    if(btns) btns.style.display='flex';
+
+  } else if(type==='history'){
+    const hist=records.filter(r=>r.itemId===itemId).slice(0,20);
+    el.innerHTML=`
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">${it.name} — Price History</div>
+      ${hist.length?`<div class="tbl-wrap"><table>
+        <thead><tr><th>Date</th><th>Old Rate</th><th>New Rate</th><th>Change</th><th>Change %</th><th>Direction</th></tr></thead>
+        <tbody>${hist.map(r=>`<tr>
+          <td class="td-mono" style="font-size:11px">${r.time}</td>
+          <td class="td-mono">₹${r.oldPrice}</td>
+          <td class="td-mono" style="font-weight:700">₹${r.newPrice}</td>
+          <td class="td-mono" style="color:${r.dir==='up'?'var(--red)':'var(--green)'}">${r.dir==='up'?'+':''}₹${r.diff.toFixed(2)}</td>
+          <td class="td-mono" style="color:${r.dir==='up'?'var(--red)':'var(--green)'}">${r.pct}%</td>
+          <td>${r.dir==='up'?'📈 Up':'📉 Down'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`:`<div class="empty"><div class="empty-ico">📋</div><p>Koi history nahi</p></div>`}`;
+    if(btns) btns.style.display=hist.length?'flex':'none';
+  }
+}
+
+function savePartyRate(){
+  const itemId=document.getElementById('pr-item').value;
+  const partyId=document.getElementById('pr-party').value;
+  const rate=parseFloat(document.getElementById('pr-rate').value);
+  if(!itemId||!partyId||!rate) return toast('⚠️ Item, party aur rate zaroori hain!','');
+  const existing=partyRates.findIndex(r=>r.itemId===itemId&&r.partyId===partyId);
+  const data={id:uid(),itemId,partyId,rate,minOrder:document.getElementById('pr-minord').value,delivery:document.getElementById('pr-delivery').value,remarks:document.getElementById('pr-remarks').value,addedAt:now()};
+  if(existing>=0) partyRates[existing]={...partyRates[existing],...data};
+  else partyRates.push(data);
+  ss(STORE_PRATINGS,partyRates);
+  toast('✅ Party rate saved!','info');
+  ['pr-rate','pr-minord','pr-delivery','pr-remarks'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cmp-item').value=itemId;
+  document.getElementById('cmp-type').value='party';
+  updateCompare();
+}
+
+// ══════════════════════════════════════════
+// RECORDS / HISTORY
+// ══════════════════════════════════════════
+function renderRecords(){
+  const q=(document.getElementById('rec-search')?.value||'').toLowerCase();
+  const cat=document.getElementById('rec-cat')?.value||'all';
+  const dir=document.getElementById('rec-dir')?.value||'all';
+  const from=document.getElementById('rec-from')?.value||'';
+  const to=document.getElementById('rec-to')?.value||'';
+  let list=[...records];
+  if(q) list=list.filter(r=>(r.name||'').toLowerCase().includes(q));
+  if(cat!=='all') list=list.filter(r=>r.cat===cat);
+  if(dir!=='all') list=list.filter(r=>r.dir===dir);
+  if(from) list=list.filter(r=>r.date>=from);
+  if(to)   list=list.filter(r=>r.date<=to);
+
+  const upCnt=list.filter(r=>r.dir==='up').length;
+  const dnCnt=list.filter(r=>r.dir==='down').length;
+  const recStats=document.getElementById('rec-stats');
+  if(recStats) recStats.innerHTML=`
+    <div class="stat s-b" style="padding:8px 14px;flex:0"><div class="stat-lbl">Total</div><div class="stat-val" style="font-size:18px">${list.length}</div></div>
+    <div class="stat s-o" style="padding:8px 14px;flex:0"><div class="stat-lbl">Price Up</div><div class="stat-val" style="font-size:18px;color:var(--red)">${upCnt}</div></div>
+    <div class="stat s-g" style="padding:8px 14px;flex:0"><div class="stat-lbl">Price Down</div><div class="stat-val" style="font-size:18px;color:var(--green)">${dnCnt}</div></div>`;
+
+  const body=document.getElementById('rec-body');
+  if(!body) return;
+  if(!list.length){
+    body.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted)">📋 Koi record nahi — Directory se rate add karein</td></tr>`;
+    return;
+  }
+  const srcLabels={market:'🛒 Market',supplier:'🏪 Supplier',indiamart:'🌐 IndiaMart',whatsapp:'📲 WhatsApp',phone:'📞 Phone',weaver:'🧶 Weaver'};
+  body.innerHTML=list.map((r,i)=>`
+    <tr style="${r.dir==='up'?'background:#1f000a':'background:#001f0a'}">
+      <td class="td-mono" style="color:var(--muted)">${i+1}</td>
+      <td class="td-mono" style="font-size:10px;color:var(--muted)">${r.time}</td>
+      <td style="font-weight:700">${r.name}</td>
+      <td><span class="tag" style="font-size:9px;background:var(--surface);color:var(--muted)">${r.cat||'—'}</span></td>
+      <td class="td-mono">₹${r.oldPrice||0}</td>
+      <td class="td-mono" style="font-weight:700">₹${r.newPrice}</td>
+      <td class="td-mono" style="color:${r.dir==='up'?'var(--red)':'var(--green)'}">${r.dir==='up'?'+':''}₹${Number(r.diff||0).toFixed(2)}</td>
+      <td class="td-mono" style="color:${r.dir==='up'?'var(--red)':'var(--green)'}">${r.pct||0}%</td>
+      <td>${r.dir==='up'?'📈 Up':'📉 Down'}</td>
+      <td style="font-size:10px;color:var(--muted)">${srcLabels[r.source]||r.source||'—'}</td>
+    </tr>`).join('');
+}
+function clearRecords(){
+  if(!confirm('Poori rate history clear karein?')) return;
+  records=[];ss(STORE_RECORDS,records);renderRecords();renderDashboard();toast('🗑 History cleared','');
+}
+
+// ══════════════════════════════════════════
+// ALERTS
+// ══════════════════════════════════════════
+function checkAlert(item,oldP,newP){
+  if(!masterAlert) return;
+  const s=alertSettings[item.id]||{enabled:true,pct:5,amt:10,dir:'both'};
+  if(!s.enabled) return;
+  const diff=newP-oldP;
+  const absDiff=Math.abs(diff);
+  const pct=oldP?(absDiff/oldP)*100:0;
+  const direction=diff>0?'up':'down';
+  if(s.dir!=='both'&&s.dir!==direction) return;
+  if(pct<s.pct&&absDiff<s.amt) return;
+  const entry={id:uid(),itemId:item.id,name:item.name,cat:item.cat,oldPrice:oldP,newPrice:newP,diff,pct:pct.toFixed(1),dir:direction,time:now()};
+  alertLog.unshift(entry);
+  if(alertLog.length>200) alertLog.pop();
+  ss(STORE_ALOG,alertLog);
+  toast(`${direction==='up'?'📈':'📉'} ${item.name}: ₹${oldP}→₹${newP} (${direction==='up'?'+':''}${pct.toFixed(1)}%)`,direction==='up'?'up':'down');
+  renderAlertLog();
+}
+function toggleMaster(on){ masterAlert=on; toast(on?'🟢 Alert ON':'🔴 Alert OFF','info'); }
+function applyGlobalAlerts(){
+  const pct=parseFloat(document.getElementById('glob-pct')?.value||5);
+  const amt=parseFloat(document.getElementById('glob-amt')?.value||10);
+  const dir=document.getElementById('glob-dir')?.value||'both';
+  items.forEach(it=>{ alertSettings[it.id]={enabled:true,pct,amt,dir}; });
+  ss(STORE_ALERTS,alertSettings);
+  renderAlertConfig();
+  toast(`⚙️ ${items.length} items pe alert apply hua`,'info');
+}
+function saveAllAlerts(){
+  items.forEach(it=>{
+    const pctEl=document.getElementById('ap-'+it.id+'-pct');
+    const amtEl=document.getElementById('ap-'+it.id+'-amt');
+    const enEl=document.getElementById('ap-'+it.id+'-en');
+    const dirEl=document.getElementById('ap-'+it.id+'-dir');
+    if(pctEl) alertSettings[it.id]={enabled:enEl?.checked??true,pct:parseFloat(pctEl.value)||5,amt:parseFloat(amtEl?.value)||10,dir:dirEl?.value||'both'};
+  });
+  ss(STORE_ALERTS,alertSettings);
+  toast('💾 Alert settings saved!','info');
+}
+function testAlert(){ toast('📈 Cotton Poplin: ₹85→₹92 (+8.2%) TEST','up'); }
+function renderAlertConfig(){
+  const grid=document.getElementById('alert-config-grid'); if(!grid) return;
+  grid.innerHTML=items.map(it=>{
+    const s=alertSettings[it.id]||{enabled:true,pct:5,amt:10,dir:'both'};
+    const diff=it.price-it.prev;
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">${it.name} <span style="color:${diff>0?'var(--red)':'var(--green)'}">₹${it.price}</span></div>
+      <div class="alert-row"><label style="font-size:10px;color:var(--muted);width:60px">% Limit</label><input class="alert-inp" type="number" id="ap-${it.id}-pct" value="${s.pct}"><span style="font-size:10px;color:var(--muted)">%</span></div>
+      <div class="alert-row"><label style="font-size:10px;color:var(--muted);width:60px">₹ Limit</label><input class="alert-inp" type="number" id="ap-${it.id}-amt" value="${s.amt}"><span style="font-size:10px;color:var(--muted)">₹</span></div>
+      <div class="alert-row"><label style="font-size:10px;color:var(--muted);width:60px">Direction</label>
+        <select class="alert-inp" id="ap-${it.id}-dir" style="width:auto">
+          <option value="both" ${s.dir==='both'?'selected':''}>Dono</option>
+          <option value="up" ${s.dir==='up'?'selected':''}>Up</option>
+          <option value="down" ${s.dir==='down'?'selected':''}>Down</option>
+        </select>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px;cursor:pointer">
+        <input type="checkbox" id="ap-${it.id}-en" ${s.enabled?'checked':''} style="accent-color:var(--green)">
+        Alert ${s.enabled?'ON':'OFF'}
+      </label>
+    </div>`;
+  }).join('');
+  renderAlertLog();
+}
+function renderAlertLog(){
+  const el=document.getElementById('alert-log'); if(!el) return;
+  if(!alertLog.length){el.innerHTML=`<div class="empty"><div class="empty-ico">🔔</div><p>Koi alert nahi</p></div>`;return;}
+  el.innerHTML=alertLog.slice(0,50).map(e=>`
+    <div class="rlog">
+      <div class="rlog-ico">${e.dir==='up'?'📈':'📉'}</div>
+      <div class="rlog-body">
+        <div class="rlog-name" style="color:${e.dir==='up'?'var(--red)':'var(--green)'}">${e.dir==='up'?'▲':'▼'} ${e.name}</div>
+        <div class="rlog-detail">₹${e.oldPrice} → ₹${e.newPrice} | ${e.dir==='up'?'+':''}₹${Number(e.diff).toFixed(2)} (${e.pct}%)</div>
+      </div>
+      <div class="rlog-time">${e.time}</div>
+    </div>`).join('');
+}
+function clearAlertLog(){
+  if(!confirm('Alert log clear karein?')) return;
+  alertLog=[];
+  ss(STORE_ALOG,alertLog);
+  renderAlertLog();
+}
+
+// ══════════════════════════════════════════
+// EXPORT — PRINT / PDF / WA / EXCEL
+// ══════════════════════════════════════════
+function openExportPanel(){ openModal('export-modal'); }
+function getExportItems(scope){
+  if(scope==='all'||!scope) return items;
+  if(['fabric','acc','pack','dye','local','mfg'].includes(scope)) return items.filter(i=>i.cat===scope);
+  return items;
+}
+function buildPrintHTML(scope,title){
+  const date=new Date().toLocaleDateString('hi-IN');
+  const list=scope==='parties'?null:scope==='records'?records:getExportItems(scope);
+  let body='';
+  if(scope==='parties'){
+    const rows=parties.map((p,i)=>`<tr><td>${i+1}</td><td><b>${p.name}</b></td><td>${TYPE_LABELS[p.type]||p.type}</td><td>${p.city}</td><td>${p.contact||'—'}</td><td>${p.speciality||'—'}</td><td>${'★'.repeat(p.rating||0)}</td><td>${p.notes||'—'}</td></tr>`).join('');
+    body=`<table><thead><tr><th>#</th><th>Party Name</th><th>Type</th><th>City</th><th>Contact</th><th>Speciality</th><th>Rating</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } else if(scope==='records'){
+    const rows=records.slice(0,100).map((r,i)=>`<tr><td>${i+1}</td><td>${r.time}</td><td><b>${r.name}</b></td><td>${r.cat}</td><td>₹${r.oldPrice}</td><td>₹${r.newPrice}</td><td style="color:${r.dir==='up'?'#c00':'#060'}">${r.dir==='up'?'+':''}₹${Number(r.diff).toFixed(2)}</td><td>${r.pct}%</td></tr>`).join('');
+    body=`<table><thead><tr><th>#</th><th>Date</th><th>Item</th><th>Cat</th><th>Old ₹</th><th>New ₹</th><th>Change</th><th>%</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } else {
+    const cats=['fabric','acc','pack','dye','local','mfg'];
+    const catNames={fabric:'🪡 Fabric',acc:'🧷 Accessories',pack:'📦 Packaging',dye:'🎨 Dyes',local:'🛒 Local Market',mfg:'🏭 MFG'};
+    (scope==='all'?cats:[scope]).forEach(cat=>{
+      const ci=list.filter(i=>i.cat===cat); if(!ci.length) return;
+      const rows=ci.map((it,i)=>{
+        const diff=it.price-it.prev;
+        const chg=diff>0?`+₹${diff.toFixed(2)}`:diff<0?`-₹${Math.abs(diff).toFixed(2)}`:'—';
+        return `<tr><td>${i+1}</td><td><b>${it.name}</b>${it.brand?'<br><small>'+it.brand+'</small>':''}</td><td>${it.widths&&it.widths.length?it.widths.join(', '):(it.notes||'—')}</td><td>${it.unit}</td><td><b>₹${Number(it.price).toLocaleString('en-IN')}</b></td><td>${chg}</td></tr>`;
+      }).join('');
+      body+=`<h2>${catNames[cat]} (${ci.length} items)</h2><table><thead><tr><th>#</th><th>Item</th><th>Detail</th><th>Unit</th><th>Rate (₹)</th><th>Change</th></tr></thead><tbody>${rows}</tbody></table><br>`;
+    });
+  }
+  return `<!DOCTYPE html><html><head><title>${title}</title><style>
+    @page{size:A4;margin:15mm}
+    body{font-family:Arial,sans-serif;color:#111;font-size:12px}
+    h1{font-size:18px;margin-bottom:4px}
+    h2{font-size:13px;margin:14px 0 6px;padding:5px 10px;background:#f0f0f0;border-radius:4px}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px}
+    th{background:#222;color:#fff;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;text-align:left}
+    td{padding:6px 8px;border-bottom:1px solid #eee}
+    tr:nth-child(even) td{background:#f9f9f9}
+    .footer{margin-top:20px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:6px}
+  </style></head><body>
+  <h1>🧵 ${title}</h1>
+  <p style="font-size:11px;color:#888;margin-bottom:16px">Date: ${date} &nbsp;|&nbsp; Textile Rate Master Pro</p>
+  ${body}
+  <div class="footer">Textile Rate Master Pro · Generated: ${date}</div>
+  </body></html>`;
+}
+
+function doPrint(){
+  const scope=document.getElementById('exp-scope')?.value||'all';
+  const titles={all:'Complete Rate List',fabric:'Fabric Rate List',acc:'Accessories',pack:'Packaging',dye:'Dyes & Chemicals',local:'Local Market',mfg:'MFG Items',parties:'Party Directory',records:'Rate History'};
+  const w=window.open('','_blank');
+  w.document.write(buildPrintHTML(scope,titles[scope]||'Rate List'));
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),500);
+  closeModal('export-modal');
+}
+function doPDF(){
+  const scope=document.getElementById('exp-scope')?.value||'all';
+  const titles={all:'Complete Rate List',fabric:'Fabric Rate List',acc:'Accessories',pack:'Packaging',dye:'Dyes & Chemicals',local:'Local Market',mfg:'MFG Items',parties:'Party Directory',records:'Rate History'};
+  const w=window.open('','_blank');
+  w.document.write(buildPrintHTML(scope,titles[scope]||'Rate List'));
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),600);
+  closeModal('export-modal');
+}
+function doWA(){
+  const scope=document.getElementById('exp-scope')?.value||'all';
+  let msg='*🧵 Textile Rate Master Pro*\n_'+new Date().toLocaleDateString('hi-IN')+'_\n\n';
+  if(scope==='parties'){
+    parties.slice(0,15).forEach((p,i)=>{msg+=`${i+1}. *${p.name}* (${p.city})\n`;if(p.contact)msg+=`   📞 ${p.contact}\n`;if(p.speciality)msg+=`   🏷 ${p.speciality}\n`;});
+  } else if(scope==='records'){
+    records.slice(0,15).forEach((r,i)=>{msg+=`${i+1}. ${r.name}: ₹${r.oldPrice}→₹${r.newPrice} (${r.dir==='up'?'+':''}${r.pct}%)\n`;});
+  } else {
+    const list=getExportItems(scope);
+    const cats=['fabric','acc','pack','dye','local','mfg'];
+    (scope==='all'?cats:[scope]).forEach(cat=>{
+      const ci=list.filter(i=>i.cat===cat); if(!ci.length) return;
+      msg+=`*${cat.toUpperCase()}*\n`;
+      ci.forEach((it,i)=>{msg+=`${i+1}. ${it.name} — *₹${it.price}* /${it.unit.replace('per ','')}\n`;});
+      msg+='\n';
+    });
+  }
+  msg+='_Textile Rate Master Pro se bheja gaya_';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  closeModal('export-modal');
+}
+async function doExcel(){
+  const scope=document.getElementById('exp-scope')?.value||'all';
+  const wb=XLSX.utils.book_new();
+  const today2=new Date().toISOString().slice(0,10);
+  if(scope==='parties'){
+    const rows=parties.map(p=>[p.type,p.cat,p.name,p.city,p.contact||'',p.gst||'',p.minOrder||'',p.rate||'',p.delivery||'',p.speciality||'',p.rating||'',p.notes||'',p.added||'']);
+    const ws=XLSX.utils.aoa_to_sheet([['Type','Category','Name','City','Contact','GST','Min Order','Rate','Delivery','Speciality','Rating','Notes','Added'],...rows]);
+    XLSX.utils.book_append_sheet(wb,ws,'Parties');
+  } else if(scope==='records'){
+    const rows=records.map((r,i)=>[i+1,r.time,r.name,r.cat,r.oldPrice,r.newPrice,Number(r.diff).toFixed(2),r.pct,r.dir]);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['#','Time','Item','Category','Old Rate','New Rate','Change','Change %','Direction'],...rows]),'Rate History');
+  } else {
+    const list=getExportItems(scope);
+    const cats=scope==='all'?['fabric','acc','pack','dye','local','mfg']:[scope];
+    cats.forEach(cat=>{
+      const ci=list.filter(i=>i.cat===cat); if(!ci.length) return;
+      const rows=ci.map((it,i)=>{const d=it.price-it.prev;return[i+1,it.name,it.brand||'',it.widths?(it.widths.join(', ')):it.notes||'',it.unit,it.price,it.prev,d.toFixed(2),(it.prev?((d/it.prev)*100).toFixed(1):0)+'%',it.status];});
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['#','Item','Brand','Detail','Unit','Rate','Prev Rate','Change','Change %','Status'],...rows]),cat.toUpperCase().slice(0,31));
+    });
+    // Summary
+    const sumRows=['fabric','acc','pack','dye','local','mfg'].map(c=>{const ci=items.filter(i=>i.cat===c);return[c,ci.length,ci.filter(i=>i.status==='updated').length,ci.filter(i=>i.price>i.prev).length,ci.filter(i=>i.price<i.prev).length];});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Category','Items','Updated','Up','Down'],...sumRows]),'Summary');
+  }
+  XLSX.writeFile(wb,'TextileRateMasterPro_'+today2+'.xlsx');
+  closeModal('export-modal');
+  toast('📊 Excel exported!','info');
+}
+
+// Individual page export buttons
+function printDashboard(){ window.print(); }
+function pdfDashboard(){ document.getElementById('exp-scope').value='all'; doPDF(); }
+function waDashboard(){ document.getElementById('exp-scope').value='all'; doWA(); }
+function excelAll(){ document.getElementById('exp-scope').value='all'; doExcel(); }
+function printRates(){ document.getElementById('exp-scope').value=catFilter==='all'?'all':catFilter; doPrint(); }
+function pdfRates(){ document.getElementById('exp-scope').value=catFilter==='all'?'all':catFilter; doPDF(); }
+function waRates(){ document.getElementById('exp-scope').value=catFilter==='all'?'all':catFilter; doWA(); }
+function excelRates(){ document.getElementById('exp-scope').value=catFilter==='all'?'all':catFilter; doExcel(); }
+function printParties(){ document.getElementById('exp-scope').value='parties'; doPrint(); }
+function pdfParties(){ document.getElementById('exp-scope').value='parties'; doPDF(); }
+function waParties(){ document.getElementById('exp-scope').value='parties'; doWA(); }
+function excelParties(){ document.getElementById('exp-scope').value='parties'; doExcel(); }
+function printRecords(){ document.getElementById('exp-scope').value='records'; doPrint(); }
+function pdfRecords(){ document.getElementById('exp-scope').value='records'; doPDF(); }
+function waRecords(){ document.getElementById('exp-scope').value='records'; doWA(); }
+function excelRecords(){ document.getElementById('exp-scope').value='records'; doExcel(); }
+function printCompare(){ window.print(); }
+function pdfCompare(){ window.print(); }
+function waCompare(){
+  const itemId=document.getElementById('cmp-item')?.value;
+  if(!itemId) return toast('Item select karein','');
+  const it=items.find(i=>i.id===itemId);
+  const pRates=partyRates.filter(r=>r.itemId===itemId);
+  let msg=`*⚖️ Rate Compare: ${it?.name||''}*\n\n`;
+  msg+=`Our Rate: ₹${it?.price} / ${it?.unit}\n`;
+  pRates.forEach(r=>{const p=parties.find(x=>x.id===r.partyId);if(p)msg+=`${p.name}: ₹${r.rate}\n`;});
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+function excelCompare(){
+  const itemId=document.getElementById('cmp-item')?.value;
+  if(!itemId) return toast('Item select karein','');
+  const it=items.find(i=>i.id===itemId);
+  const pRates=partyRates.filter(r=>r.itemId===itemId);
+  const rows=[[{partyName:'Our Rate',rate:it?.price,minOrder:'—',delivery:'—',remarks:'Current'},...pRates.map(r=>{const p=parties.find(x=>x.id===r.partyId);return{partyName:p?.name||'',rate:r.rate,minOrder:r.minOrder||'',delivery:r.delivery||'',remarks:r.remarks||''};})].map(r=>[r.partyName,r.rate,r.minOrder,r.delivery,r.remarks])];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Party','Rate','Min Order','Delivery','Remarks'],...rows[0]]),'Compare');
+  XLSX.writeFile(wb,'Compare_'+it?.name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function printAlertLog(){ document.getElementById('exp-scope').value='records'; doPrint(); }
+function waAlertLog(){
+  let msg='*🔔 Alert Log*\n\n';
+  alertLog.slice(0,15).forEach((e,i)=>{msg+=`${i+1}. ${e.dir==='up'?'📈':'📉'} ${e.name}: ₹${e.oldPrice}→₹${e.newPrice} (${e.pct}%)\n`;});
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+function excelAlertLog(){
+  const rows=alertLog.map((e,i)=>[i+1,e.time,e.name,e.cat,e.oldPrice,e.newPrice,Number(e.diff).toFixed(2),e.pct,e.dir]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['#','Time','Item','Cat','Old','New','Change','%','Dir'],...rows]),'Alert Log');
+  XLSX.writeFile(wb,'AlertLog_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('📊 Alert log exported!','info');
+}
+
+// ══════════════════════════════════════════
+// MODAL / TOAST HELPERS
+// ══════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function toast(msg,type='info'){
+  const wrap=document.getElementById('toastWrap');
+  const id='t'+Date.now();
+  const div=document.createElement('div');
+  div.className=`toast ${type}`;
+  div.id=id;
+  div.innerHTML=`<div class="toast-body"><div class="toast-title">${msg}</div></div><button class="toast-close" onclick="document.getElementById('${id}').remove()">✕</button>`;
+  wrap.appendChild(div);
+  setTimeout(()=>{ const el=document.getElementById(id);if(el)el.remove(); },4000);
+}
+
+// ══════════════════════════════════════════
+// DIRECTORY — MASTER ITEM DATABASE
+// ══════════════════════════════════════════
+const STORE_DIR = 'trm6_directory';
+
+const DIR_CAT_META = {
+  yarn:       {label:'🧶 Yarn',          color:'var(--blue)',   bg:'var(--bluebg)'},
+  fabric:     {label:'🪡 Fabric',         color:'var(--teal)',   bg:'var(--tealbg)'},
+  dyeing:     {label:'🎨 Dyeing & Printing',color:'var(--purple)', bg:'var(--purplebg)'},
+  packing:    {label:'📦 Packing',        color:'var(--orange)', bg:'var(--orangebg)'},
+  accessories:{label:'🧷 Accessories',    color:'var(--green)',  bg:'var(--greenbg)'},
+  waste:      {label:'♻️ Cotton Waste',   color:'var(--yellow)', bg:'var(--yellowbg)'},
+  weaving:    {label:'🪢 Weaving Charges',color:'var(--pink)',   bg:'#1f0015'},
+  chemical:   {label:'⚗️ Chemicals',      color:'var(--muted)',  bg:'var(--surface)'},
+};
+
+const FIBER_META = {
+  cotton:   '🌿 Cotton',
+  polyester:'🔵 Polyester',
+  acrylic:  '🟣 Acrylic',
+  blended:  '🔀 Blended',
+  viscose:  '⚪ Viscose',
+  nylon:    '🟡 Nylon',
+  silk:     '🟠 Silk',
+  wool:     '🟤 Wool',
+  na:       '—',
+};
+
+// Built-in master directory
+const BUILTIN_DIRECTORY = [
+  // ── YARN ── COTTON ──
+  {id:'d001',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 2/10',desc:'2/10 Count, Carded',unit:'per kg',notes:'Grey/Kachcha Dhaga'},
+  {id:'d002',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 2/20',desc:'2/20 Count, Carded',unit:'per kg',notes:''},
+  {id:'d003',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 2/30',desc:'2/30 Count, Combed',unit:'per kg',notes:''},
+  {id:'d004',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 2/40',desc:'2/40 Count, Combed',unit:'per kg',notes:'Fine quality'},
+  {id:'d005',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 4/40',desc:'4/40 Count',unit:'per kg',notes:''},
+  {id:'d006',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 6/1',desc:'6/1 Count, OE',unit:'per kg',notes:'Open End Spinning'},
+  {id:'d007',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 10/1',desc:'10/1 Count',unit:'per kg',notes:''},
+  {id:'d008',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 16/1',desc:'16/1 Count',unit:'per kg',notes:''},
+  {id:'d009',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 20/1',desc:'20/1 Count',unit:'per kg',notes:''},
+  {id:'d010',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 30/1',desc:'30/1 Count, Combed',unit:'per kg',notes:''},
+  {id:'d011',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 40/1',desc:'40/1 Count, Combed',unit:'per kg',notes:'Fine quality'},
+  {id:'d012',cat:'yarn',fiber:'cotton',name:'Cotton Yarn 60/1',desc:'60/1 Count, Combed',unit:'per kg',notes:'Super fine'},
+  {id:'d013',cat:'yarn',fiber:'cotton',name:'Cotton Hosiery Yarn 20/1',desc:'20/1, Knitting grade',unit:'per kg',notes:'For knitting'},
+  {id:'d014',cat:'yarn',fiber:'cotton',name:'Cotton Hosiery Yarn 30/1',desc:'30/1, Knitting grade',unit:'per kg',notes:''},
+  {id:'d015',cat:'yarn',fiber:'cotton',name:'Cotton Mercerised Yarn 40/2',desc:'Mercerised, 40/2',unit:'per kg',notes:''},
+  // ── YARN ── POLYESTER ──
+  {id:'d020',cat:'yarn',fiber:'polyester',name:'Polyester Yarn 150D/48F',desc:'150 Denier, 48 Filament',unit:'per kg',notes:'FDY'},
+  {id:'d021',cat:'yarn',fiber:'polyester',name:'Polyester Yarn 75D/36F',desc:'75 Denier, 36 Filament',unit:'per kg',notes:'DTY'},
+  {id:'d022',cat:'yarn',fiber:'polyester',name:'Polyester Yarn 300D/96F',desc:'300 Denier',unit:'per kg',notes:'Heavy'},
+  {id:'d023',cat:'yarn',fiber:'polyester',name:'Polyester Spun Yarn 30/1',desc:'30/1 Spun',unit:'per kg',notes:''},
+  {id:'d024',cat:'yarn',fiber:'polyester',name:'Polyester Spun Yarn 40/1',desc:'40/1 Spun',unit:'per kg',notes:''},
+  {id:'d025',cat:'yarn',fiber:'polyester',name:'Polyester Sewing Thread 40/2',desc:'40/2, Sewing',unit:'per kg',notes:''},
+  // ── YARN ── ACRYLIC ──
+  {id:'d030',cat:'yarn',fiber:'acrylic',name:'Acrylic Yarn 2/28',desc:'2/28 Count',unit:'per kg',notes:'Bulky quality'},
+  {id:'d031',cat:'yarn',fiber:'acrylic',name:'Acrylic Yarn 2/32',desc:'2/32 Count',unit:'per kg',notes:''},
+  {id:'d032',cat:'yarn',fiber:'acrylic',name:'Acrylic Yarn 2/48',desc:'2/48 Count, Fine',unit:'per kg',notes:''},
+  {id:'d033',cat:'yarn',fiber:'acrylic',name:'Acrylic Chenille Yarn',desc:'Chenille, various counts',unit:'per kg',notes:''},
+  {id:'d034',cat:'yarn',fiber:'acrylic',name:'Acrylic Hosiery Yarn',desc:'Knitting grade',unit:'per kg',notes:''},
+  // ── YARN ── BLENDED ──
+  {id:'d040',cat:'yarn',fiber:'blended',name:'PC Yarn 52/48 30/1',desc:'Polyester Cotton 52/48, 30/1',unit:'per kg',notes:''},
+  {id:'d041',cat:'yarn',fiber:'blended',name:'PC Yarn 65/35 40/1',desc:'PC 65/35, 40/1',unit:'per kg',notes:''},
+  {id:'d042',cat:'yarn',fiber:'blended',name:'Cotton Viscose Yarn 70/30',desc:'Cotton/Viscose blend',unit:'per kg',notes:''},
+  {id:'d043',cat:'yarn',fiber:'blended',name:'Wool Acrylic Yarn 50/50',desc:'Wool/Acrylic 50/50',unit:'per kg',notes:''},
+  // ── FABRIC ── COTTON ──
+  {id:'d050',cat:'fabric',fiber:'cotton',name:'Cotton Poplin',desc:'36"/44"/58" width',unit:'per meter',notes:'Shirt quality'},
+  {id:'d051',cat:'fabric',fiber:'cotton',name:'Cotton Cambric',desc:'36" width',unit:'per meter',notes:'Fine plain weave'},
+  {id:'d052',cat:'fabric',fiber:'cotton',name:'Cotton Sheeting',desc:'60" width',unit:'per meter',notes:'Bed sheet quality'},
+  {id:'d053',cat:'fabric',fiber:'cotton',name:'Cotton Twill',desc:'44" width',unit:'per meter',notes:''},
+  {id:'d054',cat:'fabric',fiber:'cotton',name:'Cotton Canvas',desc:'Heavy weight',unit:'per meter',notes:'Industrial use'},
+  {id:'d055',cat:'fabric',fiber:'cotton',name:'Cotton Lawn',desc:'36", fine quality',unit:'per meter',notes:''},
+  {id:'d056',cat:'fabric',fiber:'cotton',name:'Cotton Satin',desc:'44", glossy',unit:'per meter',notes:''},
+  {id:'d057',cat:'fabric',fiber:'cotton',name:'Khadi Cotton',desc:'Handloom, 36"/44"',unit:'per meter',notes:''},
+  {id:'d058',cat:'fabric',fiber:'cotton',name:'Cotton Interlock',desc:'Knitted, 36" width',unit:'per kg',notes:'T-shirt quality'},
+  {id:'d059',cat:'fabric',fiber:'cotton',name:'Cotton Single Jersey',desc:'Knitted',unit:'per kg',notes:''},
+  {id:'d060',cat:'fabric',fiber:'cotton',name:'Cotton Fleece',desc:'Heavy knit',unit:'per kg',notes:''},
+  // ── FABRIC ── POLYESTER ──
+  {id:'d065',cat:'fabric',fiber:'polyester',name:'Georgette',desc:'44"/54" width',unit:'per meter',notes:'Party wear'},
+  {id:'d066',cat:'fabric',fiber:'polyester',name:'Chiffon',desc:'44" width, sheer',unit:'per meter',notes:''},
+  {id:'d067',cat:'fabric',fiber:'polyester',name:'Polyester Satin',desc:'44" width',unit:'per meter',notes:''},
+  {id:'d068',cat:'fabric',fiber:'polyester',name:'Polyester Interlock',desc:'Knitted',unit:'per kg',notes:''},
+  {id:'d069',cat:'fabric',fiber:'polyester',name:'Polyester Taffeta',desc:'44" width',unit:'per meter',notes:'Lining use'},
+  {id:'d070',cat:'fabric',fiber:'polyester',name:'Polyester Crepe',desc:'44" width',unit:'per meter',notes:''},
+  // ── FABRIC ── BLENDED ──
+  {id:'d075',cat:'fabric',fiber:'blended',name:'PC Fabric 65/35',desc:'Polyester Cotton blend, 44"',unit:'per meter',notes:''},
+  {id:'d076',cat:'fabric',fiber:'blended',name:'TR Fabric (Terylene Rayon)',desc:'44" width',unit:'per meter',notes:''},
+  {id:'d077',cat:'fabric',fiber:'blended',name:'Linen Cotton Blend',desc:'44" width',unit:'per meter',notes:'Summer wear'},
+  // ── FABRIC ── SILK ──
+  {id:'d080',cat:'fabric',fiber:'silk',name:'Banarasi Silk',desc:'44" width',unit:'per meter',notes:'Varanasi quality'},
+  {id:'d081',cat:'fabric',fiber:'silk',name:'Raw Silk',desc:'Natural color',unit:'per meter',notes:''},
+  {id:'d082',cat:'fabric',fiber:'silk',name:'Dupioni Silk',desc:'44" width, slub',unit:'per meter',notes:''},
+  // ── DYEING & PRINTING ──
+  {id:'d090',cat:'dyeing',fiber:'cotton',name:'Reactive Dyeing — Cotton',desc:'Solid color, per meter',unit:'per meter',notes:''},
+  {id:'d091',cat:'dyeing',fiber:'polyester',name:'Disperse Dyeing — Polyester',desc:'Solid color',unit:'per meter',notes:''},
+  {id:'d092',cat:'dyeing',fiber:'blended',name:'PC Dyeing — Combined',desc:'Polyester Cotton',unit:'per meter',notes:''},
+  {id:'d093',cat:'dyeing',fiber:'na',name:'Screen Printing',desc:'Per colour, per meter',unit:'per meter',notes:''},
+  {id:'d094',cat:'dyeing',fiber:'na',name:'Digital Printing',desc:'Full color, per meter',unit:'per meter',notes:''},
+  {id:'d095',cat:'dyeing',fiber:'na',name:'Pigment Printing',desc:'Per design',unit:'per meter',notes:''},
+  {id:'d096',cat:'dyeing',fiber:'na',name:'Discharge Printing',desc:'Per meter',unit:'per meter',notes:''},
+  {id:'d097',cat:'dyeing',fiber:'na',name:'Rotary Printing',desc:'Per color, per meter',unit:'per meter',notes:'Large qty'},
+  {id:'d098',cat:'dyeing',fiber:'cotton',name:'Yarn Dyeing — Cotton',desc:'Hank/Cone dyeing',unit:'per kg',notes:''},
+  {id:'d099',cat:'dyeing',fiber:'na',name:'Bleaching Charge',desc:'White/Off white',unit:'per meter',notes:''},
+  {id:'d100',cat:'dyeing',fiber:'na',name:'Mercerisation Charge',desc:'Cotton treatment',unit:'per meter',notes:''},
+  {id:'d101',cat:'dyeing',fiber:'na',name:'Calendering / Finishing',desc:'Per meter',unit:'per meter',notes:''},
+  {id:'d102',cat:'dyeing',fiber:'na',name:'Sanforizing Charge',desc:'Shrink proofing',unit:'per meter',notes:''},
+  // ── WEAVING CHARGES ──
+  {id:'d110',cat:'weaving',fiber:'cotton',name:'Weaving Charge — Plain',desc:'Plain weave, per meter',unit:'per meter',notes:'Power loom'},
+  {id:'d111',cat:'weaving',fiber:'cotton',name:'Weaving Charge — Twill',desc:'Twill weave, per meter',unit:'per meter',notes:''},
+  {id:'d112',cat:'weaving',fiber:'na',name:'Weaving Charge — Dobby',desc:'Dobby design',unit:'per meter',notes:''},
+  {id:'d113',cat:'weaving',fiber:'na',name:'Handloom Weaving Charge',desc:'Per meter, handloom',unit:'per meter',notes:''},
+  {id:'d114',cat:'weaving',fiber:'na',name:'Jacquard Weaving Charge',desc:'Per meter, design',unit:'per meter',notes:''},
+  {id:'d115',cat:'weaving',fiber:'na',name:'Warping Charge',desc:'Per kg or per meter',unit:'per kg',notes:''},
+  {id:'d116',cat:'weaving',fiber:'na',name:'Sizing Charge',desc:'Per kg',unit:'per kg',notes:''},
+  {id:'d117',cat:'weaving',fiber:'na',name:'Knitting Charge — Circular',desc:'Per kg, knitting',unit:'per kg',notes:''},
+  {id:'d118',cat:'weaving',fiber:'na',name:'Knitting Charge — Warp',desc:'Per kg',unit:'per kg',notes:''},
+  // ── PACKING MATERIAL ──
+  {id:'d120',cat:'packing',fiber:'na',name:'LDPE Poly Bag — Small',desc:'30x40cm, 40 micron',unit:'per kg',notes:''},
+  {id:'d121',cat:'packing',fiber:'na',name:'LDPE Poly Bag — Large',desc:'60x80cm, 50 micron',unit:'per kg',notes:''},
+  {id:'d122',cat:'packing',fiber:'na',name:'PP Woven Bag',desc:'50 kg capacity',unit:'per piece',notes:'Rice bag type'},
+  {id:'d123',cat:'packing',fiber:'na',name:'Cardboard Box — Small',desc:'12x8x4 inch',unit:'per piece',notes:''},
+  {id:'d124',cat:'packing',fiber:'na',name:'Cardboard Box — Export',desc:'18x12x6 inch, 5 ply',unit:'per piece',notes:'Export quality'},
+  {id:'d125',cat:'packing',fiber:'na',name:'Brown Tape 2"',desc:'48mm, 100 meter',unit:'per piece',notes:''},
+  {id:'d126',cat:'packing',fiber:'na',name:'Stretch Film Roll',desc:'500mm x 200m',unit:'per roll',notes:''},
+  {id:'d127',cat:'packing',fiber:'na',name:'Silica Gel Sachet',desc:'1g, 2g, 5g',unit:'per piece',notes:'Moisture absorber'},
+  {id:'d128',cat:'packing',fiber:'na',name:'Price Tag / Barcode Label',desc:'Paper tag',unit:'per dozen',notes:''},
+  {id:'d129',cat:'packing',fiber:'na',name:'Hang Tag — Paper',desc:'Printed, per dozen',unit:'per dozen',notes:''},
+  {id:'d130',cat:'packing',fiber:'na',name:'Tissue Paper',desc:'MG tissue, per kg',unit:'per kg',notes:''},
+  {id:'d131',cat:'packing',fiber:'na',name:'Cone — Plastic',desc:'Yarn cone',unit:'per piece',notes:''},
+  // ── ACCESSORIES ──
+  {id:'d140',cat:'accessories',fiber:'na',name:'YKK Zipper — Metal',desc:'Various length',unit:'per piece',notes:'Imported quality'},
+  {id:'d141',cat:'accessories',fiber:'na',name:'Nylon Zipper',desc:'Standard quality',unit:'per piece',notes:''},
+  {id:'d142',cat:'accessories',fiber:'na',name:'Button — Plastic 4 Hole',desc:'15L, 18L, 20L, 24L',unit:'per dozen',notes:''},
+  {id:'d143',cat:'accessories',fiber:'na',name:'Button — Metal',desc:'Shank button',unit:'per dozen',notes:''},
+  {id:'d144',cat:'accessories',fiber:'na',name:'Button — Wood',desc:'Natural wood',unit:'per dozen',notes:''},
+  {id:'d145',cat:'accessories',fiber:'na',name:'Hook & Eye',desc:'Small, medium',unit:'per dozen',notes:''},
+  {id:'d146',cat:'accessories',fiber:'na',name:'Velcro 1"',desc:'Hook & loop, per meter',unit:'per meter',notes:''},
+  {id:'d147',cat:'accessories',fiber:'na',name:'Velcro 2"',desc:'Heavy duty',unit:'per meter',notes:''},
+  {id:'d148',cat:'accessories',fiber:'na',name:'Elastic 1"',desc:'Woven elastic, per meter',unit:'per meter',notes:''},
+  {id:'d149',cat:'accessories',fiber:'na',name:'Elastic 2"',desc:'Waist band quality',unit:'per meter',notes:''},
+  {id:'d150',cat:'accessories',fiber:'na',name:'Snap Button (Press Button)',desc:'Metal, various size',unit:'per dozen',notes:''},
+  {id:'d151',cat:'accessories',fiber:'na',name:'Sewing Thread — Polyester 40/2',desc:'5000m cone',unit:'per cone',notes:''},
+  {id:'d152',cat:'accessories',fiber:'na',name:'Embroidery Thread',desc:'100% cotton, per skein',unit:'per piece',notes:''},
+  {id:'d153',cat:'accessories',fiber:'na',name:'Lining Fabric',desc:'Polyester, 44" width',unit:'per meter',notes:''},
+  {id:'d154',cat:'accessories',fiber:'na',name:'Fusing / Interlining',desc:'Woven fusing',unit:'per meter',notes:''},
+  {id:'d155',cat:'accessories',fiber:'na',name:'Shoulder Pad',desc:'Foam, various thickness',unit:'per pair',notes:''},
+  {id:'d156',cat:'accessories',fiber:'na',name:'Care Label',desc:'Woven care label',unit:'per dozen',notes:''},
+  {id:'d157',cat:'accessories',fiber:'na',name:'Main Label / Brand Label',desc:'Woven brand label',unit:'per dozen',notes:''},
+  {id:'d158',cat:'accessories',fiber:'na',name:'Drawstring',desc:'Cotton/Polyester cord',unit:'per meter',notes:''},
+  {id:'d159',cat:'accessories',fiber:'na',name:'Rivets — Jeans',desc:'Copper rivet',unit:'per dozen',notes:''},
+  // ── COTTON WASTE ──
+  {id:'d160',cat:'waste',fiber:'cotton',name:'Cotton Soft Waste',desc:'Soft waste, mixing grade',unit:'per kg',notes:''},
+  {id:'d161',cat:'waste',fiber:'cotton',name:'Cotton Hard Waste',desc:'Hard waste',unit:'per kg',notes:''},
+  {id:'d162',cat:'waste',fiber:'cotton',name:'Cotton Comber Noil',desc:'Comber waste',unit:'per kg',notes:''},
+  {id:'d163',cat:'waste',fiber:'cotton',name:'Cotton Yarn Waste',desc:'Yarn cutting waste',unit:'per kg',notes:''},
+  {id:'d164',cat:'waste',fiber:'polyester',name:'Polyester Waste Fiber',desc:'Recycled',unit:'per kg',notes:''},
+  {id:'d165',cat:'waste',fiber:'blended',name:'Mixed Fibre Waste',desc:'Cotton Polyester mixed',unit:'per kg',notes:''},
+  {id:'d166',cat:'waste',fiber:'na',name:'Fabric Cutting Waste',desc:'Cuttings, per kg',unit:'per kg',notes:''},
+  // ── CHEMICALS ──
+  {id:'d170',cat:'chemical',fiber:'na',name:'Soda Ash (Na2CO3)',desc:'Per kg, dyeing grade',unit:'per kg',notes:''},
+  {id:'d171',cat:'chemical',fiber:'na',name:'Common Salt (NaCl)',desc:'Dyeing grade',unit:'per kg',notes:''},
+  {id:'d172',cat:'chemical',fiber:'na',name:'Hydrogen Peroxide 50%',desc:'H2O2, bleaching',unit:'per kg',notes:''},
+  {id:'d173',cat:'chemical',fiber:'na',name:'Caustic Soda',desc:'NaOH, per kg',unit:'per kg',notes:''},
+  {id:'d174',cat:'chemical',fiber:'na',name:'Acetic Acid',desc:'Glacial, per kg',unit:'per kg',notes:''},
+  {id:'d175',cat:'chemical',fiber:'na',name:'Fixing Agent',desc:'Cationic fixing agent',unit:'per kg',notes:'After treatment'},
+  {id:'d176',cat:'chemical',fiber:'na',name:'Softener — Silicone',desc:'Micro emulsion',unit:'per kg',notes:'Finishing'},
+  {id:'d177',cat:'chemical',fiber:'na',name:'Starch / Sizing Agent',desc:'Maize starch',unit:'per kg',notes:''},
+];
+
+// Load user-added directory items
+let userDirItems = ls(STORE_DIR) || [];
+function getAllDirItems(){ return [...BUILTIN_DIRECTORY, ...userDirItems]; }
+
+// ══════════════════════════════════════════
+// DIRECTORY FUNCTIONS
+// ══════════════════════════════════════════
+function renderDirectory(){
+  const q=(document.getElementById('dir-search')?.value||'').toLowerCase().trim();
+  const cat=document.getElementById('dir-cat')?.value||'all';
+  const fiber=document.getElementById('dir-fiber')?.value||'all';
+  let list=getAllDirItems();
+
+  // Filter
+  if(q) list=list.filter(d=>(d.name+d.desc+d.notes+d.fiber+d.cat).toLowerCase().includes(q));
+  if(cat!=='all') list=list.filter(d=>d.cat===cat);
+  if(fiber!=='all') list=list.filter(d=>d.fiber===fiber);
+
+  // Stats row
+  const statsEl=document.getElementById('dir-stats-row');
+  const cats=['yarn','fabric','dyeing','packing','accessories','waste','weaving','chemical'];
+  if(statsEl) statsEl.innerHTML=cats.map(c=>{
+    const cnt=getAllDirItems().filter(d=>d.cat===c).length;
+    const m=DIR_CAT_META[c]; if(!cnt) return '';
+    return `<span style="background:${m.bg};border:1px solid ${m.color}40;color:${m.color};border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700">${m.label} <b>(${cnt})</b></span>`;
+  }).join('');
+
+  const el=document.getElementById('dir-results');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📚</div><p>Koi item nahi mila<br><small style="color:var(--muted)">Neeche "Naya Item Add Karein" se add kar sakte hain</small></p></div>`;
+    return;
+  }
+
+  // Group by category
+  const grouped={};
+  list.forEach(d=>{
+    if(!grouped[d.cat]) grouped[d.cat]=[];
+    grouped[d.cat].push(d);
+  });
+
+  el.innerHTML=Object.entries(grouped).map(([cat,items2])=>{
+    const m=DIR_CAT_META[cat]||{label:cat,color:'var(--muted)',bg:'var(--surface)'};
+    const rows=items2.map(d=>{
+      const inRateList=items.find(i=>i.name===d.name);
+      const fiberLabel=FIBER_META[d.fiber]||'';
+      return `<tr>
+        <td style="font-weight:700">${d.name}</td>
+        <td style="color:var(--muted);font-size:11px">${d.desc||'—'}</td>
+        <td><span style="font-size:10px;color:var(--muted)">${fiberLabel}</span></td>
+        <td style="font-size:11px;color:var(--muted)">${d.unit}</td>
+        <td style="font-size:11px;color:var(--muted)">${d.notes||'—'}</td>
+        <td class="td-center">
+          ${inRateList
+            ? `<span style="color:var(--green);font-size:11px;font-weight:700">✅ ₹${inRateList.price}</span>`
+            : `<button class="btn btn-primary btn-xs" onclick="openAddRateModal('${d.id}')">➕ Add Rate</button>`
+          }
+          ${d.id.startsWith('u_')?`<button class="btn btn-red btn-xs" onclick="deleteDirItem('${d.id}')" style="margin-left:4px">🗑</button>`:''}
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:14px;border-top:3px solid ${m.color}">
+      <div class="card-hd">
+        <div class="card-title"><span style="font-size:16px">${m.label}</span> <span style="color:var(--muted);font-size:11px">(${items2.length} items)</span></div>
+        <a href="https://www.indiamart.com/search.mp?ss=${encodeURIComponent(m.label.replace(/[^\w\s]/g,''))}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none">🔍 IndiaMart →</a>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Item Name</th><th>Count / Detail</th><th>Fiber</th><th>Unit</th><th>Notes</th><th>Action</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addToDirectory(){
+  const name=document.getElementById('dir-add-name').value.trim();
+  if(!name) return toast('⚠️ Item naam zaroori hai!','');
+  const newItem={
+    id:'u_'+uid(),
+    cat:document.getElementById('dir-add-cat').value,
+    fiber:document.getElementById('dir-add-fiber').value,
+    name,
+    desc:document.getElementById('dir-add-desc').value.trim(),
+    unit:document.getElementById('dir-add-unit').value,
+    notes:document.getElementById('dir-add-notes').value.trim(),
+  };
+  userDirItems.push(newItem);
+  ss(STORE_DIR,userDirItems);
+  document.getElementById('dir-add-name').value='';
+  document.getElementById('dir-add-desc').value='';
+  document.getElementById('dir-add-notes').value='';
+  renderDirectory();
+  toast(`✅ "${name}" directory mein add hua!`,'info');
+}
+
+function deleteDirItem(id){
+  if(!confirm('Is item ko directory se hatayein?')) return;
+  userDirItems=userDirItems.filter(d=>d.id!==id);
+  ss(STORE_DIR,userDirItems);
+  renderDirectory();
+  toast('🗑 Directory item removed','');
+}
+
+// ── ADD RATE MODAL ──
+let _armDirItem=null;
+function openAddRateModal(dirId){
+  const d=getAllDirItems().find(x=>x.id===dirId); if(!d) return;
+  _armDirItem=d;
+  document.getElementById('arm-dir-id').value=dirId;
+  document.getElementById('arm-item-info').innerHTML=`
+    <div style="font-weight:800;font-size:14px;margin-bottom:4px">${d.name}</div>
+    <div style="font-size:11px;color:var(--muted)">${DIR_CAT_META[d.cat]?.label||d.cat} · ${d.desc||''} · ${d.unit}</div>`;
+  document.getElementById('arm-price').value='';
+  document.getElementById('arm-notes').value='';
+  document.getElementById('arm-date').value=today();
+  document.getElementById('arm-status').value='verified';
+  document.getElementById('arm-source').value='market';
+  // Party rate rows
+  document.getElementById('arm-party-rates').innerHTML=buildPartyRateRow(0);
+  // IndiaMart link
+  document.getElementById('arm-indiamart-link').textContent=`IndiaMart pe "${d.name}" search karein →`;
+  document.getElementById('arm-indiamart-link').onclick=()=>openIndiamart(d.name);
+  openModal('add-rate-modal');
+}
+
+function buildPartyRateRow(i){
+  return `<div class="party-rate-row" id="prr-${i}" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+    <select class="inp" style="flex:1;min-width:150px" id="prr-party-${i}">
+      <option value="">— Party Select (Optional) —</option>
+      ${parties.map(p=>`<option value="${p.id}">${p.name} (${p.city})</option>`).join('')}
+    </select>
+    <input type="number" class="inp" style="width:100px" id="prr-rate-${i}" placeholder="Rate ₹">
+    <button class="btn btn-ghost btn-xs" onclick="addPartyRateRow()" title="Aur party add karein">➕</button>
+    ${i>0?`<button class="btn btn-red btn-xs" onclick="document.getElementById('prr-${i}').remove()">✕</button>`:''}
+  </div>`;
+}
+
+let _prrCount=1;
+function addPartyRateRow(){
+  const wrap=document.getElementById('arm-party-rates');
+  const div=document.createElement('div');
+  div.innerHTML=buildPartyRateRow(_prrCount++);
+  wrap.appendChild(div.firstChild);
+}
+
+function openIndiamart(name){
+  const q=name||(_armDirItem?.name||'textile yarn');
+  window.open(`https://www.indiamart.com/search.mp?ss=${encodeURIComponent(q)}`,'_blank');
+}
+
+function confirmAddToRateList(){
+  const d=_armDirItem; if(!d) return;
+  const price=parseFloat(document.getElementById('arm-price').value);
+  if(!price) return toast('⚠️ Rate zaroori hai!','');
+  const status=document.getElementById('arm-status').value;
+  const source=document.getElementById('arm-source').value;
+  const notes=document.getElementById('arm-notes').value;
+
+  // Check if already exists
+  const existing=items.findIndex(i=>i.name===d.name);
+  const catMap={yarn:'fabric',fabric:'fabric',dyeing:'dye',packing:'pack',accessories:'acc',waste:'local',weaving:'mfg',chemical:'dye'};
+
+  if(existing>=0){
+    const old=items[existing];
+    if(old.price!==price){
+      records.unshift({id:uid(),itemId:old.id,name:d.name,cat:old.cat,oldPrice:old.price,newPrice:price,diff:price-old.price,pct:old.price?((Math.abs(price-old.price)/old.price)*100).toFixed(1):0,dir:price>old.price?'up':'down',time:now(),date:today(),source,status});
+      ss(STORE_RECORDS,records);
+    }
+    items[existing]={...old,price,prev:old.price,status,notes,updatedAt:today()};
+  } else {
+    const newItem={id:uid(),cat:catMap[d.cat]||'fabric',name:d.name,brand:d.desc||'',unit:d.unit,price,prev:price,widths:[],notes,status,updatedAt:today(),source,fiber:d.fiber};
+    items.push(newItem);
+    // Record
+    records.unshift({id:uid(),itemId:newItem.id,name:d.name,cat:newItem.cat,oldPrice:0,newPrice:price,diff:price,pct:0,dir:'up',time:now(),date:today(),source,status});
+    ss(STORE_RECORDS,records);
+  }
+  ss(STORE_ITEMS,items);
+
+  // Save party rates
+  let prrI=0;
+  while(document.getElementById('prr-party-'+prrI)){
+    const partyId=document.getElementById('prr-party-'+prrI)?.value;
+    const pRate=parseFloat(document.getElementById('prr-rate-'+prrI)?.value||0);
+    if(partyId&&pRate){
+      const itemId=items.find(i=>i.name===d.name)?.id;
+      if(itemId){
+        const ex=partyRates.findIndex(r=>r.itemId===itemId&&r.partyId===partyId);
+        const data={id:uid(),itemId,partyId,rate:pRate,minOrder:'',delivery:'',remarks:'From Directory',addedAt:now()};
+        if(ex>=0) partyRates[ex]={...partyRates[ex],...data};
+        else partyRates.push(data);
+      }
+    }
+    prrI++;
+  }
+  ss(STORE_PRATINGS,partyRates);
+
+  closeModal('add-rate-modal');
+  renderDirectory();
+  toast(`✅ "${d.name}" — ₹${price} rate list mein add hua! (${status==='verified'?'Verified':'Draft'})`,'info');
+  _prrCount=1;
+}
+
+// Directory export functions
+function printDir(){ document.getElementById('exp-scope').value='all'; doPrint(); }
+function pdfDir(){ document.getElementById('exp-scope').value='all'; doPDF(); }
+function waDir(){
+  const list=getAllDirItems().slice(0,30);
+  let msg='*📚 Textile Directory*\n\n';
+  const cats=['yarn','fabric','dyeing','packing','accessories','waste'];
+  cats.forEach(cat=>{
+    const ci=list.filter(d=>d.cat===cat); if(!ci.length) return;
+    msg+=`*${DIR_CAT_META[cat]?.label||cat}*\n`;
+    ci.slice(0,8).forEach(d=>{ msg+=`• ${d.name} (${d.unit})\n`; });
+    msg+='\n';
+  });
+  msg+='_Textile Rate Master Pro_';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+function excelDir(){
+  const list=getAllDirItems();
+  const rows=list.map((d,i)=>[i+1,DIR_CAT_META[d.cat]?.label||d.cat,FIBER_META[d.fiber]||d.fiber,d.name,d.desc||'',d.unit,d.notes||'',items.find(i2=>i2.name===d.name)?.price||'']);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['#','Category','Fiber','Item Name','Detail','Unit','Notes','Current Rate'],...rows]),'Directory');
+  XLSX.writeFile(wb,'TextileDirectory_'+today()+'.xlsx');
+  toast('📊 Directory exported!','info');
+}
+
+// ══════════════════════════════════════════
+// MIGRATE OLD v4 DATA
+// ══════════════════════════════════════════
+function migrateOldData(){
+  // Try to import items from old keys
+  const oldKeys=['rateItems','textile_items','trm_items','items'];
+  for(const k of oldKeys){
+    try{
+      const old=JSON.parse(localStorage.getItem(k)||'null');
+      if(old&&Array.isArray(old)&&old.length){
+        old.forEach(oi=>{
+          if(!items.find(i=>i.name===oi.name)){
+            items.push({
+              id:uid(),
+              cat:oi.cat||'fabric',
+              name:oi.name||'',
+              brand:oi.brand||'',
+              unit:oi.unit||'per meter',
+              price:Number(oi.price||oi.rate||0),
+              prev:Number(oi.prev||oi.oldPrice||oi.price||0),
+              widths:oi.widths||[],
+              notes:oi.notes||'',
+              status:'updated',
+              updatedAt:today()
+            });
+          }
+        });
+        ss(STORE_ITEMS,items);
+        toast(`✅ ${old.length} items v4 se import hue!`,'info');
+        break;
+      }
+    }catch(e){}
+  }
+  // Try to import parties / mktContacts
+  const oldPKeys=['mktContacts','textile_parties','trm_parties'];
+  for(const k of oldPKeys){
+    try{
+      const old=JSON.parse(localStorage.getItem(k)||'null');
+      if(old&&Array.isArray(old)&&old.length){
+        old.forEach(op=>{
+          if(!parties.find(p=>p.name===op.name)){
+            parties.push({
+              id:uid(),
+              type:op.type||'supplier',
+              cat:op.cat||'fabric',
+              name:op.name||'',
+              city:op.city||'—',
+              contact:op.contact||'',
+              gst:'',
+              minOrder:op.minOrder||'',
+              rate:op.rate||'',
+              delivery:op.delivery||'',
+              rating:op.rating||3,
+              speciality:op.speciality||'',
+              notes:op.notes||'',
+              added:today()
+            });
+          }
+        });
+        ss(STORE_PARTIES,parties);
+        toast(`✅ ${old.length} parties v4 se import hue!`,'info');
+        break;
+      }
+    }catch(e){}
+  }
+  // Try to import alert log
+  const oldALog=JSON.parse(localStorage.getItem('alertLog')||'null');
+  if(oldALog&&Array.isArray(oldALog)&&oldALog.length&&!alertLog.length){
+    alertLog=[...oldALog];
+    ss(STORE_ALOG,alertLog);
+  }
+}
+
+// ══════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey){
+    if(e.key==='1'){ e.preventDefault(); showTab('dashboard'); }
+    if(e.key==='2'){ e.preventDefault(); showTab('rates'); }
+    if(e.key==='3'){ e.preventDefault(); showTab('parties'); }
+    if(e.key==='4'){ e.preventDefault(); showTab('compare'); }
+    if(e.key==='5'){ e.preventDefault(); showTab('records'); }
+    if(e.key==='n'){ e.preventDefault(); openAddItem(); }
+    if(e.key==='p'){ e.preventDefault(); openPartyModal(); }
+  }
+});
+
+// ══════════════════════════════════════════
+// BULK IMPORT (CSV)
+// ══════════════════════════════════════════
+function importCSV(){
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='.csv,.xlsx';
+  input.onchange=async(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    try{
+      const data=await file.arrayBuffer();
+      const wb=XLSX.read(data);
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws);
+      let added=0;
+      rows.forEach(row=>{
+        const name=(row['Item']||row['Name']||row['item']||'').trim();
+        const price=parseFloat(row['Rate']||row['Price']||row['rate']||0);
+        if(!name||!price) return;
+        if(items.find(i=>i.name===name)) return;
+        items.push({
+          id:uid(),
+          cat:(row['Category']||row['Cat']||'fabric').toLowerCase(),
+          name,
+          brand:row['Brand']||'',
+          unit:row['Unit']||'per meter',
+          price,
+          prev:price,
+          widths:[],
+          notes:row['Notes']||'',
+          status:'updated',
+          updatedAt:today()
+        });
+        added++;
+      });
+      ss(STORE_ITEMS,items);
+      renderRates();
+      toast(`✅ ${added} items import hue CSV/Excel se!`,'info');
+    }catch(err){ toast('❌ Import error: '+err.message,''); }
+  };
+  input.click();
+}
+
+
+// ══════════════════════════════════════════
+// FIREBASE CONFIG & INDICATOR
+// ══════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBjtTav6kGcUs_1HLZmUG8KUPil0kS67dU",
+  authDomain: "textile-rate-master.firebaseapp.com",
+  databaseURL: "https://textile-rate-master-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "textile-rate-master",
+  storageBucket: "textile-rate-master.firebasestorage.app",
+  messagingSenderId: "922881575515",
+  appId: "1:922881575515:web:2e1b601ce853d3829d8d7e",
+  measurementId: "G-ZM3NKY40BX"
+};
+
+// ── Real cloud data sync (RTDB) ──
+const FB_DATA_PATH = 'ratemaster/data';
+let fbApp, fbDB;
+try{
+  fbApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+  fbDB = firebase.database();
+}catch(e){ console.error('Firebase init failed', e); }
+
+let cloudSaveTimer = null;
+let isApplyingCloudData = false;
+
+function scheduleCloudSave(){
+  if(isApplyingCloudData || !fbDB) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(pushToCloud, 1200);
+}
+
+function buildCloudPayload(){
+  return {
+    items, parties, partyRates, records, alertSettings, alertLog,
+    userDirItems: (typeof userDirItems!=='undefined' ? userDirItems : []),
+    lastmod: Number(localStorage.getItem(STORE_LASTMOD) || Date.now())
+  };
+}
+
+function pushToCloud(){
+  if(!fbDB) return;
+  const badge = document.getElementById('fb-badge');
+  if(badge) badge.textContent = 'SAVING...';
+  const payload = buildCloudPayload();
+  fbDB.ref(FB_DATA_PATH).set({data: JSON.stringify(payload)})
+    .then(()=>{ setFbStatus(true); })
+    .catch(err=>{ console.error('Cloud save failed', err); if(badge){ badge.textContent='SAVE ERR'; badge.style.color='#ff4d6d'; } });
+}
+
+function fbAutoLoad(){
+  if(!fbDB) return;
+  const badge = document.getElementById('fb-badge');
+  if(badge) badge.textContent = 'SYNCING...';
+  fbDB.ref(FB_DATA_PATH).once('value').then(snap=>{
+    const val = snap.val();
+    let cloud = null;
+    if(val && val.data){ try{ cloud = JSON.parse(val.data); }catch(e){ cloud = null; } }
+    const localMod = Number(localStorage.getItem(STORE_LASTMOD) || 0);
+    const cloudMod = cloud && cloud.lastmod ? cloud.lastmod : 0;
+    if(cloud && cloudMod > localMod){
+      isApplyingCloudData = true;
+      items       = cloud.items || items;
+      parties     = cloud.parties || parties;
+      partyRates  = cloud.partyRates || partyRates;
+      records     = cloud.records || records;
+      alertSettings = cloud.alertSettings || alertSettings;
+      alertLog    = cloud.alertLog || alertLog;
+      if(typeof userDirItems!=='undefined') userDirItems = cloud.userDirItems || userDirItems;
+      ss(STORE_ITEMS,items); ss(STORE_PARTIES,parties); ss(STORE_PRATINGS,partyRates);
+      ss(STORE_RECORDS,records); ss(STORE_ALERTS,alertSettings); ss(STORE_ALOG,alertLog);
+      if(typeof userDirItems!=='undefined') ss(STORE_DIR,userDirItems);
+      localStorage.setItem(STORE_LASTMOD, cloudMod.toString());
+      isApplyingCloudData = false;
+      renderDashboard();
+      if(typeof renderDirectory==='function') renderDirectory();
+      toast('☁️ Naya data cloud se load hua', 'info');
+    } else if(!cloud || localMod >= cloudMod){
+      pushToCloud();
+    }
+    setFbStatus(true);
+  }).catch(err=>{
+    console.error('fbAutoLoad error', err);
+    setFbStatus(false);
+  });
+}
+
+function pingFirebase(){
+  const dot = document.getElementById('fb-dot');
+  const badge = document.getElementById('fb-badge');
+  // Checking state
+  dot.style.background = '#ffd84d';
+  dot.style.boxShadow = '0 0 0 3px rgba(255,216,77,0.3)';
+  dot.style.animation = 'none';
+  badge.textContent = 'CHECKING...';
+  badge.style.background = 'rgba(255,216,77,0.15)';
+  badge.style.borderColor = 'rgba(255,216,77,0.4)';
+  badge.style.color = '#ffd84d';
+  toast('🔥 Firebase connection check ho raha hai...', 'info');
+  // Try Firebase REST ping, then do a real two-way sync
+  fetch('https://' + FIREBASE_CONFIG.projectId + '-default-rtdb.asia-southeast1.firebasedatabase.app/.json?shallow=true', {
+    method: 'GET',
+    signal: AbortSignal.timeout(4000)
+  })
+  .then(res => {
+    const ok = res.ok || res.status === 401 || res.status === 403;
+    setFbStatus(ok);
+    if(ok) fbAutoLoad();
+  })
+  .catch(() => { setFbStatus(navigator.onLine); });
+}
+
+function setFbStatus(connected){
+  const dot = document.getElementById('fb-dot');
+  const badge = document.getElementById('fb-badge');
+  if(connected){
+    dot.style.background = '#00e97a';
+    dot.style.boxShadow = '0 0 0 3px rgba(0,233,122,0.3)';
+    dot.style.animation = 'fb-pulse 2s infinite';
+    badge.textContent = 'CONNECTED';
+    badge.style.background = 'rgba(0,233,122,0.15)';
+    badge.style.borderColor = 'rgba(0,233,122,0.4)';
+    badge.style.color = '#00e97a';
+    toast('🔥 Firebase Connected ✅', 'info');
+  } else {
+    dot.style.background = '#ff4d6d';
+    dot.style.boxShadow = '0 0 0 3px rgba(255,77,109,0.3)';
+    dot.style.animation = 'none';
+    badge.textContent = 'OFFLINE';
+    badge.style.background = 'rgba(255,77,109,0.15)';
+    badge.style.borderColor = 'rgba(255,77,109,0.4)';
+    badge.style.color = '#ff4d6d';
+    toast('🔴 Firebase Offline', '');
+  }
+}
+window.addEventListener('online', () => setFbStatus(true));
+window.addEventListener('offline', () => setFbStatus(false));
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+migrateOldData();
+renderDashboard();
+renderDirectory();
+fbAutoLoad(); // real Firebase cloud sync — load newer data if available, else push local up
+</script>
+</body>
+</html>
