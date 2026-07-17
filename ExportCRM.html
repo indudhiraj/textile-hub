@@ -371,6 +371,48 @@ function dataUrlToFile(dataUrl, filename, mime) {
   return new File([u8arr], filename, { type: mime });
 }
 
+// AI models sometimes return JSON with real newlines/tabs inside string values
+// (instead of escaped \n) — that breaks JSON.parse with "Bad control character".
+// This walks the text and escapes control characters only when inside a string.
+function sanitizeJsonString(str) {
+  let result = ""; let inString = false; let escapeNext = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (escapeNext) { result += ch; escapeNext = false; continue; }
+    if (ch === "\\") { result += ch; escapeNext = true; continue; }
+    if (ch === '"') { inString = !inString; result += ch; continue; }
+    if (inString && (ch === "\n" || ch === "\r" || ch === "\t")) {
+      result += ch === "\n" ? "\\n" : ch === "\r" ? "\\r" : "\\t";
+      continue;
+    }
+    result += ch;
+  }
+  return result;
+}
+function safeJsonParse(text) { return JSON.parse(sanitizeJsonString(text)); }
+
+// Parses the "---" delimited plain-text block format used for buyer discovery/lookup —
+// avoids JSON entirely since company names/notes can contain quotes that break JSON.parse.
+function parseCompanyBlocks(text) {
+  const getField = (block, key) => {
+    const m = block.match(new RegExp(key + ":\\s*(.*)", "i"));
+    if (!m) return "";
+    const v = m[1].trim();
+    return v.toLowerCase() === "not found" ? "" : v;
+  };
+  return text.split(/\n?-{2,}\n?/)
+    .map(b => b.trim())
+    .filter(Boolean)
+    .map(block => ({
+      company: getField(block, "COMPANY"),
+      country: getField(block, "COUNTRY"),
+      website: getField(block, "WEBSITE"),
+      category: getField(block, "CATEGORY"),
+      notes: getField(block, "NOTES")
+    }))
+    .filter(r => r.company);
+}
+
 /* ---------- cloud status indicator + manual save/upload ---------- */
 function cloudIndicator() {
   const map = {
@@ -1388,7 +1430,18 @@ function attachHandlers() {
       state.discoverProgress = `Batch ${batch + 1}/${MAX_BATCHES} search kar rahe hain… (ab tak ${collected.length} buyers mile)`;
       render();
       const excludeList = collected.map(c => c.company).filter(Boolean).slice(-40).join("; ");
-      const prompt = `Web search karke home furnishing / home textile import, wholesale, ya retail business mein active REAL companies dhundo jo in criteria se match karti hain — ${criteria}. Is batch mein kam se kam 10-15 NAYI companies do jo pehle list nahi ki gayi hain${excludeList ? ` (yeh already list mein hain, inhe repeat mat karna: ${excludeList})` : ""}. Har company ke liye pata karo: company ka pura naam, desh, official website (agar mile), product category, aur ek chhoti note. SIRF real, verifiable, publicly known companies do — agar pakka confirm na ho to woh company list mein mat daalo. Research ke baad SIRF neeche diya JSON array format return karo, koi aur text pehle ya baad mein nahi:\n[{"company":"","country":"","website":"","category":"","notes":""}]`;
+      const prompt = `Web search karke home furnishing / home textile import, wholesale, ya retail business mein active REAL companies dhundo jo in criteria se match karti hain — ${criteria}. Is batch mein kam se kam 10-15 NAYI companies do jo pehle list nahi ki gayi hain${excludeList ? ` (yeh already list mein hain, inhe repeat mat karna: ${excludeList})` : ""}. SIRF real, verifiable, publicly known companies do — agar pakka confirm na ho to woh company list mein mat daalo.
+
+Research ke baad har company ke liye EXACTLY is plain-text format mein likho (JSON bilkul nahi, koi markdown nahi), har company ke beech ek line mein sirf "---" likhna:
+
+COMPANY: <naam>
+COUNTRY: <desh>
+WEBSITE: <official website agar mile, warna: not found>
+CATEGORY: <product category>
+NOTES: <ek chhoti si line, single line hi rakho>
+---
+COMPANY: <agli company>
+...`;
       let raw = "";
       try {
         raw = await callClaudeWithSearch(prompt, 3800);
@@ -1399,10 +1452,8 @@ function attachHandlers() {
         catch (e2) { lastRawError = e2.message || String(e2); await sleep(800); continue; }
       }
       try {
-        const clean = raw.replace(/```json|```/g, "").trim();
-        const m = clean.match(/\[[\s\S]*\]/);
-        if (!m) { lastRawError = "JSON format nahi mila is batch mein"; await sleep(800); continue; }
-        const parsed = JSON.parse(m[0]);
+        const parsed = parseCompanyBlocks(raw);
+        if (parsed.length === 0) { lastRawError = "Is batch mein koi valid result nahi mila"; await sleep(800); continue; }
         for (const r of parsed) {
           const key = (r.company || "").trim().toLowerCase();
           if (!key || seen.has(key)) continue;
@@ -1466,12 +1517,18 @@ function attachHandlers() {
       return;
     }
     state.lookupLoading = true; state.lookupResult = null; state.lookupError = ""; state.lookupSaved = false; state.lookupWasDuplicate = false; render();
-    const prompt = `Web search karke "${state.lookupName}" naam ki company/buyer ke baare mein public jaankari dhundo — yeh home furnishing, home textile, ya import/wholesale business context mein ho sakta hai. Pata karo: company ka pura naam, desh, official website, business/product category, aur ek chhoti si note. Agar reliable public info nahi milti to fields khaali chodo aur note mein likho. Research karne ke baad SIRF neeche diya JSON format return karo, koi aur text nahi:\n{"company":"","country":"","website":"","category":"","notes":""}`;
+    const prompt = `Web search karke "${state.lookupName}" naam ki company/buyer ke baare mein public jaankari dhundo — yeh home furnishing, home textile, ya import/wholesale business context mein ho sakta hai. Agar reliable public info nahi milti to fields mein "not found" likho.
+
+Research karne ke baad EXACTLY is plain-text format mein likho (JSON bilkul nahi, koi markdown nahi):
+COMPANY: <naam>
+COUNTRY: <desh>
+WEBSITE: <official website, warna: not found>
+CATEGORY: <business/product category>
+NOTES: <ek chhoti si line, single line hi rakho>`;
     try {
       const raw = await callClaudeWithSearch(prompt, 1200);
-      const clean = raw.replace(/\`\`\`json|\`\`\`/g, "").trim();
-      const m = clean.match(/\{[\s\S]*\}/);
-      state.lookupResult = JSON.parse(m ? m[0] : clean);
+      const parsed = parseCompanyBlocks(raw);
+      state.lookupResult = parsed[0] || { company: "", country: "", website: "", category: "", notes: "Public info nahi mili." };
       // Auto-save straight into the permanent Buyer Database — no manual "Add" click needed.
       const company = (state.lookupResult.company || state.lookupName).trim();
       const key = company.toLowerCase();

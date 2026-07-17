@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Room — Dhiraj Workspace</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16233F">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-deep:#16233F;
+    --indigo-panel:#1E304F;
+    --indigo-panel-2:#243a5e;
+    --cream:#F4EEE0;
+    --brass:#C99A3D;
+    --brass-bright:#E3B95C;
+    --rust:#A8462F;
+    --ink:#211C16;
+    --line:rgba(244,238,224,0.14);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(201,154,61,0.10), transparent 60%),
+      var(--indigo-deep);
+    color:var(--cream);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:linear-gradient(180deg, var(--indigo-deep) 0%, rgba(22,35,63,0.97) 100%);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(6px);
+  }
+
+  .header-inner{
+    max-width:1240px;
+    margin:0 auto;
+    padding:18px 28px 16px;
+    display:grid;
+    grid-template-columns:1fr minmax(220px,420px) auto;
+    align-items:center;
+    gap:28px;
+  }
+
+  .brand-eyebrow{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:0.28em;
+    font-size:12px;
+    color:var(--brass);
+    margin:0 0 2px;
+  }
+  .brand-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:34px;
+    letter-spacing:0.03em;
+    margin:0;
+    line-height:1;
+    color:var(--cream);
+  }
+  .brand-title span{color:var(--brass-bright);}
+  .brand-sub{
+    font-size:12.5px;
+    color:rgba(244,238,224,0.55);
+    margin-top:4px;
+    font-family:'Inter',sans-serif;
+  }
+
+  /* Search — ruler styled */
+  .search-wrap{position:relative;}
+  #searchInput{
+    width:100%;
+    background:var(--indigo-panel);
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--cream);
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    padding:12px 14px 12px 40px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  #searchInput::placeholder{color:rgba(244,238,224,0.4);}
+  #searchInput:focus{
+    border-color:var(--brass);
+    box-shadow:0 0 0 3px rgba(201,154,61,0.18);
+  }
+  .search-icon{
+    position:absolute;
+    left:13px; top:50%;
+    transform:translateY(-50%);
+    width:16px;height:16px;
+    opacity:.55;
+    pointer-events:none;
+  }
+  .ruler-tick{
+    height:4px;
+    margin-top:3px;
+    background-image:repeating-linear-gradient(90deg, var(--brass) 0 1px, transparent 1px 8px);
+    opacity:.35;
+  }
+
+  /* ---------- Analog clock ---------- */
+  .clock-block{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .clock-face{
+    position:relative;
+    width:64px;height:64px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #2a3f66, #12203a 70%);
+    border:3px solid var(--brass);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.35), inset 0 0 8px rgba(0,0,0,0.5);
+    flex-shrink:0;
+  }
+  .tick{
+    position:absolute;
+    left:50%; top:3px;
+    width:2px; height:6px;
+    background:rgba(244,238,224,0.55);
+    transform-origin:1px 29px;
+  }
+  .hand{
+    position:absolute;
+    left:50%; top:50%;
+    background:var(--cream);
+    border-radius:2px;
+    transform-origin:50% 100%;
+  }
+  .hand.hour{width:3px;height:16px;margin-left:-1.5px;margin-top:-16px;background:var(--cream);}
+  .hand.min{width:2px;height:22px;margin-left:-1px;margin-top:-22px;background:var(--cream);}
+  .hand.sec{width:1px;height:24px;margin-left:-0.5px;margin-top:-24px;background:var(--rust);}
+  .clock-pin{
+    position:absolute;left:50%;top:50%;
+    width:6px;height:6px;margin-left:-3px;margin-top:-3px;
+    background:var(--brass-bright);border-radius:50%;
+  }
+  .clock-text{font-family:'JetBrains Mono',monospace;}
+  #digitalTime{font-size:17px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
+  #digitalDate{font-size:11px;color:rgba(244,238,224,0.5);margin-top:2px;}
+
+  /* ---------- Body ---------- */
+  main{max-width:1240px;margin:0 auto;padding:30px 28px 60px;}
+
+  .category{margin-bottom:38px;}
+  .category-head{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .category-icon{font-size:18px;}
+  .category-title{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:20px;
+    letter-spacing:.06em;
+    color:var(--brass-bright);
+  }
+  .category-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:rgba(244,238,224,0.4);
+    margin-left:auto;
+  }
+
+  .tile-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:16px;
+  }
+
+  /* ---------- Stitched tile (signature element) ---------- */
+  .tile{
+    position:relative;
+    display:block;
+    text-decoration:none;
+    background:var(--indigo-panel);
+    border-radius:6px;
+    padding:18px 16px 16px;
+    border:1px dashed rgba(244,238,224,0.22);
+    transition:transform .18s ease, background .18s ease, border-color .18s ease;
+    opacity:0;
+    animation:riseIn .45s ease forwards;
+  }
+  .tile:nth-child(1){animation-delay:.02s;}
+  .tile:nth-child(2){animation-delay:.06s;}
+  .tile:nth-child(3){animation-delay:.10s;}
+  .tile:nth-child(4){animation-delay:.14s;}
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .tile::before{
+    content:"";
+    position:absolute;
+    top:0; left:10%;
+    width:0%;
+    height:2px;
+    background:linear-gradient(90deg, var(--brass), var(--brass-bright));
+    transition:width .35s ease;
+  }
+
+  .tile:hover, .tile:focus-visible{
+    transform:translateY(-4px);
+    background:var(--indigo-panel-2);
+    border-color:rgba(244,238,224,0.05);
+    outline:none;
+  }
+  .tile:hover::before, .tile:focus-visible::before{
+    width:80%;
+  }
+
+  .tile-name{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--cream);
+    margin:0 0 4px;
+  }
+  .tile-file{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:rgba(244,238,224,0.38);
+  }
+
+  .empty-state{
+    display:none;
+    text-align:center;
+    padding:60px 20px;
+    color:rgba(244,238,224,0.5);
+    font-size:14px;
+  }
+  .empty-state.show{display:block;}
+
+  /* ---------- Footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:22px 28px 30px;
+    text-align:center;
+  }
+  .stamp{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:rgba(244,238,224,0.45);
+    letter-spacing:.02em;
+    border:1px dashed rgba(244,238,224,0.22);
+    border-radius:4px;
+    padding:10px 20px;
+  }
+  .stamp b{color:var(--brass-bright); font-weight:700;}
+
+  @media (max-width:760px){
+    .header-inner{grid-template-columns:1fr; gap:12px;}
+    .clock-block{justify-content:flex-start;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .tile{animation:none; opacity:1;}
+    .tile, .tile::before{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <p class="brand-eyebrow">DHIRAJ WORKSPACE</p>
+      <h1 class="brand-title">Control <span>Room</span></h1>
+      <p class="brand-sub">उत्पादन नियंत्रण कक्ष · sab tools, ek jagah</p>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#F4EEE0" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Tool dhoondo...">
+      <div class="ruler-tick"></div>
+    </div>
+
+    <div class="clock-block">
+      <div class="clock-face" id="clockFace">
+        <div class="hand hour" id="hourHand"></div>
+        <div class="hand min" id="minHand"></div>
+        <div class="hand sec" id="secHand"></div>
+        <div class="clock-pin"></div>
+      </div>
+      <div class="clock-text">
+        <div id="digitalTime">--:--:--</div>
+        <div id="digitalDate">-- --- ----</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">📐</span>
+      <span class="category-title">Costing &amp; Rates</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="Garment_Cost_Pro_v3-2-1.html" target="_blank" data-name="garment costing pro">
+        <p class="tile-name">Garment Costing Pro</p>
+        <p class="tile-file">Garment_Cost_Pro_v3-2-1.html</p>
+      </a>
+      <a class="tile" href="textile-rate-master-v7.html" target="_blank" data-name="textile rate master">
+        <p class="tile-name">Textile Rate Master</p>
+        <p class="tile-file">textile-rate-master-v7.html</p>
+      </a>
+      <a class="tile" href="Textile_PPC_System_v5-5.html" target="_blank" data-name="textile ppc system">
+        <p class="tile-name">Textile PPC System</p>
+        <p class="tile-file">Textile_PPC_System_v5-5.html</p>
+      </a>
+      <a class="tile" href="Universal_Fabric_Cutting_calculator.html" target="_blank" data-name="fabric cutting calculator">
+        <p class="tile-name">Fabric Cutting Calculator</p>
+        <p class="tile-file">Universal_Fabric_Cutting_calculator.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">🧵</span>
+      <span class="category-title">Production &amp; Lean</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="garments-lean-system-1.html" target="_blank" data-name="garments lean system">
+        <p class="tile-name">Garments Lean System</p>
+        <p class="tile-file">garments-lean-system-1.html</p>
+      </a>
+      <a class="tile" href="Lean_Pro_v5_Firebase.html" target="_blank" data-name="lean pro firebase">
+        <p class="tile-name">Lean Pro (Firebase)</p>
+        <p class="tile-file">Lean_Pro_v5_Firebase.html</p>
+      </a>
+      <a class="tile" href="Job_Work_Register_v3.html" target="_blank" data-name="job work register">
+        <p class="tile-name">Job Work Register</p>
+        <p class="tile-file">Job_Work_Register_v3.html</p>
+      </a>
+      <a class="tile" href="MTM_Sheet_updated.html" target="_blank" data-name="mtm sheet">
+        <p class="tile-name">MTM Sheet</p>
+        <p class="tile-file">MTM_Sheet_updated.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">📦</span>
+      <span class="category-title">Inventory &amp; Shipping</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="SKU_Tracker_with_Position-1.html" target="_blank" data-name="sku tracker">
+        <p class="tile-name">SKU Tracker</p>
+        <p class="tile-file">SKU_Tracker_with_Position-1.html</p>
+      </a>
+      <a class="tile" href="Store_Management-2.html" target="_blank" data-name="store management">
+        <p class="tile-name">Store Management</p>
+        <p class="tile-file">Store_Management-2.html</p>
+      </a>
+      <a class="tile" href="ShipDoc_Pro_v4.html" target="_blank" data-name="shipping docs pro">
+        <p class="tile-name">Shipping Docs Pro</p>
+        <p class="tile-file">ShipDoc_Pro_v4.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">🤝</span>
+      <span class="category-title">CRM &amp; Communication</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="ExportCRM.html" target="_blank" data-name="export crm">
+        <p class="tile-name">Export CRM</p>
+        <p class="tile-file">ExportCRM.html</p>
+      </a>
+      <a class="tile" href="Report_Mail_Agent.html" target="_blank" data-name="report mail agent">
+        <p class="tile-name">Report Mail Agent</p>
+        <p class="tile-file">Report_Mail_Agent.html</p>
+      </a>
+      <a class="tile" href="Document_Report_Mailer-5.html" target="_blank" data-name="document report mailer">
+        <p class="tile-name">Document Report Mailer</p>
+        <p class="tile-file">Document_Report_Mailer-5.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">✅</span>
+      <span class="category-title">Quality &amp; Compliance</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="qc-master-v5-3-1.html" target="_blank" data-name="qc master">
+        <p class="tile-name">QC Master</p>
+        <p class="tile-file">qc-master-v5-3-1.html</p>
+      </a>
+      <a class="tile" href="textile_compliance_v4-1.html" target="_blank" data-name="textile compliance">
+        <p class="tile-name">Textile Compliance</p>
+        <p class="tile-file">textile_compliance_v4-1.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="category" data-cat>
+    <div class="category-head">
+      <span class="category-icon">🗂️</span>
+      <span class="category-title">Management Tools</span>
+      <span class="category-count"></span>
+    </div>
+    <div class="tile-grid">
+      <a class="tile" href="TaskManager.html" target="_blank" data-name="task manager">
+        <p class="tile-name">Task Manager</p>
+        <p class="tile-file">TaskManager.html</p>
+      </a>
+      <a class="tile" href="MasterDashboard-1.html" target="_blank" data-name="master dashboard">
+        <p class="tile-name">Master Dashboard</p>
+        <p class="tile-file">MasterDashboard-1.html</p>
+      </a>
+      <a class="tile" href="Master_Launcher-v5.html" target="_blank" data-name="master launcher">
+        <p class="tile-name">Master Launcher</p>
+        <p class="tile-file">Master_Launcher-v5.html</p>
+      </a>
+      <a class="tile" href="links.html" target="_blank" data-name="quick links">
+        <p class="tile-name">Quick Links</p>
+        <p class="tile-file">links.html</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="empty-state" id="emptyState">Koi tool nahi mila. Spelling check karke dobara try karein.</div>
+
+</main>
+
+<footer>
+  <div class="stamp">Developed by <b>Dhiraj Kumar</b> &nbsp;·&nbsp; Contact: <b>9608405286</b></div>
+</footer>
+
+<script>
+  // ---------- Analog + digital clock ----------
+  const hourHand = document.getElementById('hourHand');
+  const minHand = document.getElementById('minHand');
+  const secHand = document.getElementById('secHand');
+  const digitalTime = document.getElementById('digitalTime');
+  const digitalDate = document.getElementById('digitalDate');
+  const clockFace = document.getElementById('clockFace');
+
+  // tick marks
+  for(let i=0;i<12;i++){
+    const t = document.createElement('div');
+    t.className='tick';
+    t.style.transform = `rotate(${i*30}deg)`;
+    clockFace.appendChild(t);
+  }
+
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function updateClock(){
+    const now = new Date();
+    const h = now.getHours()%12;
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+
+    hourHand.style.transform = `rotate(${h*30 + m*0.5}deg)`;
+    minHand.style.transform = `rotate(${m*6 + s*0.1}deg)`;
+    secHand.style.transform = `rotate(${s*6}deg)`;
+
+    digitalTime.textContent = now.toLocaleTimeString('en-IN', {hour12:true});
+    digitalDate.textContent = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ---------- Search filter ----------
+  const searchInput = document.getElementById('searchInput');
+  const categories = document.querySelectorAll('[data-cat]');
+  const emptyState = document.getElementById('emptyState');
+
+  // populate counts
+  categories.forEach(cat=>{
+    const count = cat.querySelectorAll('.tile').length;
+    cat.querySelector('.category-count').textContent = count + ' tools';
+  });
+
+  searchInput.addEventListener('input', ()=>{
+    const q = searchInput.value.trim().toLowerCase();
+    let anyVisible = false;
+
+    categories.forEach(cat=>{
+      let catHasVisible = false;
+      cat.querySelectorAll('.tile').forEach(tile=>{
+        const match = tile.dataset.name.includes(q) || tile.querySelector('.tile-file').textContent.toLowerCase().includes(q);
+        tile.style.display = match ? '' : 'none';
+        if(match) catHasVisible = true;
+      });
+      cat.style.display = catHasVisible ? '' : 'none';
+      if(catHasVisible) anyVisible = true;
+    });
+
+    emptyState.classList.toggle('show', !anyVisible);
+  });
+
+  // ---------- PWA service worker (works only when served via http/https, not file://) ----------
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+
+</body>
+</html>

@@ -161,6 +161,35 @@
   .tv-critical-list{display:flex;flex-direction:column;gap:14px;width:100%;max-width:1000px;margin:0 auto}
   .tv-critical-item{background:rgba(226,102,92,.1);border-left:4px solid #E2665C;border-radius:8px;padding:14px 20px;font-size:18px;font-family:'JetBrains Mono',monospace}
   .tv-critical-item.tv-clean{border-left-color:#3FBF9B;background:rgba(63,191,155,.1);color:#4FD8AE;text-align:center}
+
+  /* ── Developer credit badge — left corner ── */
+  .dev-credit{position:fixed;left:10px;bottom:10px;z-index:950;background:rgba(20,30,50,.85);color:#fff;padding:7px 13px;border-radius:9px;font-size:11px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.15);font-family:'Inter',sans-serif}
+  .dev-credit b{color:#F5A623}
+  .dev-credit .dc-phone{font-family:'JetBrains Mono',monospace;color:#9CBEE6}
+  @media (max-width:860px){ .dev-credit{font-size:10px;padding:6px 10px;left:6px;bottom:6px} }
+
+  /* ── Analog clock — center of topbar (fixed color style, no selector) ── */
+  .clock-wrap{display:flex;align-items:center;flex-shrink:0}
+  .analog-clock{width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2C517F,#0F1D2E);border:3px solid rgba(255,255,255,.6);position:relative;box-shadow:0 3px 12px rgba(0,0,0,.4),inset 0 0 10px rgba(0,0,0,.4)}
+  .analog-clock .hand{position:absolute;left:50%;bottom:50%;transform-origin:50% 100%;border-radius:3px;background:#fff}
+  .analog-clock .hour-hand{width:4.5px;height:21px;margin-left:-2.25px}
+  .analog-clock .min-hand{width:3px;height:29px;margin-left:-1.5px}
+  .analog-clock .sec-hand{width:1.5px;height:33px;margin-left:-.75px;background:#E2665C}
+  .analog-clock .clock-center{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:#F5A623;transform:translate(-50%,-50%);z-index:3}
+  .analog-clock .tick{position:absolute;left:50%;top:5px;width:2px;height:7px;margin-left:-1px;background:rgba(255,255,255,.7);transform-origin:50% 34px}
+  @media (max-width:640px){ .clock-wrap{display:none} }
+
+  /* ── Print report (Color / Black & White) ── */
+  #printArea{display:none}
+  @media print{
+    body.printing-report > *:not(#printArea){display:none !important}
+    #printArea{display:block !important;position:static;padding:24px;background:#fff}
+    .print-header{border-bottom:3px solid #1C3A5E;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:baseline}
+    .print-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#1C3A5E}
+    .print-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:#444}
+    .print-body{white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.65;color:#111}
+    #printArea.print-bw, #printArea.print-bw *{color:#000 !important;background:#fff !important;border-color:#000 !important}
+  }
 </style>
 </head>
 <body>
@@ -173,10 +202,19 @@
       <span class="topbar-sub">Sabhi factory systems se data padhiye, report banayiye, aur email/WhatsApp draft karke bhejiye</span>
     </div>
   </div>
+  <div class="clock-wrap">
+    <div class="analog-clock" id="analogClock">
+      <div class="clock-center"></div>
+      <div class="hand hour-hand" id="clockHour"></div>
+      <div class="hand min-hand" id="clockMin"></div>
+      <div class="hand sec-hand" id="clockSec"></div>
+    </div>
+  </div>
   <div class="topbar-right">
     <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleDarkMode()" title="Dark / Light Mode">🌙</button>
   </div>
 </div>
+<div class="dev-credit">Developed by <b>Dhiraj Kumar</b><br>📞 Contact: <span class="dc-phone">9608405286</span></div>
 <div class="alert-board" id="alertBoard">
   <div class="alert-board-label"><span class="dot"></span><span class="label-text">CRITICAL</span></div>
   <div class="alert-board-track"><div class="alert-board-content" id="alertBoardContent"></div></div>
@@ -224,6 +262,8 @@
     </div>
     <div class="row">
       <button onclick="renderPreview()">📝 Generate report</button>
+      <button class="secondary" onclick="printReport('color')">🖨️ Print (Colour)</button>
+      <button class="secondary" onclick="printReport('bw')">🖨️ Print (Black &amp; White)</button>
       <span style="font-size:12px;color:var(--dgrey)">(Step 1 mein jo systems ✅ tick hain, unhi ka report banega)</span>
     </div>
     <div id="includedChips" class="note" style="display:none"></div>
@@ -1780,6 +1820,69 @@ function startVoiceQuery(){
   };
   voiceRecognition.start();
 }
+
+// ══════════════════════════════════════════════════════
+// ANALOG CLOCK — topbar center (fixed color face, real-time)
+// ══════════════════════════════════════════════════════
+function tickAnalogClock(){
+  const now = new Date();
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const hourDeg = (h * 30) + (m * 0.5);
+  const minDeg = (m * 6) + (s * 0.1);
+  const secDeg = s * 6;
+  const hourEl = document.getElementById('clockHour');
+  const minEl = document.getElementById('clockMin');
+  const secEl = document.getElementById('clockSec');
+  if(hourEl) hourEl.style.transform = `rotate(${hourDeg}deg)`;
+  if(minEl) minEl.style.transform = `rotate(${minDeg}deg)`;
+  if(secEl) secEl.style.transform = `rotate(${secDeg}deg)`;
+}
+
+(function initAnalogClock(){
+  const clockEl = document.getElementById('analogClock');
+  if(!clockEl) return;
+  for(let i=0;i<12;i++){
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform = `rotate(${i*30}deg)`;
+    clockEl.appendChild(tick);
+  }
+  tickAnalogClock();
+  setInterval(tickAnalogClock, 1000);
+})();
+
+// ══════════════════════════════════════════════════════
+// PRINT REPORT — Colour / Black & White
+// ══════════════════════════════════════════════════════
+function printReport(mode){
+  const reportText = document.getElementById('preview').value;
+  if(!reportText.trim()){ toast('⚠️ Pehle "Generate report" dabakar report banayein'); return; }
+  const old = document.getElementById('printArea');
+  if(old) old.remove();
+  const printDiv = document.createElement('div');
+  printDiv.id = 'printArea';
+  printDiv.className = mode === 'bw' ? 'print-bw' : 'print-color';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'print-header';
+  const t1 = document.createElement('div'); t1.className='print-title'; t1.textContent='🧵 Factory Report';
+  const t2 = document.createElement('div'); t2.className='print-date'; t2.textContent = new Date().toLocaleString('en-IN');
+  titleEl.appendChild(t1); titleEl.appendChild(t2);
+  const bodyEl = document.createElement('pre');
+  bodyEl.className = 'print-body';
+  bodyEl.textContent = reportText;
+  printDiv.appendChild(titleEl);
+  printDiv.appendChild(bodyEl);
+  document.body.appendChild(printDiv);
+  document.body.classList.add('printing-report');
+  setTimeout(()=>{ window.print(); }, 60);
+}
+window.onafterprint = function(){
+  document.body.classList.remove('printing-report');
+  const pa = document.getElementById('printArea');
+  if(pa) pa.remove();
+};
 </script>
 </body>
 </html>
