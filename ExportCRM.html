@@ -18,6 +18,21 @@
   header{display:flex;align-items:center;gap:12px;padding:24px 20px 16px;border-bottom:1px solid var(--border);}
   header .ship{font-size:26px;color:var(--brass);}
   header p{margin:2px 0 0;font-size:12px;color:var(--muted);}
+
+  .credit-bar{
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
+    padding:6px 20px; border-bottom:1px solid var(--border);
+  }
+  .credit-bar .credit-text{
+    font-family:Georgia,'Times New Roman',serif; font-size:12.5px; font-style:italic; font-weight:700;
+    color:var(--brass); letter-spacing:.2px; justify-self:start;
+  }
+  .credit-bar .clock-wrap{ justify-self:center; filter:drop-shadow(0 1px 3px rgba(0,0,0,.35)); }
+  @media (max-width:560px){
+    .credit-bar{ grid-template-columns:1fr; justify-items:center; gap:4px; }
+    .credit-bar .credit-text{ justify-self:center; text-align:center; font-size:11px; order:2; }
+    .credit-bar .clock-wrap{ order:1; }
+  }
   main{max-width:640px;margin:0 auto;padding:16px;padding-bottom:96px;}
   nav{position:fixed;bottom:0;left:0;right:0;background:var(--navy2);border-top:1px solid var(--border);
       display:flex;max-width:640px;margin:0 auto;}
@@ -76,6 +91,22 @@
 <div id="app"></div>
 
 <script>
+// ── Live analog clock in the header credit bar (guarded — header re-renders on every state change) ──
+function tickAnalogClock(){
+  const hourEl = document.getElementById('clockHour');
+  const minEl = document.getElementById('clockMinute');
+  const secEl = document.getElementById('clockSecond');
+  if(!hourEl || !minEl || !secEl) return;
+  const now = new Date();
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  hourEl.setAttribute('transform', `rotate(${(h*30)+(m*0.5)} 50 50)`);
+  minEl.setAttribute('transform', `rotate(${(m*6)+(s*0.1)} 50 50)`);
+  secEl.setAttribute('transform', `rotate(${s*6} 50 50)`);
+}
+setInterval(tickAnalogClock, 1000);
+
 /* ---------- storage: works inside Claude.ai (window.storage) and standalone (localStorage) ---------- */
 const storage = {
   async get(key) {
@@ -183,6 +214,32 @@ const emptyContact = () => ({ id: uid(), buyerId: "", emailDate: todayISO(), rep
 const emptyProduct = () => ({ id: uid(), name: "", specs: "", price: "", currency: "USD", incoterms: "FOB", moq: "", catalog: "", certificates: "", photoDesc: "" });
 const emptyTask = () => ({ id: uid(), type: "Follow-up", buyerId: "", dueDate: todayISO(), note: "", done: false });
 
+const COUNTRIES = ["Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Chad","Chile","China","Colombia","Congo","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominican Republic","Ecuador","Egypt","El Salvador","Estonia","Ethiopia","Fiji","Finland","France","Gabon","Georgia","Germany","Ghana","Greece","Guatemala","Guinea","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Ivory Coast","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Libya","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Mauritius","Mexico","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Togo","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+// Common Panipat home-furnishing export categories — used to bulk-seed the Product Library.
+const HOME_FURNISHING_STARTER_PRODUCTS = [
+  { name: "Bedsheet Set (with Pillow Covers)", specs: "Cotton/Cotton-blend, printed or plain, various sizes (Single/Double/King)", incoterms: "FOB" },
+  { name: "Comforter / Quilt (Razai)", specs: "Filled with cotton/polyester/microfiber, quilted patterns", incoterms: "FOB" },
+  { name: "Cushion Cover", specs: "Cotton/jute/velvet, various sizes, printed/embroidered/plain", incoterms: "FOB" },
+  { name: "Curtains", specs: "Cotton/polyester/sheer, various lengths and widths, eyelet/tab-top", incoterms: "FOB" },
+  { name: "Table Runner", specs: "Cotton/jute/jacquard, various lengths", incoterms: "FOB" },
+  { name: "Table Cover / Tablecloth", specs: "Cotton/PVC/vinyl, various sizes and prints", incoterms: "FOB" },
+  { name: "Napkins (Table/Dinner)", specs: "Cotton, set of 6/12, plain/printed", incoterms: "FOB" },
+  { name: "Bath Towel", specs: "100% cotton terry, various GSM (400-600), plain/dobby/jacquard", incoterms: "FOB" },
+  { name: "Hand Towel / Face Towel", specs: "100% cotton terry, various GSM", incoterms: "FOB" },
+  { name: "Bath Mat", specs: "Cotton/microfiber, non-slip backing", incoterms: "FOB" },
+  { name: "Door Mat", specs: "Cotton/coir/microfiber, various sizes and prints", incoterms: "FOB" },
+  { name: "Rug / Carpet", specs: "Cotton/wool/jute/synthetic, handloom or machine-made, various sizes", incoterms: "FOB" },
+  { name: "Chenille Rug", specs: "Chenille yarn, non-slip backing, printed patterns", incoterms: "FOB" },
+  { name: "Diwan Set", specs: "Bedcover + bolster covers + cushion covers, cotton/silk-blend", incoterms: "FOB" },
+  { name: "Mattress Protector", specs: "Waterproof/quilted, elastic fitted, various sizes", incoterms: "FOB" },
+  { name: "Pillow (Filled)", specs: "Microfiber/cotton fill, various sizes and firmness", incoterms: "FOB" },
+  { name: "Throw Blanket", specs: "Cotton/fleece/mink, various sizes and weaves", incoterms: "FOB" },
+  { name: "Yoga Mat / Rug", specs: "Cotton weave, non-slip, rollable", incoterms: "FOB" },
+  { name: "Kitchen Linen Set (Apron/Oven Mitt/Towel)", specs: "Cotton, printed/plain, set combinations", incoterms: "FOB" },
+  { name: "Cushion Filler", specs: "Polyester/cotton fiber fill, various sizes", incoterms: "FOB" },
+];
+
 const TRADE_FAIRS = [
   { name: "IHGF Delhi Fair — Autumn (62nd edition)", location: "India Expo Centre & Mart, Greater Noida", dates: "13–17 Oct 2026", date: "2026-10-13", focus: "Home, furnishings, textiles, furniture — global buyers, importers, wholesalers, retail chains" },
   { name: "Hometex Tech Exhibition", location: "Panipat, India", dates: "27–29 Nov (annual, check latest)", date: "2026-11-27", focus: "Home textile machinery, fabrics, yarn — local to Panipat, good for supplier/buyer networking" },
@@ -198,27 +255,42 @@ const TRADE_FAIRS = [
   { name: "Domotex Hannover", location: "Hannover, Germany", dates: "17–20 Jan 2028 (check yearly)", date: "2028-01-17", focus: "Carpets, rugs, flooring — strong fit for Panipat rug/carpet exporters" },
 ];
 
-/* ---------- AI helpers (only work when run inside a Claude.ai artifact) ---------- */
+/* ---------- AI helpers (Gemini — works standalone with your own free API key) ---------- */
 async function callClaude(prompt, maxTokens = 900) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const apiKey = localStorage.getItem("geminiApiKey");
+  if (!apiKey) throw new Error("NO_KEY");
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } })
   });
   const data = await res.json();
-  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-  return text || "Response nahi mil paaya.";
+  if (data?.error) throw new Error(data.error.message || "Gemini API error");
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "Response nahi mil paaya.";
 }
 async function callClaudeWithSearch(prompt, maxTokens = 1200) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const apiKey = localStorage.getItem("geminiApiKey");
+  if (!apiKey) throw new Error("NO_KEY");
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }], tools: [{ type: "web_search_20250305", name: "web_search" }] })
+    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: maxTokens } })
   });
   const data = await res.json();
-  if (data?.error) throw new Error(data.error.message || "API error");
-  const blocks = (data.content || []).filter(b => b.type === "text").map(b => b.text);
-  return blocks.length ? blocks[blocks.length - 1] : "";
+  if (data?.error) throw new Error(data.error.message || "Gemini API error");
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  return parts.map(p => p.text || "").join("\n");
 }
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Shared handling for AI-call failures: a clear message, and auto-opens Settings
+// (with the AI section expanded) when the key simply hasn't been set yet.
+function aiErrorMessage(e) {
+  if (e && e.message === "NO_KEY") {
+    state.settingsOpen = true;
+    state.aiSettingsOpen = true;
+    return "Pehle Settings (⚙️) mein apni Gemini API Key set karo, tabhi AI feature kaam karega.";
+  }
+  return "AI se jawab nahi mila: " + (e && e.message ? e.message : "network/API issue") + ". Settings mein API key check karo.";
+}
 
 /* ---------- app state ---------- */
 let state = {
@@ -226,14 +298,19 @@ let state = {
   buyers: [], contacts: [], products: [], tasks: [],
   editBuyer: null, editContact: null, editProduct: null, editTask: null,
   emailForm: { buyerId: "", type: "Introduction", context: "" }, emailResult: "", emailLoading: false,
+  emailAttachPresentation: false, emailConfirmOpen: false, emailSendStatus: "",
+  presentationStatus: "",
+  crmViewByCountry: false,
   insightResult: "", insightLoading: false,
   searchCountry: "", searchCategory: "",
   importStatus: "",
+  productsManageMode: false, productStarterStatus: "",
   lookupName: "", lookupLoading: false, lookupResult: null, lookupError: "",
   discoverResults: null, discoverLoading: false, discoverError: "", discoverProgress: "",
   buyerDupWarning: "", buyerDupConfirmed: false,
   quickFindOpen: false, quickFindQuery: "",
   settingsOpen: false, restorePending: null, restoreStatus: "", backupStatus: "",
+  aiSettingsOpen: false, aiTestResult: "", aiTestLoading: false,
   pin: null, unlocked: false, pinEntry: "", pinError: "", pinSetupValue: "", pinSetupStatus: "",
   cloudStatus: "connecting", cloudSaveStatus: "", cloudUploadStatus: "", cloudUploadPending: false,
 };
@@ -263,6 +340,36 @@ async function persist(key, arrName) {
 }
 
 function buyerName(id) { const b = state.buyers.find(x => x.id === id); return b ? esc(b.name) + " (" + esc(b.company) + ")" : "—"; }
+
+function aiStatusBadge() {
+  const key = localStorage.getItem("geminiApiKey");
+  const tested = localStorage.getItem("geminiTestOk") === "true";
+  if (!key) return { dot: "🔴", label: "AI setup nahi hai — Gemini key daalein" };
+  if (tested) return { dot: "🟢", label: "AI Ready (Gemini connected)" };
+  return { dot: "🟡", label: "Key saved hai — ek baar Test Connection karein" };
+}
+
+/* ---------- Company Presentation attachment (stored locally as base64, reused for every buyer email) ---------- */
+function getPresentationMeta() {
+  const raw = localStorage.getItem("companyPresentationMeta");
+  return raw ? JSON.parse(raw) : null; // {name, size, type, dataUrl}
+}
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function dataUrlToFile(dataUrl, filename, mime) {
+  const arr = dataUrl.split(",");
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new File([u8arr], filename, { type: mime });
+}
 
 /* ---------- cloud status indicator + manual save/upload ---------- */
 function cloudIndicator() {
@@ -359,6 +466,27 @@ function render() {
       <button class="close-x" data-action="open-quickfind" title="Quick Find" style="font-size:20px;">🔎</button>
       <button class="close-x" data-action="open-settings" title="Settings" style="font-size:20px;">⚙️</button>
     </header>
+
+    <div class="credit-bar">
+      <div class="credit-text">Developed by – Dhiraj Kumar &nbsp;|&nbsp; Contact No – 9608405286</div>
+      <div class="clock-wrap">
+        <svg id="analogClock" width="34" height="34" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="47" fill="var(--navy2)" stroke="var(--brass)" stroke-width="3"/>
+          <circle cx="50" cy="50" r="41" fill="none" stroke="var(--border)" stroke-width="1"/>
+          <g stroke="var(--ink)" stroke-width="2" stroke-linecap="round">
+            <line x1="50" y1="8"  x2="50" y2="14"/>
+            <line x1="50" y1="86" x2="50" y2="92"/>
+            <line x1="8"  y1="50" x2="14" y2="50"/>
+            <line x1="86" y1="50" x2="92" y2="50"/>
+          </g>
+          <line id="clockHour"   x1="50" y1="50" x2="50" y2="28" stroke="var(--ink)"  stroke-width="4" stroke-linecap="round"/>
+          <line id="clockMinute" x1="50" y1="50" x2="50" y2="16" stroke="var(--ink)"  stroke-width="3" stroke-linecap="round"/>
+          <line id="clockSecond" x1="50" y1="50" x2="50" y2="12" stroke="var(--brass)" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="3.2" fill="var(--brass)"/>
+        </svg>
+      </div>
+      <div></div>
+    </div>
     <main>${renderTab()}</main>
     <nav>
       ${navBtn("dashboard","📊","Dashboard")}${navBtn("buyers","👥","Buyers")}${navBtn("crm","💬","CRM")}
@@ -366,8 +494,10 @@ function render() {
       ${navBtn("tasks","🔔","Tasks")}${navBtn("insights","✨","Insights")}
     </nav>
     ${renderModals()}
+    <datalist id="countryOptions">${COUNTRIES.map(c=>`<option value="${esc(c)}"></option>`).join("")}</datalist>
   `;
   attachHandlers();
+  tickAnalogClock();
 
   if (activeId) {
     const el = document.getElementById(activeId);
@@ -503,9 +633,13 @@ function buyersTab() {
         <div class="row">
           <div>
             <div><b>${esc(b.name)}</b> <span class="muted">· ${esc(b.company)}</span></div>
-            <div class="muted">${esc(b.country)} · ${esc(b.category)} · MOQ ${esc(b.moq)}</div>
+            <div class="muted">${esc(b.category)} · MOQ ${esc(b.moq)}</div>
             ${b.website ? `<div class="muted" style="margin-top:2px;">${websiteLink(b.website, b.company)}</div>` : ""}
             <div style="margin-top:4px;"><span class="tag ${b.priority==='A'?'high':''}">Priority ${esc(b.priority)}</span></div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div class="muted">🌍 ${esc(b.country) || "—"}</div>
+            <div class="muted">📞 ${b.phone ? esc(b.phone) : "—"}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
             <button class="link" data-action="edit-buyer" data-id="${b.id}">Edit</button>
@@ -521,10 +655,13 @@ function crmTab() {
   return `
     <div class="row">
       <h2 class="section-title">Contact History</h2>
-      <button class="btn" ${state.buyers.length===0?"disabled":""} data-action="add-contact">+ Add</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-outline" data-action="toggle-crm-country-view">${state.crmViewByCountry ? "📋 Sabhi Dikhaein" : "🌍 Replies Country-wise Dekhein"}</button>
+        <button class="btn" ${state.buyers.length===0?"disabled":""} data-action="add-contact">+ Add</button>
+      </div>
     </div>
     ${state.buyers.length===0 ? '<p class="muted">Pehle Buyer Database mein buyer add karein.</p>' : ""}
-    ${state.contacts.map(c=>`
+    ${state.crmViewByCountry ? crmCountryView() : state.contacts.map(c=>`
       <div class="card">
         <div class="row">
           <div>
@@ -532,6 +669,7 @@ function crmTab() {
             <div class="muted">Email: ${c.emailDate} · Reply: ${c.replyReceived} · Next follow-up: ${c.nextFollowup||"—"}</div>
             <div class="muted">Sample: ${c.sampleSent} · Quotation: ${c.quotationSent} · Status: ${esc(c.orderStatus)}</div>
             ${c.meetingNotes ? `<div class="ink" style="font-style:italic;margin-top:4px;">"${esc(c.meetingNotes).slice(0,90)}"</div>` : ""}
+            ${c.replyNotes ? `<div class="ink" style="font-style:italic;margin-top:4px;">Reply: "${esc(c.replyNotes).slice(0,120)}"</div>` : ""}
           </div>
           <button class="link" data-action="edit-contact" data-id="${c.id}">Edit</button>
         </div>
@@ -539,9 +677,34 @@ function crmTab() {
   `;
 }
 
+// Groups every contact-history entry that has a buyer reply, by the buyer's Country —
+// so replies can be scanned market-by-market instead of one long flat list.
+function crmCountryView() {
+  const withReply = state.contacts.filter(c => c.replyReceived === "Yes");
+  if (withReply.length === 0) return '<p class="muted">Abhi tak koi buyer reply "Yes" mark karke record nahi kiya gaya.</p>';
+  const byCountry = {};
+  withReply.forEach(c => {
+    const b = state.buyers.find(x => x.id === c.buyerId);
+    const country = (b && b.country) ? b.country : "Unknown / Country nahi diya";
+    (byCountry[country] = byCountry[country] || []).push({ c, b });
+  });
+  return Object.keys(byCountry).sort().map(country => `
+    <h3 class="section-title" style="margin-top:16px;color:var(--brass);">🌍 ${esc(country)} (${byCountry[country].length})</h3>
+    ${byCountry[country].map(({c,b}) => `
+      <div class="card">
+        <div><b>${esc(b ? b.name : "—")}</b> ${b && b.company ? `<span class="muted">· ${esc(b.company)}</span>` : ""}</div>
+        <div class="muted">Email sent: ${c.emailDate} · Next follow-up: ${c.nextFollowup||"—"}</div>
+        ${c.replyNotes ? `<div class="ink" style="font-style:italic;margin-top:4px;">"${esc(c.replyNotes)}"</div>` : '<div class="muted">(Reply ka detail note nahi likha gaya)</div>'}
+        <button class="link" style="margin-top:6px;" data-action="edit-contact" data-id="${c.id}">Edit</button>
+      </div>`).join("")}
+  `).join("");
+}
+
 function emailTab() {
   const ef = state.emailForm;
   const selectedBuyer = state.buyers.find(b => b.id === ef.buyerId);
+  const buyerHistory = ef.buyerId ? state.contacts.filter(c => c.buyerId === ef.buyerId).sort((a,b)=>(b.emailDate||"").localeCompare(a.emailDate||"")) : [];
+  const pm = getPresentationMeta();
   return `
     <h2 class="section-title">AI Email Assistant</h2>
     <label>Buyer</label>
@@ -549,18 +712,39 @@ function emailTab() {
       <option value="">-- Select buyer --</option>
       ${state.buyers.map(b=>`<option value="${b.id}" ${ef.buyerId===b.id?"selected":""}>${esc(b.name)} (${esc(b.company)})</option>`).join("")}
     </select>
+
+    ${ef.buyerId ? `
+      <div class="card" style="margin-top:10px;">
+        <b>💬 Chat / Contact History — ${esc(selectedBuyer ? selectedBuyer.name : "")}</b>
+        ${buyerHistory.length===0 ? '<p class="muted" style="margin-top:6px;">Is buyer ke saath abhi tak koi contact history record nahi hai.</p>' :
+          buyerHistory.slice(0,5).map(c => `
+            <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
+              <div class="muted">${c.emailDate} · Reply: ${c.replyReceived} · Status: ${esc(c.orderStatus)}</div>
+              ${c.replyNotes ? `<div class="ink" style="font-style:italic;">"${esc(c.replyNotes).slice(0,140)}"</div>` : ""}
+              ${c.meetingNotes ? `<div class="muted" style="font-style:italic;">${esc(c.meetingNotes).slice(0,140)}</div>` : ""}
+            </div>`).join("")}
+      </div>
+    ` : ""}
+
     <label>Email Type</label>
     <select id="emailType">
       ${["Introduction","Follow-up","Sample Offer","Quotation Sharing","Order Confirmation"].map(o=>`<option ${ef.type===o?"selected":""}>${o}</option>`).join("")}
     </select>
     <label>Extra Context (optional)</label>
     <textarea id="emailContext" placeholder="Koi specific detail...">${esc(ef.context)}</textarea>
-    <button class="btn" style="width:100%;" ${(!ef.buyerId||state.emailLoading)?"disabled":""} data-action="gen-email">
-      ${state.emailLoading?"Generating…":"✉ Email Draft Karein"}
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+      <input type="checkbox" id="emailAttachPresentation" ${state.emailAttachPresentation?"checked":""} ${pm?"":"disabled"}>
+      📎 Company Presentation attach karein ${pm ? `(${esc(pm.name)})` : "(Settings mein pehle upload karein)"}
+    </label>
+
+    <button class="btn" style="width:100%;margin-top:10px;" ${(!ef.buyerId||state.emailLoading)?"disabled":""} data-action="gen-email">
+      ${state.emailLoading?"Generating…":"✉ AI Se Email Draft Karein"}
     </button>
     ${state.emailResult ? `
-      <div class="card whitespace" style="margin-top:12px;">${esc(state.emailResult)}</div>
-      <button class="btn" style="width:100%;margin-top:8px;" data-action="open-mail-app">📧 Open in Email App${selectedBuyer && selectedBuyer.email ? "" : " (buyer email missing)"}</button>
+      <textarea id="emailDraftEdit" class="whitespace" style="margin-top:12px;min-height:220px;">${esc(state.emailResult)}</textarea>
+      <p class="muted" style="margin-top:4px;">Draft ko yahan edit kar sakte ho, phir neeche confirm karke bhejein.</p>
+      <button class="btn" style="width:100%;margin-top:8px;" data-action="review-email">👁 Review &amp; Confirm${selectedBuyer && selectedBuyer.email ? "" : " (buyer email missing)"}</button>
     ` : ""}
   `;
 }
@@ -579,8 +763,17 @@ function productsTab() {
   return `
     <div class="row">
       <h2 class="section-title">Product Library</h2>
-      <button class="btn" data-action="add-product">+ Add</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" data-action="add-product">+ Add</button>
+        <button class="btn-outline" data-action="toggle-products-manage" title="Add, Delete, Modify">⚙️ ${state.productsManageMode ? "Done" : "Manage"}</button>
+      </div>
     </div>
+    ${state.productsManageMode ? `
+      <div class="card" style="margin-bottom:12px;">
+        <p class="muted" style="margin-bottom:8px;">Manage mode ON hai — har product ke saath Delete button dikh raha hai. Neeche se ek click mein Panipat home-furnishing ki common product list bhi load kar sakte ho (jo pehle se list mein hain woh dubara nahi judenge).</p>
+        <button class="btn" style="width:100%;" data-action="load-product-starter">🏠 Home Furnishing Product List Add Karein</button>
+        ${state.productStarterStatus ? `<p class="status-msg" style="margin-top:8px;">${esc(state.productStarterStatus)}</p>` : ""}
+      </div>` : ""}
     ${state.products.length===0 ? '<p class="muted">Abhi koi product add nahi kiya gaya.</p>' : ""}
     ${state.products.map(p=>`
       <div class="card">
@@ -591,7 +784,10 @@ function productsTab() {
             <div class="muted">Price: ${esc(p.price)} ${esc(p.currency||"")} (${esc(p.incoterms||"")}) · MOQ: ${esc(p.moq)}</div>
             ${p.certificates?`<div class="muted">Certificates: ${esc(p.certificates)}</div>`:""}
           </div>
-          <button class="link" data-action="edit-product" data-id="${p.id}">Edit</button>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="link" data-action="edit-product" data-id="${p.id}">Edit</button>
+            ${state.productsManageMode ? `<button class="danger" data-action="delete-product" data-id="${p.id}">🗑</button>` : ""}
+          </div>
         </div>
       </div>`).join("")}
   `;
@@ -605,7 +801,7 @@ function searchTab() {
     <h2 class="section-title">Buyer Search</h2>
     <p class="muted">Yeh filter aapki apni Buyer Database mein search karta hai — agar database khaali hai to neeche "Discover Buyers" se naye buyers dhundhein.</p>
     <div class="grid2" style="margin-top:8px;">
-      <div><label>Country</label><input id="searchCountry" value="${esc(state.searchCountry)}" placeholder="e.g. USA" /></div>
+      <div><label>Country</label><input id="searchCountry" list="countryOptions" value="${esc(state.searchCountry)}" placeholder="Type ya list se chunein" /></div>
       <div><label>Category</label><input id="searchCategory" value="${esc(state.searchCategory)}" placeholder="e.g. Rugs" /></div>
     </div>
     ${filtered.length>0 ? filtered.map(b=>`<div class="card"><b>${esc(b.name)}</b> — ${esc(b.company)}<div class="muted">${esc(b.country)} · ${esc(b.category)} · Priority ${esc(b.priority)}</div>${b.website ? `<div class="muted" style="margin-top:2px;">${websiteLink(b.website, b.company)}</div>` : ""}</div>`).join("") :
@@ -613,7 +809,7 @@ function searchTab() {
 
     <div class="divider">
       <h3 class="section-title" style="color:var(--brass);">🌐 Discover Buyers (AI Search)</h3>
-      <p class="muted" style="margin-bottom:8px;">Upar diye Country aur/ya Category ke hisaab se live web search karke real importer/wholesaler companies dhundhein — har ek ko review karke Add ya Skip karein.</p>
+      <p class="muted" style="margin-bottom:8px;">Upar diye Country aur/ya Category ke hisaab se live web search karke real importer/wholesaler companies dhundhein — har ek ko review karke Add ya Skip karein. Add karne par woh Buyer Database mein permanently save ho jaata hai.</p>
       <button class="btn" style="width:100%;" ${(state.discoverLoading||(!state.searchCountry.trim()&&!state.searchCategory.trim()))?"disabled":""} data-action="run-discover">
         ${state.discoverLoading?"Dhundh rahe hain…":"🔍 Naye Buyers Dhundhein (min. 50)"}
       </button>
@@ -630,8 +826,11 @@ function searchTab() {
                 ${r.website?`<div class="muted">${websiteLink(r.website, r.company)}</div>`:""}
                 ${r.notes?`<div class="ink" style="margin-top:4px;font-style:italic;">${esc(r.notes)}</div>`:""}
               </div>
-              <div style="display:flex;flex-direction:column;gap:6px;">
-                ${r.added ? '<span class="tag">✓ Added</span>' :
+              <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                ${r.removed ? '<span class="muted">Removed</span>' :
+                  r.added ? `<span class="tag">✓ Added</span>
+                             <button class="btn-outline btn-small" data-action="discover-remove" data-id="${r.__id}">🗑 Database se Delete</button>` :
+                  r.wasDuplicate ? '<span class="tag">Already in DB</span>' :
                   `<button class="btn btn-small" data-action="discover-add" data-id="${r.__id}">+ Add</button>
                    <button class="btn-outline btn-small" data-action="discover-skip" data-id="${r.__id}">Skip</button>`}
               </div>
@@ -654,7 +853,9 @@ function searchTab() {
           <p class="ink"><span class="muted">Website:</span> ${state.lookupResult.website ? websiteLink(state.lookupResult.website, state.lookupResult.company) : "—"}</p>
           <p class="ink"><span class="muted">Category:</span> ${esc(state.lookupResult.category||"—")}</p>
           <p class="muted" style="font-style:italic;">${esc(state.lookupResult.notes||"")}</p>
-          <button class="btn" style="width:100%;margin-top:8px;" data-action="add-lookup">Buyer Database mein Add karein</button>
+          ${state.lookupSaved ? '<p class="status-msg" style="margin-top:8px;">✓ Buyer Database mein permanently save ho gaya</p>' : ""}
+          ${state.lookupWasDuplicate ? '<p class="muted" style="margin-top:8px;">Yeh company pehle se Buyer Database mein hai.</p>' : ""}
+          <button class="btn-outline" style="width:100%;margin-top:8px;" data-action="edit-lookup-result">✏️ Details Edit Karein</button>
         </div>` : ""}
     </div>
 
@@ -731,7 +932,7 @@ function renderModals() {
           <div class="grid2">
             <div><label>Buyer Name</label><input id="f_name" value="${esc(b.name)}" /></div>
             <div><label>Company</label><input id="f_company" value="${esc(b.company)}" /></div>
-            <div><label>Country</label><input id="f_country" value="${esc(b.country)}" /></div>
+            <div><label>Country</label><input id="f_country" list="countryOptions" value="${esc(b.country)}" /></div>
             <div><label>Website</label><input id="f_website" value="${esc(b.website)}" /></div>
             <div><label>Email</label><input id="f_email" value="${esc(b.email)}" /></div>
             <div><label>Phone</label><input id="f_phone" value="${esc(b.phone)}" /></div>
@@ -837,6 +1038,37 @@ function renderModals() {
       <div class="modal" data-stop="1">
         <div class="modal-head"><h3>⚙️ Settings</h3><button class="close-x" data-action="close-settings">✕</button></div>
         <div class="modal-body">
+          <h3 class="section-title" style="color:var(--brass);">🤖 AI Settings (Gemini)</h3>
+          <div data-action="toggle-ai-settings" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;background:var(--panel-alt, rgba(0,0,0,.04));cursor:pointer;margin-bottom:8px;">
+            <span>${aiStatusBadge().dot}</span>
+            <span style="font-size:13px;font-weight:600;">${esc(aiStatusBadge().label)}</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--muted);">⚙️</span>
+          </div>
+          ${state.aiSettingsOpen ? `
+            <label>Gemini API Key</label>
+            <input id="geminiKeyInput" type="password" value="${esc(localStorage.getItem("geminiApiKey")||"")}" placeholder="AIza..." />
+            <p class="muted" style="margin-top:6px;">Key <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> se Google account se 2 minute mein free banao — credit card nahi chahiye. Ek baar Save + Test karne ke baad yeh box khud collapse ho jayega, dobara key nahi daalni padegi.</p>
+            <div class="flex-gap" style="margin-top:8px;">
+              <button class="btn flex-1" data-action="save-gemini-key">Save</button>
+              <button class="btn-outline flex-1" data-action="test-gemini-key">🔌 Test Connection</button>
+            </div>
+            ${state.aiTestLoading ? '<p class="muted" style="margin-top:8px;">⏳ Test ho raha hai…</p>' : ""}
+            ${state.aiTestResult ? `<p class="${state.aiTestResult.startsWith("✅")?"status-msg":"error-msg"}" style="margin-top:8px;">${esc(state.aiTestResult)}</p>` : ""}
+            <p class="muted" style="margin-top:8px;">Key sirf isi browser mein (localStorage) save hoti hai, kahi bhi hamare server par nahi jaati — sirf seedha Google Gemini ko jaati hai.</p>
+          ` : ""}
+
+          <div class="divider"></div>
+          <h3 class="section-title" style="color:var(--brass);">📎 Company Presentation (Email Attachment)</h3>
+          <p class="muted" style="margin-bottom:8px;">Ek baar apni company presentation (PDF/PPT) upload kar do — Email AI tab mein har buyer ko bhejte waqt isse attach kar sakte ho, dobara upload nahi karna padega.</p>
+          ${(() => { const pm = getPresentationMeta(); return pm ? `
+            <p class="ink">📄 ${esc(pm.name)} <span class="muted">(${(pm.size/1024/1024).toFixed(2)} MB)</span></p>
+            <button class="btn-outline" data-action="remove-presentation">🗑 Remove Presentation</button>
+          ` : '<p class="muted">Abhi koi presentation upload nahi hai.</p>'; })()}
+          <input type="file" id="presentationInput" accept=".pdf,.ppt,.pptx" class="hidden" />
+          <button class="btn" style="width:100%;margin-top:8px;" data-action="presentation-trigger">⬆ Presentation Upload/Update Karein</button>
+          ${state.presentationStatus ? `<p class="${state.presentationStatus.startsWith("✅")?"status-msg":"error-msg"}" style="margin-top:8px;">${esc(state.presentationStatus)}</p>` : ""}
+
+          <div class="divider"></div>
           <h3 class="section-title" style="color:var(--brass);">☁ Cloud Sync</h3>
           <p class="muted" style="margin-bottom:8px;">Status: ${cloudIndicator()}. Data har edit ke saath khud-b-khud cloud mein save hota hai — neeche wale buttons sirf manual save/upload ke liye hain (dusre device se data laane ya turant force-save karne ke liye).</p>
           <button class="btn" style="width:100%;margin-bottom:8px;" data-action="cloud-save">☁ Save (Cloud Par Bhejein)</button>
@@ -888,6 +1120,29 @@ function renderModals() {
       </div></div>`;
   }
 
+  if (state.emailConfirmOpen) {
+    const ef = state.emailForm;
+    const b = state.buyers.find(x => x.id === ef.buyerId);
+    const { subject, body } = parseEmailResult(state.emailResult);
+    const pm = getPresentationMeta();
+    out += `<div class="modal-bg" data-action="close-modal" data-which="emailConfirm">
+      <div class="modal" data-stop="1">
+        <div class="modal-head"><h3>👁 Review &amp; Confirm — Send Email</h3><button class="close-x" data-action="close-modal" data-which="emailConfirm">✕</button></div>
+        <div class="modal-body">
+          <p class="ink"><span class="muted">To:</span> ${esc(b ? b.name + " (" + b.company + ")" : "—")} — ${b && b.email ? esc(b.email) : '<span style="color:var(--thread);">Email address missing! Buyer profile mein add karein.</span>'}</p>
+          <p class="ink"><span class="muted">Subject:</span> ${esc(subject)}</p>
+          <div class="card whitespace" style="max-height:220px;overflow:auto;">${esc(body)}</div>
+          <p class="muted" style="margin-top:8px;">📎 Attachment: ${state.emailAttachPresentation && pm ? esc(pm.name) : "Koi nahi"}</p>
+          ${state.emailSendStatus ? `<p class="status-msg" style="margin-top:8px;">${esc(state.emailSendStatus)}</p>` : ""}
+          <p class="muted" style="margin-top:8px;">Confirm karne par yeh contact history mein bhi automatically log ho jayega.</p>
+          <div class="flex-gap" style="margin-top:14px;">
+            <button class="btn-outline flex-1" data-action="back-to-edit-email">✏️ Wapas Edit Karein</button>
+            <button class="btn flex-1" ${b && b.email ? "" : "disabled"} data-action="confirm-send-email">✅ Confirm &amp; Send</button>
+          </div>
+        </div>
+      </div></div>`;
+  }
+
   return out;
 }
 
@@ -929,6 +1184,7 @@ function attachHandlers() {
         if (which==="buyer") { state.editBuyer=null; state.buyerDupWarning=""; state.buyerDupConfirmed=false; }
         if (which==="contact") state.editContact=null;
         if (which==="product") state.editProduct=null; if (which==="task") state.editTask=null;
+        if (which==="emailConfirm") state.emailConfirmOpen=false;
         render();
       });
     }
@@ -965,6 +1221,7 @@ function attachHandlers() {
   });
 
   bind("add-contact", () => { state.editContact = emptyContact(); render(); });
+  bind("toggle-crm-country-view", () => { state.crmViewByCountry = !state.crmViewByCountry; render(); });
   bind("edit-contact", (el) => { state.editContact = state.contacts.find(c=>c.id===el.dataset.id); render(); });
   bind("save-contact", () => {
     const c = state.editContact;
@@ -979,6 +1236,28 @@ function attachHandlers() {
 
   bind("add-product", () => { state.editProduct = emptyProduct(); render(); });
   bind("edit-product", (el) => { state.editProduct = state.products.find(p=>p.id===el.dataset.id); render(); });
+  bind("toggle-products-manage", () => { state.productsManageMode = !state.productsManageMode; state.productStarterStatus = ""; render(); });
+  bind("delete-product", (el) => {
+    state.products = state.products.filter(p=>p.id!==el.dataset.id);
+    persist("products-list","products"); render();
+  });
+  bind("load-product-starter", () => {
+    const existingNames = new Set(state.products.map(p => (p.name||"").trim().toLowerCase()));
+    let added = 0;
+    HOME_FURNISHING_STARTER_PRODUCTS.forEach(sp => {
+      const key = sp.name.trim().toLowerCase();
+      if (!existingNames.has(key)) {
+        state.products.push({ ...emptyProduct(), name: sp.name, specs: sp.specs, incoterms: sp.incoterms });
+        existingNames.add(key);
+        added++;
+      }
+    });
+    if (added > 0) persist("products-list","products");
+    state.productStarterStatus = added > 0
+      ? `✓ ${added} naye home-furnishing products add ho gaye.`
+      : `Sab home-furnishing products pehle se list mein hain.`;
+    render();
+  });
   bind("save-product", () => {
     const p = state.editProduct;
     p.name=val("p_name"); p.price=val("p_price"); p.currency=val("p_currency"); p.incoterms=val("p_incoterms");
@@ -1020,11 +1299,63 @@ function attachHandlers() {
     state.emailForm.buyerId = val("emailBuyer"); state.emailForm.type = val("emailType"); state.emailForm.context = val("emailContext");
     const b = state.buyers.find(x=>x.id===state.emailForm.buyerId);
     if (!b) return;
-    state.emailLoading = true; state.emailResult = ""; render();
-    const prompt = `Tum ek home furnishing export company ke liye professional B2B email likh rahe ho (Panipat, India based exporter). Buyer details: Name: ${b.name}, Company: ${b.company}, Country: ${b.country}, Product Category interested: ${b.category}, MOQ: ${b.moq}. Email type: ${state.emailForm.type}. Extra context: ${state.emailForm.context || "none"}. Email professional business English mein likho (buyer international hai), concise, persuasive, with clear subject line at top as "Subject: ...". Sirf email content do, koi extra explanation nahi.`;
+    const attachCb = document.getElementById("emailAttachPresentation");
+    if (attachCb) state.emailAttachPresentation = attachCb.checked;
+    state.emailLoading = true; state.emailResult = ""; state.emailConfirmOpen = false; state.emailSendStatus = ""; render();
+    const history = state.contacts.filter(c => c.buyerId === b.id).sort((a,b2)=>(b2.emailDate||"").localeCompare(a.emailDate||"")).slice(0,3);
+    const historyText = history.length
+      ? history.map(c => `- ${c.emailDate}: reply=${c.replyReceived}${c.replyNotes?`, buyer ne kaha: "${c.replyNotes}"`:""}${c.meetingNotes?`, note: "${c.meetingNotes}"`:""}, status=${c.orderStatus}`).join("\n")
+      : "Koi pichli history nahi hai — yeh pehla contact hai.";
+    const prompt = `Tum ek home furnishing export company ke liye professional B2B email likh rahe ho (Panipat, India based exporter). Buyer details: Name: ${b.name}, Company: ${b.company}, Country: ${b.country}, Product Category interested: ${b.category}, MOQ: ${b.moq}. Email type: ${state.emailForm.type}. Extra context: ${state.emailForm.context || "none"}.\nIs buyer ke saath pichli chat/contact history:\n${historyText}\nAgar pichli history mein kuch relevant hai (jaise unhone kuch pucha tha ya sample maanga tha) to email mein us continuity ko naturally reflect karo. Email professional business English mein likho (buyer international hai), concise, persuasive, with clear subject line at top as "Subject: ...". Sirf email content do, koi extra explanation nahi.`;
     try { state.emailResult = await callClaude(prompt, 700); }
-    catch (e) { state.emailResult = "Email generate nahi ho paaya. Yeh feature sirf Claude.ai ke andar chalta hai — agar file download karke standalone khola hai to yeh kaam nahi karega."; }
+    catch (e) { state.emailResult = aiErrorMessage(e); }
     state.emailLoading = false; render();
+  });
+  bind("review-email", () => {
+    const edited = val("emailDraftEdit");
+    if (edited) state.emailResult = edited;
+    const attachCb = document.getElementById("emailAttachPresentation");
+    if (attachCb) state.emailAttachPresentation = attachCb.checked;
+    state.emailConfirmOpen = true; state.emailSendStatus = "";
+    render();
+  });
+  bind("back-to-edit-email", () => { state.emailConfirmOpen = false; render(); });
+  bind("confirm-send-email", async () => {
+    const b = state.buyers.find(x => x.id === state.emailForm.buyerId);
+    if (!b || !b.email) return;
+    const { subject, body } = parseEmailResult(state.emailResult);
+    const pm = getPresentationMeta();
+    const wantsAttachment = state.emailAttachPresentation && pm;
+
+    let sentVia = "mailto (manual send from your mail app)";
+    if (wantsAttachment) {
+      try {
+        const file = dataUrlToFile(pm.dataUrl, pm.name, pm.type);
+        if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: subject, text: `${subject}\n\n${body}\n\n(To: ${b.email})` });
+          sentVia = "Share sheet (attachment ke saath — email app mein manually 'To' field mein buyer ka email daalna hoga: " + b.email + ")";
+        } else {
+          const url = `mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          window.location.href = url;
+          sentVia = "mailto (yeh browser file-share support nahi karta, isliye attachment manually lagana hoga: " + pm.name + ")";
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") {
+          const url = `mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          window.location.href = url;
+        }
+      }
+    } else {
+      const url = `mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = url;
+    }
+
+    // Auto-log this as a Contact History entry so it becomes part of the buyer's chat history.
+    state.contacts.push({ ...emptyContact(), buyerId: b.id, emailDate: todayISO(), meetingNotes: `AI email bheja gaya (${state.emailForm.type}) — Subject: ${subject}` });
+    persist("contacts-list", "contacts");
+
+    state.emailSendStatus = `✅ Bhej diya (${sentVia}). Contact History mein bhi log ho gaya.`;
+    render();
   });
 
   bind("gen-insights", async () => {
@@ -1035,11 +1366,16 @@ function attachHandlers() {
     };
     const prompt = `Tum ek home furnishing export business ke liye AI sales analyst ho (India, Panipat based). Neeche diya gaya buyer aur contact data dekho aur Hinglish mein short insights do teen headings ke saath:\n1) Kaun se buyers ki order milne ki sambhavna sabse zyada hai aur kyun\n2) Kis country mein sabse zyada opportunity dikh rahi hai\n3) Kaun sa product category sabse zyada demand mein hai\nData: ${JSON.stringify(dataSummary)}\nAgar data bahut kam hai to woh bhi bata dena. Concise rakhna, bullet points use karo.`;
     try { state.insightResult = await callClaude(prompt, 800); }
-    catch (e) { state.insightResult = "Insights generate nahi ho paaye. Yeh feature sirf Claude.ai ke andar chalta hai."; }
+    catch (e) { state.insightResult = aiErrorMessage(e); }
     state.insightLoading = false; render();
   });
 
   bind("run-discover", async () => {
+    if (!localStorage.getItem("geminiApiKey")) {
+      state.discoverError = aiErrorMessage({ message: "NO_KEY" });
+      render();
+      return;
+    }
     state.discoverLoading = true; state.discoverResults = null; state.discoverError = ""; state.discoverProgress = ""; render();
     const country = state.searchCountry.trim(); const category = state.searchCategory.trim();
     const criteria = [country ? `country: ${country}` : "", category ? `product category: ${category}` : ""].filter(Boolean).join(", ");
@@ -1082,9 +1418,16 @@ function attachHandlers() {
       await sleep(500); // batches ke beech thoda gap, taaki rapid-fire calls se rate-limit na lage
     }
     if (collected.length === 0) {
-      state.discoverError = `Search mein error aayi (yeh feature sirf Claude.ai ke andar chalta hai) — ya country/category thoda specific likhein.${lastRawError ? " [detail: " + lastRawError + "]" : ""}`;
+      state.discoverError = `Search mein koi result nahi mila — ya country/category thoda specific likhein.${lastRawError ? " [detail: " + lastRawError + "]" : ""}`;
     } else {
-      state.discoverResults = collected.map(r => ({ ...r, __id: uid(), added: false }));
+      // Show results for manual review — flag any that already exist in the database
+      // so "Add" is disabled for them (no duplicates), but nothing is saved until
+      // the user explicitly clicks Add.
+      const existingKeys = new Set(state.buyers.map(b => (b.company || "").trim().toLowerCase()));
+      state.discoverResults = collected.map(r => ({
+        ...r, __id: uid(), added: false,
+        wasDuplicate: !!(r.company && existingKeys.has(r.company.trim().toLowerCase()))
+      }));
       if (collected.length < TARGET) {
         state.discoverError = `${collected.length} buyers mile (target ${TARGET} tha) — is niche/country mein itni hi verifiable companies mil paayi. Category/country thoda broad kar ke dobara try karein to zyada mil sakte hain.`;
       }
@@ -1094,50 +1437,127 @@ function attachHandlers() {
   bind("discover-add", (el) => {
     const r = state.discoverResults.find(x => x.__id === el.dataset.id);
     if (!r) return;
+    const key = (r.company || "").trim().toLowerCase();
+    const dup = state.buyers.some(b => (b.company || "").trim().toLowerCase() === key);
+    if (dup) { r.wasDuplicate = true; render(); return; } // safety net, Add button is hidden for these anyway
     state.buyers = [...state.buyers, { ...emptyBuyer(), name: r.company || "", company: r.company || "", country: r.country || "", website: r.website || "", category: r.category || "" }];
-    persist("buyers-list","buyers");
+    persist("buyers-list", "buyers");
     r.added = true; render();
   });
   bind("discover-skip", (el) => {
     state.discoverResults = state.discoverResults.filter(x => x.__id !== el.dataset.id);
     render();
   });
+  bind("discover-remove", (el) => {
+    const r = state.discoverResults.find(x => x.__id === el.dataset.id);
+    if (!r) return;
+    const key = (r.company || "").trim().toLowerCase();
+    state.buyers = state.buyers.filter(b => (b.company || "").trim().toLowerCase() !== key);
+    persist("buyers-list", "buyers");
+    r.removed = true; render();
+  });
 
   bind("run-lookup", async () => {
     state.lookupName = val("lookupName");
     if (!state.lookupName.trim()) return;
-    state.lookupLoading = true; state.lookupResult = null; state.lookupError = ""; render();
+    if (!localStorage.getItem("geminiApiKey")) {
+      state.lookupError = aiErrorMessage({ message: "NO_KEY" });
+      render();
+      return;
+    }
+    state.lookupLoading = true; state.lookupResult = null; state.lookupError = ""; state.lookupSaved = false; state.lookupWasDuplicate = false; render();
     const prompt = `Web search karke "${state.lookupName}" naam ki company/buyer ke baare mein public jaankari dhundo — yeh home furnishing, home textile, ya import/wholesale business context mein ho sakta hai. Pata karo: company ka pura naam, desh, official website, business/product category, aur ek chhoti si note. Agar reliable public info nahi milti to fields khaali chodo aur note mein likho. Research karne ke baad SIRF neeche diya JSON format return karo, koi aur text nahi:\n{"company":"","country":"","website":"","category":"","notes":""}`;
     try {
       const raw = await callClaudeWithSearch(prompt, 1200);
       const clean = raw.replace(/\`\`\`json|\`\`\`/g, "").trim();
       const m = clean.match(/\{[\s\S]*\}/);
       state.lookupResult = JSON.parse(m ? m[0] : clean);
+      // Auto-save straight into the permanent Buyer Database — no manual "Add" click needed.
+      const company = (state.lookupResult.company || state.lookupName).trim();
+      const key = company.toLowerCase();
+      const dup = state.buyers.some(b => (b.company || "").trim().toLowerCase() === key);
+      if (dup) {
+        state.lookupWasDuplicate = true;
+      } else if (company) {
+        state.buyers.push({ ...emptyBuyer(), name: state.lookupName, company, country: state.lookupResult.country || "", website: state.lookupResult.website || "", category: state.lookupResult.category || "" });
+        persist("buyers-list", "buyers");
+        state.lookupSaved = true;
+      }
     } catch (e) {
-      state.lookupError = "Lookup mein error aayi (yeh feature sirf Claude.ai ke andar chalta hai) — ya naam thoda specific likhein.";
+      state.lookupError = aiErrorMessage(e) + (e.message === "NO_KEY" ? "" : " — ya naam thoda specific likhein.");
     }
     state.lookupLoading = false; render();
   });
-  bind("add-lookup", () => {
+  bind("edit-lookup-result", () => {
     const r = state.lookupResult;
-    state.editBuyer = { ...emptyBuyer(), name: state.lookupName, company: r.company||state.lookupName, country: r.country||"", website: r.website||"", category: r.category||"" };
+    const existing = state.buyers.find(b => (b.company||"").trim().toLowerCase() === (r.company||state.lookupName).trim().toLowerCase());
+    state.editBuyer = existing ? { ...existing } : { ...emptyBuyer(), name: state.lookupName, company: r.company||state.lookupName, country: r.country||"", website: r.website||"", category: r.category||"" };
     state.tab = "buyers"; render();
-  });
-
-  bind("open-mail-app", () => {
-    const b = state.buyers.find(x => x.id === state.emailForm.buyerId);
-    const { subject, body } = parseEmailResult(state.emailResult);
-    const to = b && b.email ? b.email : "";
-    const url = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = url;
   });
 
   bind("open-quickfind", () => { state.quickFindOpen = true; state.quickFindQuery = ""; render(); });
   bind("close-quickfind", () => { state.quickFindOpen = false; render(); });
   bind("quickfind-goto", (el) => { state.tab = el.dataset.tab; state.quickFindOpen = false; render(); });
 
-  bind("open-settings", () => { state.settingsOpen = true; state.restorePending = null; state.restoreStatus = ""; state.backupStatus = ""; state.pinSetupValue = ""; state.pinSetupStatus = ""; state.cloudSaveStatus = ""; state.cloudUploadStatus = ""; state.cloudUploadPending = null; render(); });
+  bind("open-settings", () => { state.settingsOpen = true; state.restorePending = null; state.restoreStatus = ""; state.backupStatus = ""; state.pinSetupValue = ""; state.pinSetupStatus = ""; state.cloudSaveStatus = ""; state.cloudUploadStatus = ""; state.cloudUploadPending = null; state.aiSettingsOpen = !localStorage.getItem("geminiApiKey"); state.aiTestResult = ""; render(); });
   bind("close-settings", () => { state.settingsOpen = false; render(); });
+  bind("toggle-ai-settings", () => { state.aiSettingsOpen = !state.aiSettingsOpen; render(); });
+  bind("save-gemini-key", () => {
+    const key = (val("geminiKeyInput") || "").trim();
+    if (!key) { state.aiTestResult = "❌ Pehle key paste karo."; render(); return; }
+    localStorage.setItem("geminiApiKey", key);
+    localStorage.setItem("geminiTestOk", "false"); // force a fresh test after any key change
+    state.aiTestResult = "Key save ho gayi. Ab \"Test Connection\" dabao.";
+    render();
+  });
+  bind("test-gemini-key", async () => {
+    const key = (val("geminiKeyInput") || "").trim();
+    if (!key) { state.aiTestResult = "❌ Pehle key upar box mein daalo."; render(); return; }
+    state.aiTestLoading = true; state.aiTestResult = ""; render();
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with only the word: OK" }] }] })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(`HTTP ${res.status} — ${data.error.message}`);
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+      localStorage.setItem("geminiApiKey", key);
+      localStorage.setItem("geminiTestOk", "true");
+      state.aiTestResult = `✅ Connection ho gaya! Reply mila: "${reply.trim()}"`;
+      state.aiSettingsOpen = false;
+    } catch (e) {
+      localStorage.setItem("geminiTestOk", "false");
+      state.aiTestResult = `❌ Connection FAIL hua. Exact error: ${e.message}`;
+    }
+    state.aiTestLoading = false; render();
+  });
+
+  bind("presentation-trigger", () => { document.getElementById("presentationInput").click(); });
+  bind("remove-presentation", () => {
+    localStorage.removeItem("companyPresentationMeta");
+    state.presentationStatus = "Presentation hata di gayi.";
+    state.emailAttachPresentation = false;
+    render();
+  });
+  const presInput = document.getElementById("presentationInput");
+  if (presInput) presInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      state.presentationStatus = "❌ File 4 MB se badi hai — is browser storage mein itni badi file save nahi ho sakti. Chhoti/compressed file try karein.";
+      render();
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      localStorage.setItem("companyPresentationMeta", JSON.stringify({ name: file.name, size: file.size, type: file.type, dataUrl }));
+      state.presentationStatus = `✅ "${file.name}" upload ho gayi — ab Email AI tab mein attach kar sakte ho.`;
+    } catch (err) {
+      state.presentationStatus = "❌ Upload fail hua: " + err.message;
+    }
+    render();
+  });
 
   bind("cloud-save", () => { cloudPushAll(); });
   bind("cloud-upload", () => { cloudPullAll(); });

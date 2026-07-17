@@ -15,6 +15,7 @@
     --bg:#FAF9F5; --surface:#FFFFFF; --surface-alt:#F1EFE8;
     --ink:#1F2420; --muted:#6E6A5E; --border:#E3DFD3;
     --accent:#1E8A72; --accent-dark:#146354; --accent-tint:#E3F4EF;
+    --gold:#B8860B;
     --amber:#C97D2E; --amber-tint:#FBF0DF;
     --danger:#C1452C; --danger-tint:#FBEAE5;
     --blue:#3B6FD6; --blue-tint:#E8EEFC;
@@ -30,6 +31,7 @@
     --bg:#11151A; --surface:#1A2025; --surface-alt:#212A30;
     --ink:#EDEDE6; --muted:#9AA1A7; --border:#2C363D;
     --accent:#3FCDAE; --accent-dark:#2E9B84; --accent-tint:rgba(63,205,174,.15);
+    --gold:#F0C24B;
     --amber:#E3A15C; --amber-tint:rgba(227,161,92,.15);
     --danger:#E4735A; --danger-tint:rgba(228,115,90,.15);
     --blue:#7DA0F0; --blue-tint:rgba(125,160,240,.15);
@@ -47,6 +49,20 @@
   }
   header h1{ font-size:17px; margin:0; letter-spacing:.2px; }
   header .tag{ font-size:11.5px; color:var(--muted); font-family:var(--mono); }
+
+  .credit-bar{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    padding:8px 20px; border-bottom:1px solid var(--border); background:var(--surface-alt);
+  }
+  .credit-bar .clock-wrap{ flex-shrink:0; filter:drop-shadow(0 1px 3px rgba(0,0,0,.15)); }
+  .credit-bar .credit-text{
+    font-size:17px; font-style:italic; font-weight:600; color:var(--gold);
+    letter-spacing:.2px; text-shadow:0 1px 1px rgba(0,0,0,.08);
+  }
+  @media (max-width:520px){
+    .credit-bar{ flex-direction:column; gap:6px; padding:8px 14px; }
+    .credit-bar .credit-text{ font-size:14px; text-align:center; }
+  }
   .header-actions{ display:flex; align-items:center; gap:10px; }
   .stamp{ border:1.5px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:10.5px; letter-spacing:1.5px; padding:4px 9px; border-radius:3px; transform:rotate(-3deg); font-weight:700; }
   .theme-toggle{
@@ -107,7 +123,7 @@
   .file-group[open] summary::before{ transform:rotate(90deg); }
   #fileSearchInput{ margin-top:12px; }
   label{ font-size:12.5px; font-weight:600; display:block; margin-bottom:5px; margin-top:12px; }
-  input[type=text], input[type=email], input[type=tel], textarea{
+  input[type=text], input[type=email], input[type=tel], input[type=password], select, textarea{
     width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;
     font-family:var(--sans); font-size:16px; background:var(--surface); color:var(--ink);
   }
@@ -164,6 +180,26 @@
   </div>
 </header>
 
+<div class="credit-bar">
+  <div class="clock-wrap">
+    <svg id="analogClock" width="42" height="42" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="47" fill="var(--surface)" stroke="var(--gold)" stroke-width="3"/>
+      <circle cx="50" cy="50" r="41" fill="none" stroke="var(--border)" stroke-width="1"/>
+      <g stroke="var(--ink)" stroke-width="2" stroke-linecap="round">
+        <line x1="50" y1="8"  x2="50" y2="14"/>
+        <line x1="50" y1="86" x2="50" y2="92"/>
+        <line x1="8"  y1="50" x2="14" y2="50"/>
+        <line x1="86" y1="50" x2="92" y2="50"/>
+      </g>
+      <line id="clockHour"   x1="50" y1="50" x2="50" y2="28" stroke="var(--ink)"   stroke-width="4" stroke-linecap="round"/>
+      <line id="clockMinute" x1="50" y1="50" x2="50" y2="16" stroke="var(--ink)"   stroke-width="3" stroke-linecap="round"/>
+      <line id="clockSecond" x1="50" y1="50" x2="50" y2="12" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="3.2" fill="var(--gold)"/>
+    </svg>
+  </div>
+  <div class="credit-text">Developed by – Dhiraj Kumar &nbsp;|&nbsp; Contact No – 9608405286</div>
+</div>
+
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-inner">
@@ -215,7 +251,9 @@
         <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="generateReportBtn">Generate Report</button>
           <button class="btn btn-outline" id="downloadCombinedBtn">Download Combined Excel</button>
+          <button class="btn btn-primary" id="aiReportBtn" style="background:linear-gradient(135deg,#4a63d1,#8b5cf6);">🤖 AI Se Smart Report Banao</button>
         </div>
+        <div class="note" style="margin-top:8px;">"Generate Report" sirf raw stats/data dikhata hai. <b>"AI Se Smart Report"</b> Excel/PDF/Word — kisi bhi type ki files ko khud padh kar pehchanta hai ki wo kya hai, aur ek samajhdar, combined summary banata hai jo seedha Print/WhatsApp/Email ho sake. (Ask tab me API key set honi chahiye.)</div>
         <div id="reportOutput" style="margin-top:16px;"></div>
       </div>
     </div>
@@ -224,8 +262,31 @@
       <div class="card">
         <label>Apna sawaal likho</label>
         <input type="text" id="askInput" placeholder="e.g. Total qty cut kitni hai / Sab cutting report combine karo / June ki files dikhao">
-        <button class="btn btn-primary" id="askBtn" style="margin-top:12px;">Ask</button>
-        <button class="btn btn-outline" id="askClearBtn" style="margin-top:12px;">Clear Conversation</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+          <button class="btn btn-primary" id="askBtn">Ask (Quick)</button>
+          <button class="btn btn-primary" id="askAIBtn" style="background:linear-gradient(135deg,#4a63d1,#8b5cf6);">🤖 AI Se Pucho (Accurate)</button>
+          <button class="btn btn-outline" id="openColReportBtn">📊 Column Total Report</button>
+          <button class="btn btn-outline" id="askClearBtn">Clear Conversation</button>
+        </div>
+        <div class="note" style="margin-top:8px;">"Ask (Quick)" sirf total/combine/list jaise fixed commands samajhta hai. <b>"AI Se Pucho"</b> aapki uploaded Excel files ka pura data padh kar AI se koi bhi sawaal ka accurate jawab deta hai. <b>"Column Total Report"</b> ek popup me file/sheet/column choose karke turant total/average/count dikhata hai (AI ke bina, 100% sahi).</div>
+        <div id="aiStatusBox" style="display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 14px; border-radius:8px; background:var(--surface-alt); cursor:pointer;">
+          <span id="aiStatusDot" style="width:10px; height:10px; border-radius:50%; flex-shrink:0;"></span>
+          <span id="aiStatusText" style="font-size:13px; font-weight:600;"></span>
+          <span style="margin-left:auto; font-size:12px; color:var(--muted);">⚙️ Settings</span>
+        </div>
+        <details class="settings" id="aiSettingsDetails" style="margin-top:8px;">
+          <summary>🤖 Gemini API Key</summary>
+          <label>Gemini API Key</label>
+          <input type="password" id="geminiApiKey" placeholder="AIza...">
+          <div class="note" style="margin-top:6px;">Key <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> par Google account se 2 minute me free banao — credit card nahi chahiye. Ek baar save + test karne ke baad ye box khud collapse ho jaayega, dobara key nahi daalni padegi.</div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+            <button class="btn btn-outline" id="saveApiKeyBtn">Save</button>
+            <button class="btn btn-outline" id="testApiBtn">🔌 Test Connection</button>
+          </div>
+          <div id="testApiResult" style="margin-top:8px;"></div>
+          <div class="note" style="margin-top:8px;">Key sirf isi browser me (localStorage) save hoti hai, kahi bhi hamare server par nahi bheji jaati — sirf seedha Google Gemini ko jaati hai. ⚠️ Note: is tarah client-side key sirf trusted/internal users ke liye safe hai, kyunki koi bhi is page ka source dekh kar key nikal sakta hai.</div>
+        </details>
         <div id="askResultOutput" style="margin-top:12px;"></div>
         <button class="btn btn-primary" id="askSendBtn" style="display:none; margin-top:14px;">Send as Email/WhatsApp</button>
       </div>
@@ -271,10 +332,29 @@
   </main>
 </div>
 
+<div class="modal-backdrop" id="colReportModalBackdrop">
+  <div class="modal">
+    <h2>📊 Column Total Report</h2>
+    <label>Excel File</label>
+    <select id="crFileSelect"></select>
+    <label>Sheet</label>
+    <select id="crSheetSelect"></select>
+    <label>Column jiska Total/Average chahiye</label>
+    <select id="crColSelect"></select>
+    <label>Group By (optional) — jaise Buyer/Style ke hisaab se breakdown</label>
+    <select id="crGroupSelect"><option value="">— Koi grouping nahi (sirf grand total) —</option></select>
+    <div id="crResult" style="margin-top:14px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="crCloseBtn">Close</button>
+      <button class="btn btn-primary" id="crCalcBtn">Calculate</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <h2>Preview</h2>
-    <div><b id="mRecipientLabel">To (Email):</b> <span id="mRecipientValue"></span></div>
+    <div><b id="mRecipientLabel">To (Email):</b> <input type="text" id="mRecipientValue" style="width:auto; display:inline-block; padding:4px 8px; font-size:13px;" placeholder="91XXXXXXXXXX"></div>
     <div style="margin-top:6px;"><b>Subject:</b> <span id="mSubject"></span></div>
     <div class="pre-text" id="mBody" style="margin-top:8px;"></div>
 
@@ -289,10 +369,17 @@
       </div>
     </div>
 
+    <label style="margin-top:14px;">Kya bhejna hai</label>
     <div class="send-mode-row">
+      <label class="mode-pill"><input type="radio" name="attachMode" value="report" checked> 📄 Sirf Report</label>
+      <label class="mode-pill"><input type="radio" name="attachMode" value="withFiles"> 📎 Report + Attachments</label>
+    </div>
+
+    <div class="send-mode-row" style="margin-top:10px;">
       <label class="mode-pill"><input type="radio" name="sendMode" value="manual" checked> 📧 Manual (Mail App)</label>
       <label class="mode-pill"><input type="radio" name="sendMode" value="auto"> ⚡ Auto (EmailJS)</label>
       <label class="mode-pill"><input type="radio" name="sendMode" value="whatsapp"> 💬 WhatsApp</label>
+      <label class="mode-pill"><input type="radio" name="sendMode" value="drive"> ☁️ Drive / Share</label>
     </div>
     <div class="note" id="modeNote"></div>
 
@@ -307,6 +394,22 @@
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+// ── Live analog clock in the header credit bar ──
+function tickAnalogClock(){
+  const now = new Date();
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const hourDeg   = (h * 30) + (m * 0.5);
+  const minuteDeg = (m * 6)  + (s * 0.1);
+  const secondDeg = s * 6;
+  document.getElementById('clockHour').setAttribute('transform',   `rotate(${hourDeg} 50 50)`);
+  document.getElementById('clockMinute').setAttribute('transform', `rotate(${minuteDeg} 50 50)`);
+  document.getElementById('clockSecond').setAttribute('transform', `rotate(${secondDeg} 50 50)`);
+}
+tickAnalogClock();
+setInterval(tickAnalogClock, 1000);
 
 let scannedFiles = [];
 let activeFileId = null;
@@ -568,6 +671,19 @@ function renderFileList(){
     const summary = document.createElement('summary');
     summary.textContent = `${groupLabels[type]} (${groupFiles.length})`;
     details.appendChild(summary);
+
+    const selectAllRow = document.createElement('div');
+    selectAllRow.className = 'file-row';
+    selectAllRow.style.fontWeight = '600';
+    const allChecked = groupFiles.every(f=>f.attach);
+    selectAllRow.innerHTML = `<input type="checkbox" ${allChecked ? 'checked' : ''} title="Select/Deselect all ${groupLabels[type]}"><span>Select All (${groupLabels[type]})</span>`;
+    selectAllRow.querySelector('input[type=checkbox]').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      groupFiles.forEach(f => f.attach = e.target.checked);
+      renderFileList();
+    });
+    details.appendChild(selectAllRow);
+
     groupFiles.forEach(entry=>{
       const row = document.createElement('div');
       row.className = 'file-row' + (entry.id === activeFileId ? ' active' : '');
@@ -621,10 +737,7 @@ function renderPreview(entry){
       html += `</select>`;
     }
 
-    html += `<b style="display:block; margin-top:14px;">${entry.name}</b> — showing "${sheet.name}" (first 15 rows)<br><br>`;
-    html += '<div class="table-scroll"><table class="data-table"><tbody>';
-    sheet.preview.forEach(row=>{ html += '<tr>' + row.map(c=>`<td>${(c===''||c==null)?'':String(c)}</td>`).join('') + '</tr>'; });
-    html += '</tbody></table></div>';
+    html += `<b style="display:block; margin-top:14px;">${entry.name}</b> — showing "${sheet.name}" (first 15 rows). <span style="color:var(--text-muted, #888);">Har column ke upar checkbox se select/deselect karo (Report / Email ke liye).</span><br><br>`;
 
     const header = sheet.rows[0] || [];
     if(!entry.selectedCols){
@@ -632,12 +745,18 @@ function renderPreview(entry){
       const match = findMatchingPreset(header);
       if(match){ applyPreset(entry, match, header); entry._presetApplied = match.name; }
     }
-    html += `<label>Select columns for Report / Email (jo columns chahiye unhe tick rakho)</label><div class="col-picker" id="colPicker_${entry.id}">`;
+
+    html += `<div class="table-scroll"><table class="data-table"><thead><tr id="colHead_${entry.id}">`;
     header.forEach((h,i)=>{
       const checked = entry.selectedCols[i] !== false;
-      html += `<label><input type="checkbox" data-col="${i}" ${checked?'checked':''}> ${h || '(col '+(i+1)+')'}</label>`;
+      html += `<th style="text-align:center; vertical-align:top;"><label style="display:flex; flex-direction:column; align-items:center; gap:4px; font-weight:600; cursor:pointer; white-space:nowrap;">
+        <input type="checkbox" class="col-check" data-col="${i}" ${checked?'checked':''}>
+        <span>${h || '(col '+(i+1)+')'}</span>
+      </label></th>`;
     });
-    html += `</div>`;
+    html += `</tr></thead><tbody>`;
+    sheet.rows.slice(1,16).forEach(row=>{ html += '<tr>' + row.map(c=>`<td>${(c===''||c==null)?'':String(c)}</td>`).join('') + '</tr>'; });
+    html += '</tbody></table></div>';
 
     if(entry._presetApplied){
       html += `<div class="note">Preset "${entry._presetApplied}" applied.</div>`;
@@ -661,7 +780,7 @@ function renderPreview(entry){
         renderPreview(entry);
       });
     }
-    document.querySelectorAll(`#colPicker_${entry.id} input[type=checkbox]`).forEach(cb=>{
+    document.querySelectorAll(`#colHead_${entry.id} input.col-check`).forEach(cb=>{
       cb.addEventListener('change', (e)=>{
         entry.selectedCols[parseInt(e.target.dataset.col,10)] = e.target.checked;
         entry._presetApplied = null;
@@ -739,6 +858,13 @@ function buildExtractedData(entry, opts){
 }
 
 document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function generateReport(){
   if(!scannedFiles.length){ showToast('Pehle folder select karo.', 'warn'); return; }
   const report = { generatedAt:new Date().toLocaleString(), folderName, totalFiles:scannedFiles.length, byType:{xlsx:0,pdf:0,docx:0}, items:[] };
@@ -761,6 +887,13 @@ function renderReport(report){
   const incFileTable = document.getElementById('incFileTable').checked;
   const incExtracted = document.getElementById('incExtracted').checked;
   let html = '';
+
+  if(report.aiSummary){
+    html += `<div style="background:linear-gradient(135deg,rgba(74,99,209,0.08),rgba(139,92,246,0.08)); border:1px solid #4a63d1; border-radius:10px; padding:16px; margin-bottom:16px;">
+      <b>🤖 AI Smart Summary</b>
+      <div class="pre-text" style="margin-top:8px;">${escapeHtml(report.aiSummary)}</div>
+    </div>`;
+  }
 
   if(incStats){
     html += `<div class="stat-row">
@@ -803,6 +936,14 @@ function reportToPlainText(report){
   const incFileTable = document.getElementById('incFileTable').checked;
   const incExtracted = document.getElementById('incExtracted').checked;
   const lines = [];
+
+  if(report.aiSummary){
+    lines.push('🤖 AI SMART SUMMARY');
+    lines.push(report.aiSummary);
+    lines.push('');
+    lines.push('─────────────────────');
+    lines.push('');
+  }
 
   if(incStats){
     lines.push(`Report generated: ${report.generatedAt}`);
@@ -1050,6 +1191,375 @@ function runQuery(){
   }
 }
 
+// ═══════════════════════════════════════════════════
+// 🤖 AI ASSISTANT — accurate answers from any uploaded Excel
+// ═══════════════════════════════════════════════════
+document.getElementById('testApiBtn').addEventListener('click', testAIConnection);
+
+async function testAIConnection(){
+  const apiKey = document.getElementById('geminiApiKey').value.trim();
+  const out = document.getElementById('testApiResult');
+
+  if(!apiKey){ out.innerHTML = `<div class="empty-hint">Pehle Gemini key upar wale box me daalo.</div>`; return; }
+  out.innerHTML = '<div class="note">⏳ Connection test ho raha hai…</div>';
+
+  try{
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Reply with only the word: OK' }] }] })
+    });
+    const status = res.status;
+    const data = await res.json();
+    if(data.error){ throw new Error(`HTTP ${status} — ${data.error.message}`); }
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+    out.innerHTML = `<div class="note" style="color:#16a34a; font-weight:600;">✅ Gemini se connection ho gaya! Reply mila: "${replyText.trim()}"</div>`;
+    localStorage.setItem('geminiApiKey', apiKey);
+    localStorage.setItem('geminiTestOk', 'true');
+    updateAIStatusBox();
+  }catch(e){
+    out.innerHTML = `<div class="empty-hint">❌ Gemini se connection FAIL hua.<br><b>Exact error:</b> ${e.message}<br><br>Ye poora error message screenshot/copy karke mujhe bhejo, main isi se exact wajah bata dunga.</div>`;
+    localStorage.setItem('geminiTestOk', 'false');
+    updateAIStatusBox();
+  }
+}
+
+document.getElementById('askAIBtn').addEventListener('click', runAIQuery);
+document.getElementById('aiReportBtn').addEventListener('click', generateAIReport);
+
+// Calls Gemini with a plain system+user prompt.
+// Shared by the Ask-tab AI query and the Smart Report generator, so both stay in sync.
+async function callAIProvider(systemPrompt, userMessage){
+  const apiKey = localStorage.getItem('geminiApiKey');
+  if(!apiKey){
+    const err = new Error('NO_KEY');
+    throw err;
+  }
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: 'user', parts: [{ text: userMessage }] }] })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(`HTTP ${res.status} — ${data.error.message}`);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function generateAIReport(){
+  if(!scannedFiles.length){ showToast('Pehle folder select karo.', 'warn'); return; }
+  if(!currentReport) generateReport(); // makes sure base stats/table exist even if AI call fails
+
+  const out = document.getElementById('reportOutput');
+  out.innerHTML = '<div class="note">⏳ AI Excel/PDF/Word — sabhi files padh kar samajh raha hai, thoda time lagega…</div>' + out.innerHTML;
+
+  // Build a per-file context block: Excel gets its rows, PDF/Word get their extracted raw text.
+  // Everything is capped so mixed file types never blow past the free-tier token quota.
+  let context = '';
+  scannedFiles.forEach(f => {
+    if(!f.parsed) return;
+    context += `\n\n=== FILE: ${f.path || f.name} (${f.type.toUpperCase()}) ===`;
+    if(f.type === 'xlsx'){
+      context += buildExcelContextForAI([f], 150) || '\n[Excel parse nahi ho paya]';
+    } else if(f.parsed.text){
+      const txt = f.parsed.text.slice(0, 6000);
+      context += '\n' + txt;
+      if(f.parsed.text.length > 6000) context += '\n[NOTE: is document ka baaki text truncate ho gaya, sirf shuruaati hissa upar diya gaya hai]';
+    } else {
+      context += '\n[Content extract nahi ho paya]';
+    }
+  });
+  const CAP = 180000;
+  if(context.length > CAP){
+    context = context.slice(0, CAP) + '\n\n[NOTE: Overall data bahut zyada tha, truncate kar diya gaya hai.]';
+  }
+
+  const systemPrompt = `Tum ek business document analyst ho. Neeche di gayi files Excel, PDF, ya Word — kisi bhi type ki ho sakti hain, aur kisi bhi topic ki (cutting, stitching, invoice, packing list, buyer letter, compliance, kuch bhi) — tumhe koi bhi cheez pehle se assume nahi karni.
+
+Tumhara kaam:
+1. Har file ko uske CONTENT se pehchano ki wo kis type ka document/report hai (naam se guess mat karo, andar ka data padho).
+2. Har file ka ek chhota, clear summary do — jo bhi important numbers, totals, names, dates, ya key points mile wahi likho. Kabhi kuch invent/guess mat karo.
+3. Agar files aapas me related lagti hain (jaise ek hi order/buyer/date ki alag-alag stages), to unhe jodkar ek combined insight/report bhi do.
+4. Jawab Hindi/Hinglish me do, clear headings aur bullet points ke saath, taaki ye seedha WhatsApp ya Email me copy-paste karke bheja ja sake (plain text formatting, koi markdown ** ya # use mat karo).
+5. Agar kisi file ka content samajh na aaye ya khali lage, to saaf bata do — chup mat raho.
+
+FILES DATA:${context}`;
+
+  try{
+    const reply = await callAIProvider(systemPrompt, 'Ab upar diye gaye data se combined smart report banao.');
+    currentReport.aiSummary = reply || '(AI ne khaali jawab diya, dobara try karo)';
+    renderReport(currentReport);
+    showToast('AI Smart Report ban gayi!', 'success');
+  }catch(e){
+    if(e.message === 'NO_KEY'){
+      showToast('Pehle Gemini API key set karo (status box par click karo).', 'warn');
+    } else {
+      showToast('AI Report fail hua: ' + e.message, 'error');
+    }
+    renderReport(currentReport);
+  }
+}
+document.getElementById('askInput').addEventListener('keypress', (e)=>{
+  if(e.key === 'Enter') runAIQuery();
+});
+
+// Load saved Gemini key on page load, set up the status box, and collapse settings
+// automatically once a key is saved so the user never has to re-enter it.
+function updateAIStatusBox(){
+  const key = localStorage.getItem('geminiApiKey');
+  const tested = localStorage.getItem('geminiTestOk') === 'true';
+  const dot = document.getElementById('aiStatusDot');
+  const text = document.getElementById('aiStatusText');
+  if(!key){
+    dot.style.background = '#ef4444';
+    text.textContent = '🔴 AI setup nahi hai — yahan click karke Gemini key daalo';
+    document.getElementById('aiSettingsDetails').open = true;
+  } else if(tested){
+    dot.style.background = '#16a34a';
+    text.textContent = '🟢 AI Ready (Gemini connected)';
+    document.getElementById('aiSettingsDetails').open = false;
+  } else {
+    dot.style.background = '#eab308';
+    text.textContent = '🟡 Key saved hai — ek baar "Test Connection" kar lo';
+    document.getElementById('aiSettingsDetails').open = true;
+  }
+}
+document.getElementById('aiStatusBox').addEventListener('click', ()=>{
+  const d = document.getElementById('aiSettingsDetails');
+  d.open = !d.open;
+});
+(function(){
+  const savedGemKey = localStorage.getItem('geminiApiKey');
+  if(savedGemKey) document.getElementById('geminiApiKey').value = savedGemKey;
+  updateAIStatusBox();
+})();
+
+document.getElementById('saveApiKeyBtn').addEventListener('click', ()=>{
+  const gemKey = document.getElementById('geminiApiKey').value.trim();
+  if(!gemKey){ showToast('Pehle Gemini key paste karo.', 'warn'); return; }
+  localStorage.setItem('geminiApiKey', gemKey);
+  localStorage.setItem('geminiTestOk', 'false'); // force a fresh test after any key change
+  showToast('Gemini key save ho gayi is browser me. Ab "Test Connection" dabao.', 'success');
+  updateAIStatusBox();
+});
+
+// Turn every parsed Excel file's every sheet into compact text the AI can read.
+// Caps rows per sheet so very large files don't blow past the API's token quota —
+// if a sheet is capped, the AI is told so, so it never silently guesses on missing rows.
+function buildExcelContextForAI(files, maxRowsPerSheet){
+  if(!files.length) return null;
+
+  let context = '';
+  files.forEach(f => {
+    context += `\n\n=== FILE: ${f.path || f.name} ===`;
+    f.parsed.sheets.forEach(sheet => {
+      const rows = sheet.rows || [];
+      const header = rows[0] || [];
+      const dataRows = rows.slice(1);
+      const shown = dataRows.slice(0, maxRowsPerSheet);
+      context += `\n--- Sheet: ${sheet.name} (${dataRows.length} data row(s), showing ${shown.length}) ---\n`;
+      context += header.join(' | ') + '\n';
+      shown.forEach(r => { context += r.join(' | ') + '\n'; });
+      if(dataRows.length > shown.length){
+        context += `[NOTE: ${dataRows.length - shown.length} more row(s) exist in this sheet but are not shown above — mention if the answer may be incomplete for this reason.]\n`;
+      }
+    });
+  });
+
+  // Hard safety cap so a single huge file never blows past the free-tier token quota.
+  const CHAR_LIMIT = 180000; // ~45k tokens, safely under Gemini free tier's 250k/min limit
+  if(context.length > CHAR_LIMIT){
+    context = context.slice(0, CHAR_LIMIT) + '\n\n[NOTE: Data yahan truncate ho gaya hai kyunki files bahut badi thi — agar answer incomplete lage, to sawaal me file/sheet ka naam aur specific karo (jaise sirf "Cutting Report" ka data), taaki poora data fit ho sake.]';
+  }
+  return context;
+}
+
+// Picks only the files whose name/folder matches meaningful words from the question —
+// e.g. asking about "cutting" report only sends the Cutting Report file in full detail,
+// instead of every uploaded file, which is what was blowing past the free-tier token quota.
+const ASK_STOPWORDS = new Set(['hame','hume','hamen','chahiye','chahia','alag','ki','ka','ke','se','sabhi','sab','sabse','mein','kitni','kitna','kya','hai','ho','do','dijiye','dena','batao','please','and','the','for','report','reports','file','files','all','sheet','sheets','wala','wali','wale','mujhe','muje']);
+function pickRelevantFiles(query, files){
+  const words = query.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !ASK_STOPWORDS.has(w));
+  if(!words.length) return null;
+  const matched = files.filter(f => {
+    const name = (f.path || f.name).toLowerCase();
+    return words.some(w => name.includes(w));
+  });
+  return matched.length ? matched : null;
+}
+
+async function runAIQuery(){
+  const input = document.getElementById('askInput').value.trim();
+  if(!input){ showToast('Pehle sawaal likho.', 'warn'); return; }
+  if(!scannedFiles.length){ showToast('Pehle folder select karo.', 'warn'); return; }
+
+  const apiKey = localStorage.getItem('geminiApiKey');
+  if(!apiKey){
+    addAskResult(input, `<div class="empty-hint">⚠️ Pehle Gemini API Key save karo (upar status box par click karo), tabhi AI kaam karega.</div>`, '🤖 AI Assistant — API key set nahi hai.', '');
+    document.getElementById('aiSettingsDetails').open = true;
+    return;
+  }
+
+  const allFiles = scannedFiles.filter(f => f.type === 'xlsx' && f.parsed);
+  const relevantFiles = pickRelevantFiles(input, allFiles);
+  const filesToUse = relevantFiles || allFiles;
+  // If we matched specific file(s) by name, we can afford to send them in much more detail.
+  // If not, we're sending everything, so rows-per-sheet must stay small to fit the free-tier quota.
+  const maxRows = relevantFiles ? 1200 : 60;
+  const excelContext = buildExcelContextForAI(filesToUse, maxRows);
+  if(!excelContext){
+    addAskResult(input, '<div class="empty-hint">Koi Excel file parsed nahi mili. AI sirf .xlsx/.xls files ka data padh sakta hai.</div>', '🤖 AI Assistant — koi Excel data nahi mila.', '');
+    return;
+  }
+
+  document.getElementById('askInput').value = '';
+  const fileNote = relevantFiles
+    ? `Match hui file(s): ${filesToUse.map(f => f.name).join(', ')}`
+    : `Koi specific file match nahi hui — sabhi ${filesToUse.length} file(s) ka sample bheja ja raha hai`;
+  addAskResult(input, `<div class="note">⏳ AI Excel data padh raha hai… (${fileNote})</div>`, '🤖 AI Assistant soch raha hai…', '');
+  const thinkingIndex = askHistory.length - 1;
+
+  const filterNote = relevantFiles
+    ? `\n\nIMPORTANT CONTEXT NOTE: User ke sawaal ke keywords se match karke sirf ${filesToUse.length} file(s) ka poora data neeche diya gaya hai (baaki uploaded files is baar nahi bheji gayi, taaki data-limit cross na ho). Agar answer in files me na mile, to user ko bolo ki wo apne sawaal me us doosri report/file ka naam bhi mention kare.`
+    : `\n\nIMPORTANT CONTEXT NOTE: User ke sawaal me koi specific file/report ka naam identify nahi hua, isliye SAARI uploaded files ka thoda-thoda (sample) data neeche diya gaya hai taaki free-tier data-limit cross na ho. Agar exact/poora total chahiye, to user ko suggest karo ki apne sawaal me specific report ka naam (jaise "Cutting", "Finishing", "Packing") likhe, taaki us file ka poora data mil sake — ya "Column Total Report" popup istemal kare jo hamesha 100% exact hota hai.`;
+
+  const systemPrompt = `Tum ek accurate data-analysis assistant ho jo neeche diye gaye Excel data ke aadhar par sawaalon ke jawab dete ho.
+Rules:
+- Neeche har file "=== FILE: <folder-path/filename> ===" se shuru hoti hai — is poore path (folder name + file name) ko dhyan se padho, kyunki user kabhi kabhi location/unit ka naam (jaise "Home", "Factory A") sirf FOLDER NAME me poochta hai, filename me nahi.
+- Jawab dene se pehle SAARI files aur unki SAARI sheets ek-ek karke check karo — kisi bhi file/sheet ko skip mat karo jab tak user ne khud filter na kiya ho.
+- SIRF neeche diye gaye data ke aadhar par jawab do — kabhi bhi number ya fact ko guess/invent mat karo.
+- Agar poori tarah dhoondhne ke baad bhi answer nahi milta, ya koi row truncate ho gayi hai jisse answer incomplete ho sakta hai, ye clearly bata do — "nahi mila" bolne se pehle confirm karo ki tumne har file/sheet check kiya.
+- Jo bhi total/sum nikaalo, use dobara check karke exact number do.
+- User jis language (Hindi/English/Hinglish) me poochta hai, usi me jawab do.
+- Jawab short, clear, bullet points ya table ke form me do jaha zaroorat ho. File ka poora path aur sheet ka naam mention karo jaha se number/data aaya hai.
+${filterNote}
+
+EXCEL DATA:${excelContext}`;
+
+  try{
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: input }] }]
+      })
+    });
+    const data = await res.json();
+    if(data.error){ throw new Error(data.error.message || 'Gemini API error'); }
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf kijiye, jawab nahi mil paaya.';
+    const html = `<div class="pre-text">${escapeHtml(reply)}</div>`;
+    askHistory[thinkingIndex] = { query: input, html, interpretation: `🤖 AI Assistant (Gemini) — Excel data padh kar jawab diya`, emailText: `Query: ${input}\n\n${reply}` };
+    renderAskThread();
+  }catch(e){
+    askHistory[thinkingIndex] = { query: input, html: `<div class="empty-hint">⚠️ AI se jawab nahi mila: ${e.message || 'network/API issue'}. API Key sahi hai ya nahi check karo, ya "Ask (Quick)" button try karo.</div>`, interpretation: '🤖 AI Assistant — error aaya', emailText: '' };
+    renderAskThread();
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// 📊 COLUMN TOTAL REPORT — deterministic popup (no AI, 100% accurate)
+// ═══════════════════════════════════════════════════
+document.getElementById('openColReportBtn').addEventListener('click', openColReportModal);
+document.getElementById('crCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('colReportModalBackdrop').classList.remove('open');
+});
+document.getElementById('crCalcBtn').addEventListener('click', calculateColumnReport);
+
+function openColReportModal(){
+  const files = scannedFiles.filter(f => f.type === 'xlsx' && f.parsed);
+  if(!files.length){ showToast('Pehle folder select karo jisme Excel files ho.', 'warn'); return; }
+
+  const fileSelect = document.getElementById('crFileSelect');
+  fileSelect.innerHTML = files.map(f => `<option value="${f.id}">${f.path || f.name}</option>`).join('');
+  fileSelect.onchange = () => populateSheetSelect();
+  populateSheetSelect();
+
+  document.getElementById('crResult').innerHTML = '';
+  document.getElementById('colReportModalBackdrop').classList.add('open');
+}
+
+function populateSheetSelect(){
+  const fileId = document.getElementById('crFileSelect').value;
+  const entry = scannedFiles.find(f => f.id === fileId);
+  const sheetSelect = document.getElementById('crSheetSelect');
+  if(!entry) return;
+  sheetSelect.innerHTML = entry.parsed.sheets.map((s,i) => `<option value="${i}">${s.name}</option>`).join('');
+  sheetSelect.onchange = () => populateColumnSelects();
+  populateColumnSelects();
+}
+
+function populateColumnSelects(){
+  const fileId = document.getElementById('crFileSelect').value;
+  const entry = scannedFiles.find(f => f.id === fileId);
+  const sheetIdx = parseInt(document.getElementById('crSheetSelect').value, 10) || 0;
+  const sheet = entry.parsed.sheets[sheetIdx];
+  const header = (sheet.rows && sheet.rows[0]) || [];
+
+  const colSelect = document.getElementById('crColSelect');
+  const groupSelect = document.getElementById('crGroupSelect');
+  colSelect.innerHTML = header.map((h,i) => `<option value="${i}">${h || '(col '+(i+1)+')'}</option>`).join('');
+  groupSelect.innerHTML = '<option value="">— Koi grouping nahi (sirf grand total) —</option>' +
+    header.map((h,i) => `<option value="${i}">${h || '(col '+(i+1)+')'}</option>`).join('');
+}
+
+function calculateColumnReport(){
+  const fileId = document.getElementById('crFileSelect').value;
+  const entry = scannedFiles.find(f => f.id === fileId);
+  if(!entry){ showToast('File select karo.', 'warn'); return; }
+
+  const sheetIdx = parseInt(document.getElementById('crSheetSelect').value, 10) || 0;
+  const sheet = entry.parsed.sheets[sheetIdx];
+  const header = (sheet.rows && sheet.rows[0]) || [];
+  const dataRows = (sheet.rows || []).slice(1);
+
+  const colIdx = parseInt(document.getElementById('crColSelect').value, 10);
+  const groupVal = document.getElementById('crGroupSelect').value;
+  const groupIdx = groupVal === '' ? null : parseInt(groupVal, 10);
+  const colName = header[colIdx] || '(col '+(colIdx+1)+')';
+
+  let sum = 0, count = 0, min = null, max = null;
+  const groups = {};
+
+  dataRows.forEach(row => {
+    const raw = row[colIdx];
+    if(raw === '' || raw == null) return;
+    const n = Number(raw);
+    if(Number.isNaN(n)) return;
+    sum += n; count++;
+    if(min === null || n < min) min = n;
+    if(max === null || n > max) max = n;
+    if(groupIdx != null){
+      const key = (row[groupIdx] === '' || row[groupIdx] == null) ? '(khali)' : String(row[groupIdx]);
+      groups[key] = (groups[key] || 0) + n;
+    }
+  });
+
+  const avg = count ? (sum / count) : 0;
+  let html = `<div class="stat-row">
+      <div class="stat"><b>${formatNum(sum)}</b><span>TOTAL</span></div>
+      <div class="stat"><b>${count}</b><span>COUNT</span></div>
+      <div class="stat"><b>${formatNum(avg)}</b><span>AVERAGE</span></div>
+      <div class="stat"><b>${min===null?'—':formatNum(min)}</b><span>MIN</span></div>
+      <div class="stat"><b>${max===null?'—':formatNum(max)}</b><span>MAX</span></div>
+    </div>
+    <div class="note" style="margin-top:8px;">Column: <b>${colName}</b> · File: <b>${entry.path || entry.name}</b> · Sheet: <b>${sheet.name}</b></div>`;
+
+  if(groupIdx != null){
+    const groupName = header[groupIdx] || '(col '+(groupIdx+1)+')';
+    const rows = Object.entries(groups).sort((a,b) => b[1]-a[1]);
+    html += `<label style="margin-top:14px;">Breakdown by "${groupName}"</label>
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>${groupName}</th><th>${colName} Total</th></tr></thead><tbody>` +
+      rows.map(([k,v]) => `<tr><td>${k}</td><td>${formatNum(v)}</td></tr>`).join('') +
+      '</tbody></table></div>';
+  }
+
+  if(!count){
+    html = `<div class="empty-hint">Is column me koi numeric data nahi mila. Sahi column select kiya hai?</div>`;
+  }
+
+  document.getElementById('crResult').innerHTML = html;
+}
+
 document.getElementById('askSendBtn').addEventListener('click', ()=>{
   const combined = askHistory.filter(h=>h.emailText).map(h=>h.emailText).join('\n\n----------\n\n');
   document.getElementById('emailSubject').value = 'Answers — ' + new Date().toLocaleDateString();
@@ -1084,6 +1594,28 @@ function getAllAttachments(){
   return attachments;
 }
 
+// Returns [] when the user chose "Sirf Report" — so no confirmation step is ever
+// forced unless they explicitly asked for attachments too.
+function getEffectiveAttachments(){
+  const attachMode = document.querySelector('input[name=attachMode]:checked').value;
+  return attachMode === 'withFiles' ? getAllAttachments() : [];
+}
+
+document.querySelectorAll('input[name=attachMode]').forEach(r => r.addEventListener('change', updateAttachModeUI));
+
+function updateAttachModeUI(){
+  const attachMode = document.querySelector('input[name=attachMode]:checked').value;
+  const attachSection = document.getElementById('mAttachSection');
+  const attachments = getAllAttachments();
+  document.getElementById('mConfirmAttach').checked = false;
+  if(attachMode === 'withFiles' && attachments.length){
+    attachSection.style.display = 'block';
+    document.getElementById('mAttachList').innerHTML = attachments.map(a=>`<div>${a.name} — ${formatBytes(a.size)}</div>`).join('');
+  } else {
+    attachSection.style.display = 'none';
+  }
+}
+
 function openModal(){
   const subject = document.getElementById('emailSubject').value.trim();
   const body = document.getElementById('emailBody').value;
@@ -1092,15 +1624,8 @@ function openModal(){
   document.getElementById('mSubject').textContent = subject;
   document.getElementById('mBody').textContent = body;
 
-  const attachments = getAllAttachments();
-  const attachSection = document.getElementById('mAttachSection');
-  document.getElementById('mConfirmAttach').checked = false;
-  if(attachments.length){
-    attachSection.style.display = 'block';
-    document.getElementById('mAttachList').innerHTML = attachments.map(a=>`<div>${a.name} — ${formatBytes(a.size)}</div>`).join('');
-  } else {
-    attachSection.style.display = 'none';
-  }
+  document.querySelector('input[name=attachMode][value=report]').checked = true;
+  updateAttachModeUI();
 
   document.querySelector('input[name=sendMode][value=manual]').checked = true;
   updateModeUI();
@@ -1115,15 +1640,24 @@ function updateModeUI(){
   sendBtn.classList.remove('btn-primary','btn-wa');
   if(mode === 'whatsapp'){
     document.getElementById('mRecipientLabel').textContent = 'WhatsApp Number:';
-    document.getElementById('mRecipientValue').textContent = document.getElementById('waNumber').value.trim() || '(empty)';
-    const hasAttachments = getAllAttachments().length > 0;
+    document.getElementById('mRecipientValue').readOnly = false;
+    document.getElementById('mRecipientValue').value = document.getElementById('waNumber').value.trim();
+    const hasAttachments = getEffectiveAttachments().length > 0;
     document.getElementById('modeNote').textContent = hasAttachments
       ? 'Files as-is bhejne ke liye share sheet khulega — usme WhatsApp choose karo, phir contact/number waha manually chuno (number yahan se pre-fill nahi ho sakta, ye OS/WhatsApp ki limitation hai). Agar device/browser file-share support nahi karta to sirf text ke saath chat khulega.'
       : 'WhatsApp chat khulega message ke saath ready (number se seedha).';
     sendBtn.classList.add('btn-wa');
+  } else if(mode === 'drive'){
+    document.getElementById('mRecipientLabel').textContent = 'Save/Share:';
+    const recipientInput = document.getElementById('mRecipientValue');
+    recipientInput.value = '(koi number/email nahi chahiye)';
+    recipientInput.readOnly = true;
+    document.getElementById('modeNote').textContent = 'Ek share-sheet khulega jisme "Save to Drive" ka option milega (Android/Chrome par) — report text ek file ke roop me bhejega, agar "Report + Attachments" chuna hai to files bhi saath jayengi. Agar share support nahi hai to file seedhi download ho jaayegi, use manually Drive me upload kar dena.';
+    sendBtn.classList.add('btn-primary');
   } else {
+    document.getElementById('mRecipientValue').readOnly = false;
     document.getElementById('mRecipientLabel').textContent = 'To (Email):';
-    document.getElementById('mRecipientValue').textContent = document.getElementById('emailTo').value.trim() || '(empty)';
+    document.getElementById('mRecipientValue').value = document.getElementById('emailTo').value.trim();
     sendBtn.classList.add('btn-primary');
     document.getElementById('modeNote').textContent = mode === 'manual'
       ? 'Manual mode me attachments automatically nahi jud sakti (browser restriction) — mail app khulne ke baad tumhe manually attach karke Send dabana hoga.'
@@ -1131,10 +1665,21 @@ function updateModeUI(){
   }
 }
 
+// Typing directly in the popup's recipient box updates the main Send-tab field too,
+// so both stay in sync and the Send button always reads the latest value.
+document.getElementById('mRecipientValue').addEventListener('input', (e)=>{
+  const mode = document.querySelector('input[name=sendMode]:checked').value;
+  if(mode === 'whatsapp'){
+    document.getElementById('waNumber').value = e.target.value.trim();
+  } else if(mode !== 'drive'){
+    document.getElementById('emailTo').value = e.target.value.trim();
+  }
+});
+
 document.getElementById('modalBackBtn').addEventListener('click', ()=> document.getElementById('modalBackdrop').classList.remove('open'));
 
 document.getElementById('modalSendBtn').addEventListener('click', async ()=>{
-  const attachments = getAllAttachments();
+  const attachments = getEffectiveAttachments();
   if(attachments.length && !document.getElementById('mConfirmAttach').checked){
     showToast('Attachments confirm karo pehle (checkbox tick karo).', 'warn');
     return;
@@ -1150,12 +1695,47 @@ document.getElementById('modalSendBtn').addEventListener('click', async ()=>{
   if(mode === 'whatsapp'){
     if(!data.waNumber){ showToast('WhatsApp number bharo.', 'warn'); return; }
     await sendWhatsApp(data);
+  } else if(mode === 'drive'){
+    await sendToDrive(data);
   } else {
     if(!data.to){ showToast('Email address bharo.', 'warn'); return; }
     if(mode === 'manual') sendManual(data);
     else await sendAuto(data);
   }
 });
+
+async function sendToDrive(data){
+  // Turn the report text itself into a shareable .txt file, so "Save to Drive"
+  // (offered by the native share-sheet) has something to save even with no attachments.
+  const reportBlob = new Blob([`${data.subject}\n\n${data.body}`], { type: 'text/plain' });
+  const reportFile = new File([reportBlob], `${data.subject.replace(/[^a-z0-9]+/gi,'_')}.txt`, { type: 'text/plain' });
+  const fileObjs = [reportFile, ...data.attachments.map(a=>a.file)];
+
+  const canShareFiles = navigator.canShare && navigator.share && navigator.canShare({files: fileObjs});
+  if(canShareFiles){
+    try{
+      await navigator.share({ files: fileObjs, title: data.subject, text: data.subject });
+      showToast('Share sheet khula — "Save to Drive" (ya koi bhi app) choose karo.', 'success');
+      document.getElementById('modalBackdrop').classList.remove('open');
+      return;
+    }catch(err){
+      if(err.name === 'AbortError'){ return; } // user cancelled the share sheet
+      console.error('Web Share failed', err);
+    }
+  }
+
+  // Fallback: browser/device doesn't support file-sharing — just download the file(s),
+  // user can then manually upload to drive.google.com.
+  fileObjs.forEach(f=>{
+    const url = URL.createObjectURL(f);
+    const a = document.createElement('a');
+    a.href = url; a.download = f.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  showToast('Ye browser share-sheet support nahi karta — file(s) download ho gayi, ab drive.google.com par manually upload kar do.', 'info');
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
 
 function sendManual(data){
   const mailto = `mailto:${encodeURIComponent(data.to)}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.body)}`;
