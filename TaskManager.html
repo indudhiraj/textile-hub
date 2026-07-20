@@ -447,6 +447,166 @@ tr:last-child td{border-bottom:none}
 .rpt-bar-track{flex:1;height:16px;background:#e0e0e0;border-radius:8px;overflow:hidden}
 .rpt-bar-fill{height:100%;border-radius:8px;transition:width 0.4s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;color:#fff;font-weight:bold}
 .rpt-bar-val{width:36px;font-size:12px;color:#555;text-align:right;flex-shrink:0}
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE BUTTON
+═══════════════════════════════════════════ */
+.theme-toggle-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.theme-toggle-btn:hover{background:rgba(255,255,255,0.25)}
+
+/* ═══════════════════════════════════════════
+   ANALOG CLOCK — topbar centre, big, live
+═══════════════════════════════════════════ */
+.tb-clock-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-width:70px}
+.tb-analog-clock{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#33397a,#12142a 75%);border:3px solid #ffa000;position:relative;box-shadow:0 3px 12px rgba(0,0,0,0.35)}
+.tb-analog-clock .tbc-center{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:#ffa000;transform:translate(-50%,-50%);z-index:3}
+.tb-analog-clock .tbc-hand{position:absolute;left:50%;bottom:50%;transform-origin:50% 100%;border-radius:3px;background:#fff}
+.tb-analog-clock .tbc-hour{width:3.2px;height:15px;margin-left:-1.6px}
+.tb-analog-clock .tbc-min{width:2.3px;height:21px;margin-left:-1.15px}
+.tb-analog-clock .tbc-sec{width:1.2px;height:24px;margin-left:-.6px;background:#ff6659}
+.tb-analog-clock .tbc-tick{position:absolute;left:50%;top:4px;width:1.4px;height:5px;margin-left:-.7px;background:rgba(255,255,255,0.55);transform-origin:50% 26px}
+@media (max-width:820px){.tb-clock-wrap{display:none}}
+@media print{.tb-clock-wrap,.theme-toggle-btn{display:none!important}}
+
+/* ═══════════════════════════════════════════
+   DARK MODE
+═══════════════════════════════════════════ */
+body.dark-mode{background:#12141c;color:#dfe1ee}
+body.dark-mode #main{background:transparent}
+
+/* surfaces */
+body.dark-mode .card,
+body.dark-mode .stat-box,
+body.dark-mode .chart-box,
+body.dark-mode .dept-card,
+body.dark-mode .modal,
+body.dark-mode .reg-card,
+body.dark-mode .erp-card,
+body.dark-mode .erp-stat,
+body.dark-mode .ai-section,
+body.dark-mode #notifPanel,
+body.dark-mode .meet-card,
+body.dark-mode .notice-card,
+body.dark-mode .folder-file-card,
+body.dark-mode .wa-tpl-card,
+body.dark-mode .fu-card,
+body.dark-mode .summary-box,
+body.dark-mode .tabs .tab,
+body.dark-mode .fu-tab,
+body.dark-mode .ai-tab{background:#1c2030;color:#dfe1ee;border-color:#333850}
+
+/* headings that were navy-on-white → lighten for dark bg */
+body.dark-mode .page-title,
+body.dark-mode .modal-title,
+body.dark-mode .dept-card .dname,
+body.dark-mode .person-name,
+body.dark-mode .reply-company,
+body.dark-mode .reply-task-title,
+body.dark-mode .summary-title,
+body.dark-mode .ai-section-title,
+body.dark-mode .wa-tpl-name,
+body.dark-mode .erp-card-title,
+body.dark-mode .meet-title,
+body.dark-mode .stat-box.total .stat-num,
+body.dark-mode .erp-stat.blue .enum,
+body.dark-mode .login-company{color:#8c9eff}
+body.dark-mode .page-title{border-bottom-color:#333850}
+body.dark-mode .erp-card-title{border-bottom-color:#2a2f45}
+
+/* light-indigo tint backgrounds → dark tint */
+body.dark-mode .person-hdr,
+body.dark-mode .action-bar,
+body.dark-mode .comm-task-info,
+body.dark-mode th,
+body.dark-mode .erp-table th,
+body.dark-mode .attach-doc-badge,
+body.dark-mode .chip.on,
+body.dark-mode .fu-badge.soon,
+body.dark-mode .erp-badge.blue,
+body.dark-mode .wa-tpl-card.selected{background:#242b46;color:#aab4ff;border-color:#3a4166}
+
+/* tables */
+body.dark-mode th{border-bottom-color:#3a4166}
+body.dark-mode td,body.dark-mode .erp-table td{border-bottom-color:#2a2f45}
+body.dark-mode tr:hover td,body.dark-mode .erp-table tr:hover td{background:#20263a}
+body.dark-mode .tbl-wrap{border-color:#333850}
+
+/* inputs */
+body.dark-mode .form-group input,
+body.dark-mode .form-group select,
+body.dark-mode .form-group textarea,
+body.dark-mode .filter-bar select,
+body.dark-mode .filter-bar input[type=date],
+body.dark-mode .comm-input-row textarea,
+body.dark-mode .reply-field select,
+body.dark-mode .reply-field textarea,
+body.dark-mode .ai-key-row input,
+body.dark-mode .phone-row select,
+body.dark-mode .phone-row input,
+body.dark-mode .edit-inline input,
+body.dark-mode .chip{background:#1a1e2c;border-color:#3a4166;color:#e6e8f0}
+body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:#6b7290}
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus,
+body.dark-mode .comm-input-row textarea:focus,
+body.dark-mode .reply-field select:focus,
+body.dark-mode .reply-field textarea:focus{border-color:#7986cb}
+
+/* muted secondary text */
+body.dark-mode .card-title,
+body.dark-mode .stat-label,
+body.dark-mode .chart-box .ctitle,
+body.dark-mode .dept-card .dmeta,
+body.dark-mode .bar-label,
+body.dark-mode .time-tag,
+body.dark-mode .notif-time,
+body.dark-mode .notif-empty,
+body.dark-mode .empty,
+body.dark-mode .ai-section-sub,
+body.dark-mode .fu-meta,
+body.dark-mode .meet-meta,
+body.dark-mode .notice-meta,
+body.dark-mode .folder-upload-box p,
+body.dark-mode .attach-file-name,
+body.dark-mode .rpt-bar-label,
+body.dark-mode .rpt-bar-val,
+body.dark-mode .modal-close,
+body.dark-mode .donut-legend{color:#9aa0b8}
+
+/* light tinted panels → dark tint */
+body.dark-mode .filter-bar,
+body.dark-mode .summary-stat,
+body.dark-mode .ai-provider-wrap .ai-prov-tab,
+body.dark-mode .ai-prov-statusbar,
+body.dark-mode .list-item{background:#20263a;border-color:#333850}
+body.dark-mode .list-item:hover{background:#262c42}
+body.dark-mode .comm-thread,
+body.dark-mode .folder-upload-box,
+body.dark-mode .attach-area,
+body.dark-mode .ai-result,
+body.dark-mode .reply-task-card{background:#1a2036;border-color:#333850;color:#dfe1ee}
+body.dark-mode .ai-result.loading{background:#1a1e2c;color:#7d84a0}
+body.dark-mode .notice-card.pinned{background:#1a2036}
+
+/* progress / stock bar tracks */
+body.dark-mode .pbar-wrap,
+body.dark-mode .stock-bar,
+body.dark-mode .rpt-bar-track{background:#2a2f45}
+
+/* notif items */
+body.dark-mode .notif-item{border-bottom-color:#2a2f45}
+body.dark-mode .notif-item:hover{background:#232840}
+body.dark-mode .notif-item.unread{background:#332b1a}
+body.dark-mode .notif-msg{color:#dfe1ee}
+
+/* misc text colors */
+body.dark-mode .comm-bubble .comm-text,
+body.dark-mode .notice-title,
+body.dark-mode .fu-title{color:#e6e8f0}
+
+/* scrollable containers */
+body.dark-mode ::-webkit-scrollbar-track{background:#1a1e2c}
+body.dark-mode ::-webkit-scrollbar-thumb{background:#3a4166;border-radius:4px}
 </style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -486,11 +646,20 @@ tr:last-child td{border-bottom:none}
         <div class="ctag" id="hTagline">Smart Task Management System</div>
       </div>
     </div>
+    <div class="tb-clock-wrap no-print">
+      <div class="tb-analog-clock" id="tbAnalogClock">
+        <div class="tbc-center"></div>
+        <div class="tbc-hand tbc-hour" id="tbcHour"></div>
+        <div class="tbc-hand tbc-min" id="tbcMin"></div>
+        <div class="tbc-hand tbc-sec" id="tbcSec"></div>
+      </div>
+    </div>
     <div class="right">
       <div class="fb-pill no-print">
         <div class="fb-dot sync" id="fb-dot"></div>
         <span id="fb-txt">Connecting...</span>
       </div>
+      <button class="theme-toggle-btn no-print" id="themeToggleBtn" onclick="toggleDarkMode()" title="Light / Dark Mode">🌙</button>
       <button class="fb-topbtn fb-save no-print" onclick="fbSaveNow()">☁️ Save</button>
       <button class="fb-topbtn fb-load no-print" onclick="fbLoadNow()">📥 Load</button>
       <button class="fb-topbtn fb-backup no-print" onclick="fbBackup()">💾 Backup</button>
@@ -2029,6 +2198,8 @@ function startApp(){
   refreshDropdowns();
   renderDash();
   nav('dashboard');
+  initDarkMode();
+  initTbClock();
 }
 
 // ===== HEADER =====
@@ -5663,6 +5834,53 @@ buildMsg=function(tList,personName,imageUrl){
   }
   return msg;
 };
+
+// ═══════════════════════════════════════
+// LIGHT / DARK MODE
+// ═══════════════════════════════════════
+function toggleDarkMode(){
+  var isDark=document.body.classList.toggle('dark-mode');
+  var btn=document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent=isDark?'☀️':'🌙';
+  try{ localStorage.setItem('tm_darkmode', isDark?'1':'0'); }catch(e){}
+}
+function initDarkMode(){
+  var isDark=false;
+  try{ isDark=localStorage.getItem('tm_darkmode')==='1'; }catch(e){}
+  document.body.classList.toggle('dark-mode', isDark);
+  var btn=document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent=isDark?'☀️':'🌙';
+}
+
+// ═══════════════════════════════════════
+// TOPBAR ANALOG CLOCK — live, real-time
+// ═══════════════════════════════════════
+var _tbClockStarted=false;
+function tbClockTick(){
+  var now=new Date();
+  var h=now.getHours()%12, m=now.getMinutes(), s=now.getSeconds();
+  var hourDeg=(h*30)+(m*0.5), minDeg=(m*6)+(s*0.1), secDeg=s*6;
+  var hourEl=document.getElementById('tbcHour');
+  var minEl=document.getElementById('tbcMin');
+  var secEl=document.getElementById('tbcSec');
+  if(hourEl) hourEl.style.transform='rotate('+hourDeg+'deg)';
+  if(minEl) minEl.style.transform='rotate('+minDeg+'deg)';
+  if(secEl) secEl.style.transform='rotate('+secDeg+'deg)';
+}
+function initTbClock(){
+  if(_tbClockStarted) return;
+  var clockEl=document.getElementById('tbAnalogClock');
+  if(!clockEl) return;
+  for(var i=0;i<12;i++){
+    var tick=document.createElement('div');
+    tick.className='tbc-tick';
+    tick.style.transform='rotate('+(i*30)+'deg)';
+    clockEl.appendChild(tick);
+  }
+  tbClockTick();
+  setInterval(tbClockTick,1000);
+  _tbClockStarted=true;
+}
 </script>
 <!-- ============================================================ -->
 <!-- INDU AI CHATBOT -->

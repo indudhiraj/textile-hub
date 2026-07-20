@@ -25,12 +25,38 @@
   --shadow2:0 8px 32px rgba(80,60,30,.14);
   --r:14px;--r2:9px;
 }
+body.dark-mode{
+  --cream:#181510;--cream2:#242019;--cream3:#2f291f;
+  --ink:#f2ece1;--ink2:#d8cebb;--ink3:#a89c87;
+  --card:#211d16;--bg:var(--cream);
+  --border:#3a3226;--border2:#4a4032;
+  --shadow:0 2px 12px rgba(0,0,0,.35);
+  --shadow2:0 8px 32px rgba(0,0,0,.5);
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23c17f3a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0}
+body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23c17f3a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0;transition:opacity .3s}
+body.dark-mode::before{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23e8973f' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+body{transition:background-color .3s,color .3s}
+
+/* ── Theme toggle button ── */
+.theme-toggle-btn{background:var(--cream2);border:1px solid var(--border);color:var(--ink);font-size:15px;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.theme-toggle-btn:hover{border-color:var(--amber);color:var(--amber)}
+
+/* ── Analog clock — big, live, topbar centre ── */
+.tb-clock-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.tb-analog-clock{width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 34% 30%,var(--cream2),var(--card) 75%);border:3px solid var(--amber);position:relative;box-shadow:var(--shadow2)}
+.tb-analog-clock .tbc-center{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:var(--amber);transform:translate(-50%,-50%);z-index:3}
+.tb-analog-clock .tbc-hand{position:absolute;left:50%;bottom:50%;transform-origin:50% 100%;border-radius:3px;background:var(--ink)}
+.tb-analog-clock .tbc-hour{width:3.6px;height:17px;margin-left:-1.8px}
+.tb-analog-clock .tbc-min{width:2.6px;height:24px;margin-left:-1.3px}
+.tb-analog-clock .tbc-sec{width:1.3px;height:27px;margin-left:-.65px;background:var(--red)}
+.tb-analog-clock .tbc-tick{position:absolute;left:50%;top:4px;width:1.6px;height:6px;margin-left:-.8px;background:var(--ink3);transform-origin:50% 29px}
+@media (max-width:900px){.tb-clock-wrap{display:none}}
+@media print{.tb-clock-wrap,.theme-toggle-btn{display:none}}
 
 /* ═══ TOPBAR ═══ */
-.topbar{background:var(--card);border-bottom:2px solid var(--cream3);padding:0 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:500;height:62px;box-shadow:var(--shadow)}
+.topbar{background:var(--card);border-bottom:2px solid var(--cream3);padding:0 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:500;height:80px;box-shadow:var(--shadow)}
 .tb-logo{font-size:22px}
 .tb-company-area{flex:1;min-width:0}
 .tb-company{font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;border-bottom:1px dashed transparent;transition:all .2s;display:inline-block}
@@ -50,7 +76,7 @@ body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xm
 .topbtn:hover{background:var(--amber);color:#fff;border-color:var(--amber)}
 
 /* ═══ MODE BAR ═══ */
-.mode-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:62px;z-index:99;flex-wrap:wrap}
+.mode-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:80px;z-index:99;flex-wrap:wrap}
 .mode-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase}
 .mode-toggle,.unit-toggle{display:flex;background:var(--cream2);border:1.5px solid var(--border);border-radius:9px;padding:3px;gap:2px}
 .mode-btn,.unit-btn{padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;background:transparent;color:var(--ink3)}
@@ -521,9 +547,18 @@ body.print-grid table.om-tbl th{border:1px solid #555 !important}
       <span id="tbContact" onclick="editInfo('contact')" title="Click">Contact</span>
     </div>
   </div>
+  <div class="tb-clock-wrap">
+    <div class="tb-analog-clock" id="tbAnalogClock">
+      <div class="tbc-center"></div>
+      <div class="tbc-hand tbc-hour" id="tbcHour"></div>
+      <div class="tbc-hand tbc-min" id="tbcMin"></div>
+      <div class="tbc-hand tbc-sec" id="tbcSec"></div>
+    </div>
+  </div>
   <div class="tb-sep"></div>
   <div class="tb-right">
     <div class="fb-pill"><div class="fb-dot sync" id="fbDot"></div><span id="fbTxt" style="font-size:10px">Firebase...</span></div>
+    <button class="theme-toggle-btn no-print" id="themeToggleBtn" onclick="toggleDarkMode()" title="Light / Dark Mode">🌙</button>
     <button class="topbtn no-print" onclick="fbSaveNow()">☁️ Save</button>
     <button class="topbtn no-print" onclick="fbLoadNow()">📥 Load</button>
     <button class="topbtn no-print" onclick="window.print()">🖨️ Print</button>
@@ -1379,7 +1414,7 @@ function fbLoadNow(){
 // ═══════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════
-let settings={company:'Your Company Name',address:'Company Address',dev:'Developer Name',contact:'+91-XXXXXXXXXX'};
+let settings={company:'Your Company Name',address:'Company Address',dev:'Dhiraj Kumar',contact:'9608405286'};
 function loadSettings(){const s=localStorage.getItem('ucc2_settings');if(s)settings=Object.assign(settings,JSON.parse(s));applySettings();}
 function saveSettings(){localStorage.setItem('ucc2_settings',JSON.stringify(settings));}
 function applySettings(){
@@ -2077,6 +2112,8 @@ function showToast(msg){
   populateProductType();buildSizeTable();
   calculate();renderData();initFbStatus();
   omInit();
+  initDarkMode();
+  initTbClock();
   // Auto-sync from Firebase on startup
   fbAutoLoad(function(){
     // Firebase data loaded — refresh UI
@@ -3178,6 +3215,56 @@ async function induTestKey() {
     document.getElementById('induKeyInput').placeholder = '••••••••••••••••••';
   }
 })();
+
+// ═══════════════════════════════════════
+// LIGHT / DARK MODE
+// ═══════════════════════════════════════
+function toggleDarkMode(){
+  const isDark = document.body.classList.toggle('dark-mode');
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '☀️' : '🌙';
+  try{ localStorage.setItem('ucc2_darkmode', isDark ? '1' : '0'); }catch(e){}
+}
+function initDarkMode(){
+  let isDark = false;
+  try{ isDark = localStorage.getItem('ucc2_darkmode') === '1'; }catch(e){}
+  if(isDark){
+    document.body.classList.add('dark-mode');
+    const btn = document.getElementById('themeToggleBtn');
+    if(btn) btn.textContent = '☀️';
+  }
+}
+
+// ═══════════════════════════════════════
+// TOPBAR ANALOG CLOCK — live, real-time
+// ═══════════════════════════════════════
+function tbClockTick(){
+  const now = new Date();
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const hourDeg = (h * 30) + (m * 0.5);
+  const minDeg = (m * 6) + (s * 0.1);
+  const secDeg = s * 6;
+  const hourEl = document.getElementById('tbcHour');
+  const minEl = document.getElementById('tbcMin');
+  const secEl = document.getElementById('tbcSec');
+  if(hourEl) hourEl.style.transform = `rotate(${hourDeg}deg)`;
+  if(minEl) minEl.style.transform = `rotate(${minDeg}deg)`;
+  if(secEl) secEl.style.transform = `rotate(${secDeg}deg)`;
+}
+function initTbClock(){
+  const clockEl = document.getElementById('tbAnalogClock');
+  if(!clockEl) return;
+  for(let i=0;i<12;i++){
+    const tick = document.createElement('div');
+    tick.className = 'tbc-tick';
+    tick.style.transform = `rotate(${i*30}deg)`;
+    clockEl.appendChild(tick);
+  }
+  tbClockTick();
+  setInterval(tbClockTick, 1000);
+}
 
 </script>
 
