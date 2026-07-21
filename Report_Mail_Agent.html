@@ -295,7 +295,7 @@
         <div style="font-size:12px;margin-bottom:6px"><b>To:</b> <span id="prevTo"></span></div>
         <div style="font-size:12px;margin-bottom:10px"><b>Subject:</b> <span id="prevSubject"></span></div>
         <div style="font-size:12px;color:var(--dgrey);margin-bottom:4px"><b>Body:</b></div>
-        <div id="prevBody" style="font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto;background:var(--hover);padding:10px;border-radius:6px"></div>
+        <div id="prevBody" style="font-size:12px;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;max-height:260px;overflow:auto;background:var(--hover);padding:10px;border-radius:6px"></div>
       </div>
     </div>
 
@@ -307,7 +307,23 @@
 
   <!-- STEP 4: AI ASSISTANT -->
   <div class="section" id="sec-ai">
-    <h2><span class="step-num">4</span> 🤖 AI Assistant — apne data se sawaal poochho</h2>
+    <h2><span class="step-num">4</span> 🤖 AI Assistant — apne data se sawaal poochho
+      <button class="secondary" style="margin-left:auto;padding:5px 10px;font-size:14px" onclick="toggleGroqBox()" id="groqGearBtn" title="Groq API Key settings">⚙️</button>
+    </h2>
+
+    <div id="groqBox" style="display:none;border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:var(--hover)">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">🔑 Groq API Key</div>
+      <div class="row" style="align-items:center">
+        <input type="password" id="groqKeyInput" placeholder="gsk_... yahan paste karo" style="flex:1;font-family:'JetBrains Mono',monospace">
+        <button class="secondary" onclick="toggleGroqKeyVisibility()" id="groqEyeBtn" title="Dikhayein/Chhupayein" style="padding:8px 12px">👁</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button onclick="saveGroqKey()">💾 Save</button>
+        <button class="secondary" onclick="testGroqKey()">🧪 Test</button>
+      </div>
+      <div id="groqKeyStatus" class="note" style="margin-top:8px;margin-bottom:0"></div>
+    </div>
+
     <div class="note">Pehle Step 1 mein "Fetch all cloud systems" kar lena — AI usi fetched data se jawaab dega. Jaise: "TJX ke order ka status kya hai?" ya "kis system mein sabse zyada delay hai?"</div>
     <div id="chatBox" style="max-height:340px;overflow-y:auto;margin:12px 0;display:flex;flex-direction:column;gap:10px"></div>
     <div class="row">
@@ -1335,6 +1351,28 @@ const CUSTOM_SUMMARY = {
       out += table(['Item','Type','Qty','Unit','Source'], stock.map(s=>[s.item,s.type,s.qty,s.unit,s.source]));
     }
     return out || null;
+  },
+  qcmaster(records){
+    // qcmaster/data mein 3 cheezein aati hain: settings (company info — report mein kaam ka nahi),
+    // checklists (fixed checkpoint definitions — static config, roz nahi badalta), aur entries
+    // (asal QC records jo roz banate hain). Sirf entries dikhate hain, warna raw JSON dump ban jaata hai.
+    const raw = tryUnwrap(records['qcmaster/data']);
+    if(!raw) return null;
+    const CATS = [
+      ['fabric','Fabric'],['cutting','Cutting'],['dyeing','Dyeing'],['printing','Printing'],
+      ['embroidery','Embroidery'],['stitching','Stitching'],['packing','Packing'],['final','Final Inspection']
+    ];
+    const entries = raw.entries || {};
+    let out = '', total = 0;
+    CATS.forEach(([key,label])=>{
+      const arr = entries[key] || [];
+      if(!arr.length) return;
+      total += arr.length;
+      out += `\n-- ${label} QC (${arr.length} entries) --\n`;
+      out += autoTable(arr, 8);
+    });
+    if(!total) return `Checklists set hain (${Object.values(raw.checklists||{}).reduce((s,a)=>s+a.length,0)} checkpoints, ${CATS.length} stages) — lekin koi QC entry abhi tak record nahi hui hai.\n`;
+    return `Total QC Entries: ${total}\n` + out;
   }
 };
 
@@ -1674,11 +1712,87 @@ applyReminderSettingsToUI();
 // ══════════════════════════════════════════════════════
 // NOTE: Ye key sirf private/local use ke liye hai — kabhi public GitHub repo
 // ya kisi shared jagah is file ko is key ke saath mat daalna.
-const GROQ_API_KEY = YOUR_API_KEY_HERE;
+const RMA_GROQ_KEY = 'RMA_GROQ_API_KEY';
+let GROQ_API_KEY = localStorage.getItem(RMA_GROQ_KEY) || '';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const AI_AVATAR = 'data:image/jpeg;base64,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';
 
 let chatHistory = [];
+
+// ══════════════════════════════════════════════════════
+// GROQ API KEY — hidable gear-box: save to localStorage + live test
+// ══════════════════════════════════════════════════════
+function toggleGroqBox(){
+  const box = document.getElementById('groqBox');
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  if(isHidden){
+    document.getElementById('groqKeyInput').value = GROQ_API_KEY;
+    updateGroqKeyStatus();
+  }
+}
+
+function toggleGroqKeyVisibility(){
+  const input = document.getElementById('groqKeyInput');
+  const btn = document.getElementById('groqEyeBtn');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁' : '🙈';
+}
+
+function updateGroqKeyStatus(){
+  const el = document.getElementById('groqKeyStatus');
+  if(!el) return;
+  if(GROQ_API_KEY){
+    el.innerHTML = `✅ Key saved hai (${GROQ_API_KEY.slice(0,6)}••••${GROQ_API_KEY.slice(-4)})`;
+    el.style.color = 'var(--green)';
+  } else {
+    el.innerHTML = '⚪ Abhi koi key save nahi hai — AI Assistant kaam nahi karega';
+    el.style.color = 'var(--dgrey)';
+  }
+}
+
+function saveGroqKey(){
+  const val = document.getElementById('groqKeyInput').value.trim();
+  if(!val){ toast('⚠️ Pehle key paste karo'); return; }
+  GROQ_API_KEY = val;
+  localStorage.setItem(RMA_GROQ_KEY, val);
+  toast('💾 Groq key save ho gayi');
+  updateGroqKeyStatus();
+}
+
+async function testGroqKey(){
+  const val = document.getElementById('groqKeyInput').value.trim();
+  if(!val){ toast('⚠️ Pehle key paste karo'); return; }
+  const el = document.getElementById('groqKeyStatus');
+  el.innerHTML = '⏳ Test ho raha hai...';
+  el.style.color = 'var(--dgrey)';
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization': 'Bearer ' + val },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{role:'user', content:'ping'}],
+        max_tokens: 5
+      })
+    });
+    const data = await res.json();
+    if(data.error){
+      el.innerHTML = '❌ Key invalid ya expired: ' + data.error.message;
+      el.style.color = 'var(--red)';
+      toast('❌ Groq key test fail ho gaya');
+    } else {
+      el.innerHTML = '✅ Key sahi kaam kar rahi hai!';
+      el.style.color = 'var(--green)';
+      toast('✅ Groq key test pass ho gaya');
+    }
+  }catch(err){
+    el.innerHTML = '❌ Test fail: ' + err.message;
+    el.style.color = 'var(--red)';
+    toast('❌ Network/error: ' + err.message);
+  }
+}
 
 function addChatBubble(text, cls){
   const box = document.getElementById('chatBox');
