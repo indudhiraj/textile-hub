@@ -36,7 +36,29 @@
     font-weight: 500;
     min-height: 100vh;
     overflow-x: hidden;
+    padding-bottom: 80px;
   }
+
+  .dev-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: #0a0d12;
+    border-top: 1px solid rgba(0,245,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: #5a6a7a;
+    z-index: 500;
+  }
+  .dev-footer b { color: var(--cyan); font-weight: 700; }
+  .dev-footer .sep { color: #333; }
 
   /* Scanline overlay */
   body::before {
@@ -398,8 +420,10 @@
     inset: 0;
     background: rgba(0,0,0,0.9);
     z-index: 9999;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    overflow-y: auto;
+    padding: 30px 0;
   }
 
   .alarm-modal.show { display: flex; }
@@ -411,8 +435,11 @@
     padding: 32px;
     max-width: 480px;
     width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
     box-shadow: 0 0 40px rgba(204,0,34,0.6), 0 0 80px rgba(204,0,34,0.2);
     animation: alarmShake 0.5s ease;
+    margin: auto;
   }
 
   @keyframes alarmShake {
@@ -529,7 +556,7 @@
   /* Ticker at bottom */
   .ticker-bar {
     position: fixed;
-    bottom: 0;
+    bottom: 36px;
     left: 0;
     right: 0;
     background: var(--panel);
@@ -563,6 +590,8 @@
     letter-spacing: 2px;
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -572,15 +601,61 @@
     <div class="live-dot"></div>
     <div class="board-title">⚓ SHIPMENT BOARD</div>
   </div>
-  <div class="clock" id="clock">--:--:--</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div id="lastUpdatedBadge" style="display:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px"></div>
+    <div id="cloudSyncDot" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#666;letter-spacing:1px;cursor:pointer" onclick="toggleFirebaseBox()" title="Firebase sync settings">⚪ CLOUD OFF</div>
+    <button class="filter-btn" style="padding:5px 10px;font-size:14px" onclick="toggleFirebaseBox()" title="Firebase sync settings">⚙️</button>
+    <button class="filter-btn" style="border-color:var(--green);color:var(--green);font-size:11px" onclick="manualEnterWithoutUpload()" title="Bina Excel upload kiye seedha board mein jao (local ya cloud se)">📥 ENTER (NO UPLOAD)</button>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- Firebase Sync Settings (hidable gear-box) -->
+<div id="firebaseBox" style="display:none;border:1.5px solid var(--border,#1a2030);border-radius:8px;padding:14px 16px;margin:0 0 16px;background:#0d1119">
+  <div style="font-size:12.5px;font-weight:700;margin-bottom:10px;color:var(--cyan);font-family:'Rajdhani',sans-serif;letter-spacing:1px">☁️ FIREBASE CLOUD SYNC</div>
+  <div style="font-size:11px;color:#8090a0;margin-bottom:10px;line-height:1.5">
+    Ek baar config daal ke Save karo — is board ka data Firebase Realtime Database mein sync hoga, taaki koi bhi device isi board ko live dekh sake, bina Excel dobara upload kiye.
+  </div>
+  <div class="mapping-row"><span class="mapping-label" style="width:110px">API Key</span><input type="text" id="fbApiKey" class="mapping-select" style="flex:1;font-family:'JetBrains Mono',monospace" placeholder="AIzaSy..."></div>
+  <div class="mapping-row" style="margin-top:8px"><span class="mapping-label" style="width:110px">Auth Domain</span><input type="text" id="fbAuthDomain" class="mapping-select" style="flex:1;font-family:'JetBrains Mono',monospace" placeholder="your-project.firebaseapp.com"></div>
+  <div class="mapping-row" style="margin-top:8px"><span class="mapping-label" style="width:110px">Database URL</span><input type="text" id="fbDatabaseURL" class="mapping-select" style="flex:1;font-family:'JetBrains Mono',monospace" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"></div>
+  <div class="mapping-row" style="margin-top:8px"><span class="mapping-label" style="width:110px">Project ID</span><input type="text" id="fbProjectId" class="mapping-select" style="flex:1;font-family:'JetBrains Mono',monospace" placeholder="your-project-id"></div>
+  <div class="mapping-row" style="margin-top:12px;gap:10px">
+    <button class="apply-btn" style="padding:8px 18px;font-size:11px" onclick="saveFirebaseConfig()">💾 Save</button>
+    <button class="apply-btn" style="padding:8px 18px;font-size:11px;background:#2a3a4a" onclick="testFirebaseConnection()">🧪 Test</button>
+    <button class="apply-btn" style="padding:8px 18px;font-size:11px;background:#444" onclick="loadBoardFromCloud()">⬇ Load Cloud Board</button>
+  </div>
+  <div id="fbStatus" style="margin-top:10px;font-size:11px;font-family:'JetBrains Mono',monospace"></div>
+</div>
+
+<!-- Landing Panel — shown only if a previously saved board exists -->
+<div class="mapping-panel" id="landingPanel" style="display:none;text-align:center;border-color:var(--cyan)">
+  <div class="mapping-title" style="justify-content:center">📋 PICHLA BOARD MILA</div>
+  <div id="landingSummary" style="color:#a0b0c0;font-family:'JetBrains Mono',monospace;font-size:12px;margin-bottom:16px;line-height:1.6"></div>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button class="apply-btn" style="max-width:280px" onclick="enterSavedBoard()">👉 ENTER BOARD (bina upload kiye)</button>
+    <button class="apply-btn" style="max-width:280px;background:#333" onclick="showUploadZoneInstead()">📂 Naya Excel upload karo</button>
+  </div>
 </div>
 
 <!-- Upload Zone -->
+<div style="text-align:center;margin-bottom:10px">
+  <button class="filter-btn" style="border-color:var(--green);color:var(--green);padding:8px 18px;font-size:12px" onclick="manualEnterWithoutUpload()">📥 BINA UPLOAD KIYE ENTER KARO (agar pehle se board saved hai)</button>
+</div>
 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
   <div class="upload-icon">📂</div>
   <div class="upload-text">EXCEL FILE DROP KAREIN YA CLICK KAREIN</div>
   <div class="upload-sub">XLSX / XLS format • Har hafte nayi file upload karo</div>
   <input type="file" id="fileInput" accept=".xlsx,.xls">
+</div>
+
+<!-- Sheet Selector (hidden until a multi-sheet workbook is loaded) -->
+<div class="mapping-panel" id="sheetPanel" style="display:none">
+  <div class="mapping-title">📑 SHEET SELECT KAREIN — is file mein kai sheets hain</div>
+  <div class="mapping-row">
+    <span class="mapping-label">Sheet</span>
+    <select class="mapping-select" id="sheetSelect" onchange="loadSheetHeaders()"></select>
+  </div>
 </div>
 
 <!-- Column Mapping (hidden until file loaded) -->
@@ -606,6 +681,18 @@
     <span class="mapping-label">QTY Column</span>
     <select class="mapping-select" id="mapQty"></select>
   </div>
+  <div class="mapping-row">
+    <span class="mapping-label">ORDER NO (optional)</span>
+    <select class="mapping-select" id="mapOrderNo"></select>
+  </div>
+  <div class="mapping-row">
+    <span class="mapping-label">STYLE NO (optional)</span>
+    <select class="mapping-select" id="mapStyleNo"></select>
+  </div>
+  <div class="mapping-row">
+    <span class="mapping-label">AGENT / PARTY (optional)</span>
+    <select class="mapping-select" id="mapAgent"></select>
+  </div>
   <button class="apply-btn" onclick="applyMapping()">▶ APPLY &amp; LOAD BOARD</button>
 </div>
 
@@ -627,6 +714,10 @@
     <span class="stat-label">📦 TOTAL ORDERS</span>
     <span class="stat-value" id="statTotal">0</span>
   </div>
+  <div class="stat-card total" style="border-color:#444">
+    <span class="stat-label">🚚 DISPATCHED</span>
+    <span class="stat-value" id="statDispatched">0</span>
+  </div>
 </div>
 
 <!-- Controls -->
@@ -636,6 +727,13 @@
   <button class="filter-btn danger" id="filterCritical" onclick="setFilter('critical')">🚨 CRITICAL</button>
   <button class="filter-btn" id="filterWarning" onclick="setFilter('warning')">⚠ WARNING</button>
   <button class="filter-btn" id="filterSafe" onclick="setFilter('safe')">✅ ON TRACK</button>
+  <button class="filter-btn" id="filterDispatched" onclick="setFilter('dispatched')">🚚 DISPATCHED</button>
+  <button class="filter-btn" id="groupToggleBtn" onclick="toggleGroupByBuyer()" title="Buyer ke hisaab se group karke dekho">👥 GROUP BY BUYER</button>
+  <button class="filter-btn" onclick="openBuyerModal()" style="border-color:#ff9d00;color:#ff9d00" title="Har buyer ki poori detail ek popup mein dekho">📋 BUYER DETAILS</button>
+  <button class="filter-btn" id="workingDaysBtn" onclick="toggleWorkingDays()" title="Sunday chhod ke working-days countdown dikhao">📅 WORKING DAYS</button>
+  <button class="filter-btn" onclick="openHistoryModal()" style="border-color:#8a5cff;color:#8a5cff" title="Pichle uploads ka trend dekho">📈 HISTORY</button>
+  <button class="filter-btn" onclick="shareCriticalList('whatsapp')" style="border-color:#25D366;color:#25D366" title="Critical/Warning list WhatsApp par bhejo">💬 WHATSAPP</button>
+  <button class="filter-btn" onclick="shareCriticalList('email')" style="border-color:#4a9eff;color:#4a9eff" title="Critical/Warning list Email se bhejo">✉ EMAIL</button>
   <button class="filter-btn" onclick="document.getElementById('fileInput').click()" style="margin-left:auto; border-color:#333; color:#666">↑ NEW FILE</button>
 </div>
 
@@ -651,6 +749,7 @@
         <th>SKU / DESC</th>
         <th onclick="sortBy('qty')">QTY ↕</th>
         <th>STATUS</th>
+        <th>ACTION</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -658,11 +757,30 @@
 </div>
 
 <!-- Alarm Modal -->
-<div class="alarm-modal" id="alarmModal">
+<div class="alarm-modal" id="alarmModal" onclick="if(event.target===this) closeAlarm()">
   <div class="alarm-box">
     <div class="alarm-title">🚨 SHIP DATE ALERT 🚨</div>
     <div id="alarmItems"></div>
     <button class="alarm-close" onclick="closeAlarm()">✓ ACKNOWLEDGE — BOARD DEKH LO</button>
+  </div>
+</div>
+
+<!-- History / Trend Modal -->
+<div class="alarm-modal" id="historyModal" onclick="if(event.target===this) closeHistoryModal()">
+  <div class="alarm-box" style="max-width:640px;border-color:#8a5cff;box-shadow:0 0 40px rgba(138,92,255,0.5),0 0 80px rgba(138,92,255,0.15)">
+    <div class="alarm-title" style="color:#8a5cff;text-shadow:0 0 15px #8a5cff,0 0 30px rgba(138,92,255,0.5)">📈 UPLOAD HISTORY / TREND</div>
+    <div id="historyItems"></div>
+    <button class="alarm-close" style="background:#5a3aad;border-color:#8a5cff" onclick="closeHistoryModal()">✓ CLOSE</button>
+  </div>
+</div>
+
+<!-- Buyer Details Modal -->
+<div class="alarm-modal" id="buyerModal" onclick="if(event.target===this) closeBuyerModal()">
+  <div class="alarm-box" style="max-width:760px;border-color:#ff9d00;box-shadow:0 0 40px rgba(255,157,0,0.5),0 0 80px rgba(255,157,0,0.15);text-align:left">
+    <div class="alarm-title" style="color:#ff9d00;text-shadow:0 0 15px #ff9d00,0 0 30px rgba(255,157,0,0.5)">📋 BUYER-WISE DETAILS</div>
+    <input type="text" id="buyerModalSearch" placeholder="🔍 Buyer dhundo..." oninput="renderBuyerModalContent()" style="width:100%;padding:8px 12px;margin-bottom:12px;background:#0d1119;border:1px solid #333;border-radius:6px;color:#e0eaf8;font-family:'JetBrains Mono',monospace;font-size:12px">
+    <div id="buyerModalContent" style="max-height:50vh;overflow-y:auto"></div>
+    <button class="alarm-close" style="background:#8a5a00;border-color:#ff9d00" onclick="closeBuyerModal()">✓ CLOSE</button>
   </div>
 </div>
 
@@ -681,6 +799,9 @@ let sortCol = 'daysLeft';
 let sortDir = 1;
 let headers = [];
 let colMap = {};
+let groupByBuyer = false;
+let useWorkingDays = localStorage.getItem('shipmentTrackerUseWorkingDays') === '1';
+let _rowIdCounter = 0;
 
 // Clock
 function updateClock() {
@@ -690,6 +811,10 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
+
+// Restore last saved board (if any) so the tracker doesn't start empty after a reload
+document.getElementById('workingDaysBtn').classList.toggle('active', useWorkingDays);
+restoreBoardFromStorage();
 
 // File upload
 const fileInput = document.getElementById('fileInput');
@@ -706,51 +831,125 @@ uploadZone.addEventListener('drop', e => {
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
 function handleFile(file) {
+  closeAlarm(); // purana alarm popup agar khula reh gaya ho, use band karo taaki naya sheet/mapping panel block na ho
+  document.getElementById('landingPanel').style.display = 'none';
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-    if (json.length < 2) return alert('File mein data nahi mila!');
+    window._wb = wb;
+    window._fileName = file.name;
 
-    // Find header row (first non-empty row)
-    let headerRow = 0;
-    for (let i = 0; i < Math.min(5, json.length); i++) {
-      if (json[i].some(c => c !== '')) { headerRow = i; break; }
+    if (wb.SheetNames.length > 1) {
+      // Multiple sheets in this workbook — let the user pick which one before mapping columns
+      const sel = document.getElementById('sheetSelect');
+      sel.innerHTML = wb.SheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+      document.getElementById('sheetPanel').style.display = 'block';
+      uploadZone.style.display = 'none';
+      loadSheetHeaders(); // build mapping panel for the first sheet by default
+    } else {
+      document.getElementById('sheetPanel').style.display = 'none';
+      window._sheetName = wb.SheetNames[0];
+      loadSheetHeaders();
+      uploadZone.style.display = 'none';
     }
-
-    headers = json[headerRow].map((h, i) => ({ label: String(h || `Col ${i+1}`), idx: i }));
-
-    // Auto-detect columns
-    const autoDetect = (keywords) => {
-      const idx = headers.findIndex(h =>
-        keywords.some(k => h.label.toLowerCase().includes(k.toLowerCase()))
-      );
-      return idx >= 0 ? idx : 0;
-    };
-
-    // Populate selects
-    const selects = ['mapBuyer','mapShipDate','mapRevised','mapDesc','mapQty'];
-    selects.forEach(id => {
-      const sel = document.getElementById(id);
-      sel.innerHTML = '<option value="-1">— None —</option>' +
-        headers.map(h => `<option value="${h.idx}">${h.label}</option>`).join('');
-    });
-
-    document.getElementById('mapBuyer').value = autoDetect(['buyer','client','customer']);
-    document.getElementById('mapShipDate').value = autoDetect(['original ship','ship date','shipdate','ship']);
-    document.getElementById('mapRevised').value = autoDetect(['revised','rev ship','new ship']);
-    document.getElementById('mapDesc').value = autoDetect(['description','desc','sku','product','item']);
-    document.getElementById('mapQty').value = autoDetect(['qty','quantity','pcs','pieces']);
-
-    // Store raw data
-    window._rawJson = json;
-    window._headerRow = headerRow;
-
-    document.getElementById('mappingPanel').style.display = 'block';
-    uploadZone.style.display = 'none';
   };
   reader.readAsArrayBuffer(file);
+}
+
+function loadSheetHeaders() {
+  const wb = window._wb;
+  const sheetName = document.getElementById('sheetPanel').style.display === 'block'
+    ? document.getElementById('sheetSelect').value
+    : wb.SheetNames[0];
+  window._sheetName = sheetName;
+
+  const ws = wb.Sheets[sheetName];
+  const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (json.length < 2) return alert('Is sheet mein data nahi mila!');
+
+  // Find header row (first non-empty row)
+  let headerRow = 0;
+  for (let i = 0; i < Math.min(5, json.length); i++) {
+    if (json[i].some(c => c !== '')) { headerRow = i; break; }
+  }
+
+  headers = json[headerRow].map((h, i) => ({ label: String(h || `Col ${i+1}`), idx: i }));
+
+  // Auto-detect columns
+  const autoDetect = (keywords) => {
+    const idx = headers.findIndex(h =>
+      keywords.some(k => h.label.toLowerCase().includes(k.toLowerCase()))
+    );
+    return idx >= 0 ? idx : 0;
+  };
+  // For optional fields, default to "— None —" (-1) instead of guessing column 0
+  const autoDetectOptional = (keywords) => {
+    const idx = headers.findIndex(h =>
+      keywords.some(k => h.label.toLowerCase().includes(k.toLowerCase()))
+    );
+    return idx >= 0 ? idx : -1;
+  };
+
+  // Populate selects
+  const selects = ['mapBuyer','mapShipDate','mapRevised','mapDesc','mapQty','mapOrderNo','mapStyleNo','mapAgent'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="-1">— None —</option>' +
+      headers.map(h => `<option value="${h.idx}">${h.label}</option>`).join('');
+  });
+
+  document.getElementById('mapBuyer').value = autoDetect(['buyer','client','customer']);
+  document.getElementById('mapShipDate').value = autoDetect(['original ship','ship date','shipdate','ship']);
+  document.getElementById('mapRevised').value = autoDetect(['revised','rev ship','new ship']);
+  document.getElementById('mapDesc').value = autoDetect(['description','desc','sku','product','item']);
+  document.getElementById('mapQty').value = autoDetect(['qty','quantity','pcs','pieces']);
+  document.getElementById('mapOrderNo').value = autoDetectOptional(['order no','order #','po no','po#','order number']);
+  document.getElementById('mapStyleNo').value = autoDetectOptional(['style no','style #','style number','article no']);
+  document.getElementById('mapAgent').value = autoDetectOptional(['agent','party','broker']);
+
+  // If this exact header layout was mapped before, use that mapping instead of the auto-guess
+  const savedMap = getColMapMemory(headerSignature(headers));
+  if (savedMap) {
+    const maxIdx = headers.length - 1;
+    if (savedMap.buyer <= maxIdx) document.getElementById('mapBuyer').value = savedMap.buyer;
+    if (savedMap.shipDate <= maxIdx) document.getElementById('mapShipDate').value = savedMap.shipDate;
+    if (savedMap.revised <= maxIdx) document.getElementById('mapRevised').value = savedMap.revised;
+    if (savedMap.desc <= maxIdx) document.getElementById('mapDesc').value = savedMap.desc;
+    if (savedMap.qty <= maxIdx) document.getElementById('mapQty').value = savedMap.qty;
+    if (savedMap.orderNo !== undefined && savedMap.orderNo <= maxIdx) document.getElementById('mapOrderNo').value = savedMap.orderNo;
+    if (savedMap.styleNo !== undefined && savedMap.styleNo <= maxIdx) document.getElementById('mapStyleNo').value = savedMap.styleNo;
+    if (savedMap.agent !== undefined && savedMap.agent <= maxIdx) document.getElementById('mapAgent').value = savedMap.agent;
+  }
+
+  // Store raw data
+  window._rawJson = json;
+  window._headerRow = headerRow;
+
+  document.getElementById('mappingPanel').style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════
+// COLUMN-MAPPING MEMORY — remember mapping per header layout (localStorage)
+// ══════════════════════════════════════════════════════
+const COLMAP_MEMORY_KEY = 'shipmentTrackerColMapMemory';
+
+function headerSignature(hdrs) {
+  return hdrs.map(h => h.label.trim().toLowerCase()).join('|');
+}
+
+function getColMapMemory(sig) {
+  try {
+    const store = JSON.parse(localStorage.getItem(COLMAP_MEMORY_KEY) || '{}');
+    return store[sig] || null;
+  } catch (e) { return null; }
+}
+
+function saveColMapMemory(sig, map) {
+  try {
+    const store = JSON.parse(localStorage.getItem(COLMAP_MEMORY_KEY) || '{}');
+    store[sig] = map;
+    localStorage.setItem(COLMAP_MEMORY_KEY, JSON.stringify(store));
+  } catch (e) { console.warn('ColMap memory save failed:', e); }
 }
 
 function applyMapping() {
@@ -760,7 +959,11 @@ function applyMapping() {
     revised: parseInt(document.getElementById('mapRevised').value),
     desc: parseInt(document.getElementById('mapDesc').value),
     qty: parseInt(document.getElementById('mapQty').value),
+    orderNo: parseInt(document.getElementById('mapOrderNo').value),
+    styleNo: parseInt(document.getElementById('mapStyleNo').value),
+    agent: parseInt(document.getElementById('mapAgent').value),
   };
+  saveColMapMemory(headerSignature(headers), colMap);
 
   const json = window._rawJson;
   const headerRow = window._headerRow;
@@ -788,24 +991,40 @@ function applyMapping() {
     const today = new Date();
     today.setHours(0,0,0,0);
     let daysLeft = null;
+    let daysLeftWorking = null;
     if (effectiveDate) {
       const ed = new Date(effectiveDate);
       ed.setHours(0,0,0,0);
       daysLeft = Math.ceil((ed - today) / (1000 * 60 * 60 * 24));
+      daysLeftWorking = countWorkingDays(today, ed);
     }
 
+    const buyerVal = colMap.buyer >= 0 ? String(row[colMap.buyer] || '—').trim().replace(/\s+/g, ' ') : '—';
+    const descVal = colMap.desc >= 0 ? String(row[colMap.desc] || '—').trim() : '—';
+    const qtyVal = colMap.qty >= 0 ? row[colMap.qty] : '';
+    const orderNoVal = colMap.orderNo >= 0 ? String(row[colMap.orderNo] || '').trim() : '';
+    const styleNoVal = colMap.styleNo >= 0 ? String(row[colMap.styleNo] || '').trim() : '';
+    const agentVal = colMap.agent >= 0 ? String(row[colMap.agent] || '').trim() : '';
+
     allData.push({
-      buyer: colMap.buyer >= 0 ? String(row[colMap.buyer] || '—') : '—',
+      id: 'row_' + (_rowIdCounter++) + '_' + buyerVal.slice(0,10).replace(/\s+/g,'') ,
+      buyer: buyerVal,
       shipDate,
       revisedDate,
       effectiveDate,
       daysLeft,
-      desc: colMap.desc >= 0 ? String(row[colMap.desc] || '—') : '—',
-      qty: colMap.qty >= 0 ? row[colMap.qty] : '',
+      daysLeftWorking,
+      desc: descVal,
+      qty: qtyVal,
+      orderNo: orderNoVal,
+      styleNo: styleNoVal,
+      agent: agentVal,
+      dispatched: false,
       raw: row
     });
   }
 
+  document.getElementById('sheetPanel').style.display = 'none';
   document.getElementById('mappingPanel').style.display = 'none';
   document.getElementById('statsBar').style.display = 'flex';
   document.getElementById('controls').style.display = 'flex';
@@ -813,9 +1032,290 @@ function applyMapping() {
   document.getElementById('tickerBar').style.display = 'block';
 
   currentFilter = 'all';
+  resetAlertHistory(); // naya file upload hua hai — is board ke current critical items ek baar dikhao
   renderTable();
   checkAlarms();
   setInterval(checkAlarms, 60 * 60 * 1000); // Every hour
+
+  const savedAt = Date.now();
+  saveBoardToStorage(savedAt);
+  showLastUpdatedBadge(savedAt);
+  recordHistorySnapshot(savedAt);
+}
+
+// ══════════════════════════════════════════════════════
+// HISTORY / TREND — snapshot each upload so trend over weeks is visible
+// ══════════════════════════════════════════════════════
+const HISTORY_KEY = 'shipmentTrackerHistory';
+const HISTORY_MAX_ENTRIES = 25;
+
+function recordHistorySnapshot(savedAt) {
+  try {
+    const critical = allData.filter(r => !r.dispatched && getStatus(getEffectiveDaysLeft(r)) === 'critical').length;
+    const warning = allData.filter(r => !r.dispatched && getStatus(getEffectiveDaysLeft(r)) === 'warning').length;
+    const safe = allData.filter(r => !r.dispatched && getStatus(getEffectiveDaysLeft(r)) === 'safe').length;
+    const dispatched = allData.filter(r => r.dispatched).length;
+    const total = allData.length;
+
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    history.push({ date: savedAt, critical, warning, safe, dispatched, total, fileName: window._fileName || '' });
+    while (history.length > HISTORY_MAX_ENTRIES) history.shift();
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) { console.warn('History snapshot failed:', e); }
+}
+
+function openHistoryModal() {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) {}
+
+  const box = document.getElementById('historyItems');
+  if (history.length === 0) {
+    box.innerHTML = `<div style="color:#8090a0;text-align:center;padding:20px 0">Abhi tak koi history nahi hai — jab bhi naya file upload karoge, uska snapshot yahan record ho jaayega.</div>`;
+  } else {
+    const maxTotal = Math.max(...history.map(h => h.total), 1);
+    box.innerHTML = [...history].reverse().map(h => {
+      const d = new Date(h.date);
+      const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }) + ', ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
+      const w = (n) => Math.max((n / maxTotal) * 100, n > 0 ? 3 : 0);
+      return `
+      <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #1a2030">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:11px">${dateStr}</span>
+          <span style="color:#5a6a7a;font-size:10px;font-family:'JetBrains Mono',monospace">${h.total} orders${h.fileName ? ' • ' + h.fileName : ''}</span>
+        </div>
+        <div style="display:flex;height:14px;border-radius:4px;overflow:hidden;background:#0a0d12">
+          ${h.critical ? `<div style="width:${w(h.critical)}%;background:var(--red-bright)" title="${h.critical} Critical"></div>` : ''}
+          ${h.warning ? `<div style="width:${w(h.warning)}%;background:var(--amber)" title="${h.warning} Warning"></div>` : ''}
+          ${h.safe ? `<div style="width:${w(h.safe)}%;background:var(--green)" title="${h.safe} On Track"></div>` : ''}
+          ${h.dispatched ? `<div style="width:${w(h.dispatched)}%;background:#444" title="${h.dispatched} Dispatched"></div>` : ''}
+        </div>
+        <div style="margin-top:4px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#8090a0">
+          <span style="color:var(--red-bright)">🚨 ${h.critical}</span> &nbsp;
+          <span style="color:var(--amber)">⚠ ${h.warning}</span> &nbsp;
+          <span style="color:var(--green)">✅ ${h.safe}</span> &nbsp;
+          <span style="color:#888">🚚 ${h.dispatched}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('historyModal').classList.add('show');
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+// BUYER DETAILS POPUP — sabhi buyers ek jagah, har buyer ke saath
+// Order No, Ship Date, SKU/Product, Qty, Status ki poori detail
+// ══════════════════════════════════════════════════════
+function openBuyerModal() {
+  document.getElementById('buyerModalSearch').value = '';
+  renderBuyerModalContent();
+  document.getElementById('buyerModal').classList.add('show');
+}
+
+function closeBuyerModal() {
+  document.getElementById('buyerModal').classList.remove('show');
+}
+
+function renderBuyerModalContent() {
+  const search = (document.getElementById('buyerModalSearch').value || '').toLowerCase();
+  const fmt = (d) => d ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }) : '—';
+
+  const groups = {};
+  allData.forEach(r => { (groups[r.buyer] = groups[r.buyer] || []).push(r); });
+
+  let buyerNames = Object.keys(groups);
+  if (search) buyerNames = buyerNames.filter(b => b.toLowerCase().includes(search));
+
+  // Sort buyers by urgency — the one with the most critical items first
+  buyerNames.sort((a, b) => {
+    const minA = Math.min(...groups[a].map(r => getEffectiveDaysLeft(r) ?? 9999));
+    const minB = Math.min(...groups[b].map(r => getEffectiveDaysLeft(r) ?? 9999));
+    return minA - minB;
+  });
+
+  const box = document.getElementById('buyerModalContent');
+  if (buyerNames.length === 0) {
+    box.innerHTML = `<div style="color:#8090a0;text-align:center;padding:20px 0">Koi buyer nahi mila</div>`;
+    return;
+  }
+
+  box.innerHTML = buyerNames.map(buyer => {
+    const rows = groups[buyer];
+    const totalQty = rows.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+    const critCount = rows.filter(r => !r.dispatched && getStatus(getEffectiveDaysLeft(r)) === 'critical').length;
+    const dispCount = rows.filter(r => r.dispatched).length;
+
+    const rowsHTML = rows.map(r => {
+      const daysLeft = getEffectiveDaysLeft(r);
+      const status = getStatus(daysLeft);
+      const statusTxt = r.dispatched ? '🚚 Dispatched'
+        : status === 'critical' ? '🚨 Critical'
+        : status === 'warning' ? '⚠ Warning'
+        : status === 'safe' ? '✅ On Track'
+        : '— No Date';
+      const statusColor = r.dispatched ? '#888' : status === 'critical' ? 'var(--red-bright)' : status === 'warning' ? 'var(--amber)' : status === 'safe' ? 'var(--green)' : '#666';
+      return `<tr>
+        <td style="padding:5px 8px;color:#8090a0">${r.orderNo || '—'}</td>
+        <td style="padding:5px 8px;color:#e0eaf8">${fmt(r.effectiveDate)}${r.revisedDate ? ' <span style="color:var(--amber);font-size:9px">REV</span>' : ''}</td>
+        <td style="padding:5px 8px;color:#e0eaf8">${r.desc}${r.styleNo ? ` <span style="color:#5a6a7a;font-size:10px">(${r.styleNo})</span>` : ''}</td>
+        <td style="padding:5px 8px;color:var(--cyan)">${r.qty || '—'}</td>
+        <td style="padding:5px 8px;color:#8090a0">${r.agent || '—'}</td>
+        <td style="padding:5px 8px;color:${statusColor};white-space:nowrap">${statusTxt}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+    <details ${critCount > 0 ? 'open' : ''} style="margin-bottom:10px;border:1px solid #1a2030;border-radius:6px;overflow:hidden">
+      <summary style="padding:10px 12px;background:#0d1119;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:0.5px;color:#ff9d00;font-size:13px">
+        👤 ${buyer} — ${rows.length} orders • Qty: ${totalQty}
+        ${critCount ? `<span style="color:var(--red-bright);margin-left:10px">🚨 ${critCount}</span>` : ''}
+        ${dispCount ? `<span style="color:#888;margin-left:10px">🚚 ${dispCount}</span>` : ''}
+      </summary>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace">
+          <thead>
+            <tr style="background:#0a0d12;color:#5a6a7a;text-align:left">
+              <th style="padding:6px 8px">P.O. / Order No</th>
+              <th style="padding:6px 8px">Ship Date</th>
+              <th style="padding:6px 8px">SKU / Product</th>
+              <th style="padding:6px 8px">Qty</th>
+              <th style="padding:6px 8px">Agent/Party</th>
+              <th style="padding:6px 8px">Status</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+    </details>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// PERSISTENCE — remember last board across reloads (localStorage)
+// ══════════════════════════════════════════════════════
+const BOARD_STORAGE_KEY = 'shipmentTrackerBoard';
+
+function buildBoardPayload(savedAt) {
+  return {
+    allData: allData.map(r => ({
+      ...r,
+      shipDate: r.shipDate ? r.shipDate.toISOString() : null,
+      revisedDate: r.revisedDate ? r.revisedDate.toISOString() : null,
+      effectiveDate: r.effectiveDate ? r.effectiveDate.toISOString() : null,
+    })),
+    colMap, headers,
+    fileName: window._fileName || '',
+    sheetName: window._sheetName || '',
+    savedAt
+  };
+}
+
+function saveBoardToStorage(savedAt) {
+  try {
+    const payload = buildBoardPayload(savedAt);
+    localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(payload));
+    pushBoardToCloud(payload); // no-op if Firebase isn't configured
+  } catch (e) {
+    console.warn('Board save failed:', e);
+  }
+}
+
+function showLastUpdatedBadge(savedAt) {
+  const badge = document.getElementById('lastUpdatedBadge');
+  const d = new Date(savedAt);
+  const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+  const timeStr = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
+  const label = window._sheetName ? ` • ${window._sheetName}` : '';
+  badge.textContent = `DATA AS OF: ${dateStr}, ${timeStr}${label}`;
+  badge.style.display = 'block';
+}
+
+function applyBoardPayload(saved, showAlarms) {
+  allData = saved.allData.map(r => ({
+    ...r,
+    shipDate: r.shipDate ? new Date(r.shipDate) : null,
+    revisedDate: r.revisedDate ? new Date(r.revisedDate) : null,
+    effectiveDate: r.effectiveDate ? new Date(r.effectiveDate) : null,
+  }));
+  colMap = saved.colMap || {};
+  headers = saved.headers || [];
+  window._fileName = saved.fileName || '';
+  window._sheetName = saved.sheetName || '';
+
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('statsBar').style.display = 'flex';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('tableWrap').style.display = 'block';
+  document.getElementById('tickerBar').style.display = 'block';
+
+  currentFilter = 'all';
+  renderTable();
+  if (showAlarms) checkAlarms();
+  showLastUpdatedBadge(saved.savedAt);
+}
+
+function restoreBoardFromStorage() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY) || 'null'); } catch (e) { return false; }
+  if (!saved || !saved.allData || !saved.allData.length) return false;
+
+  window._pendingSavedBoard = saved; // stash it — user chooses Enter vs Upload New
+
+  const d = new Date(saved.savedAt);
+  const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) + ', ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
+  const totalQty = saved.allData.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+
+  document.getElementById('landingSummary').innerHTML =
+    `File: <span style="color:var(--cyan)">${saved.fileName || '—'}</span>${saved.sheetName ? ' (' + saved.sheetName + ')' : ''}<br>
+     Updated: <span style="color:var(--cyan)">${dateStr}</span><br>
+     ${saved.allData.length} orders • Total Qty: ${totalQty || '—'}`;
+
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('landingPanel').style.display = 'block';
+  return true;
+}
+
+function enterSavedBoard() {
+  const saved = window._pendingSavedBoard;
+  if (!saved) return;
+  document.getElementById('landingPanel').style.display = 'none';
+  applyBoardPayload(saved, true);
+  setInterval(checkAlarms, 60 * 60 * 1000);
+}
+
+function showUploadZoneInstead() {
+  document.getElementById('landingPanel').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+}
+
+// Always-visible entry point — works even if the auto-detect landing panel didn't
+// show up (e.g. file was re-saved under a new name so localStorage looks empty locally).
+// Checks localStorage first, then falls back to Firebase Cloud if configured.
+function manualEnterWithoutUpload() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY) || 'null'); } catch (e) { saved = null; }
+
+  if (saved && saved.allData && saved.allData.length) {
+    document.getElementById('landingPanel').style.display = 'none';
+    document.getElementById('uploadZone').style.display = 'none';
+    applyBoardPayload(saved, true);
+    setInterval(checkAlarms, 60 * 60 * 1000);
+    toast('👉 Local se board load ho gaya');
+    return;
+  }
+
+  // Nothing in this browser's localStorage — try the cloud, if Firebase is set up
+  const cfg = getFirebaseConfig();
+  if (cfg) {
+    toast('☁️ Local mein kuch nahi mila, cloud check kar rahe hain...');
+    loadBoardFromCloud();
+  } else {
+    toast('⚠️ Koi saved board nahi mila — pehle Excel upload karo, ya Firebase Cloud Sync set up karo (⚙️)');
+  }
 }
 
 function setFilter(f) {
@@ -838,23 +1338,47 @@ function getStatus(daysLeft) {
   return 'safe';
 }
 
+// Working-days countdown — counts days excluding Sundays (standard weekly-off for most factories)
+function countWorkingDays(fromDate, toDate) {
+  const diffCalendarDays = Math.round((toDate - fromDate) / 86400000);
+  if (diffCalendarDays === 0) return 0;
+  const sign = diffCalendarDays > 0 ? 1 : -1;
+  let count = 0;
+  const d = new Date(fromDate);
+  for (let i = 0; i < Math.abs(diffCalendarDays); i++) {
+    d.setDate(d.getDate() + sign);
+    if (d.getDay() !== 0) count++; // skip Sunday
+  }
+  return sign * count;
+}
+
+function getEffectiveDaysLeft(r) {
+  return useWorkingDays ? r.daysLeftWorking : r.daysLeft;
+}
+
 function renderTable() {
   const search = document.getElementById('searchBox').value.toLowerCase();
 
   let data = allData.filter(r => {
     const matchSearch = !search ||
       r.buyer.toLowerCase().includes(search) ||
-      r.desc.toLowerCase().includes(search);
-    const status = getStatus(r.daysLeft);
-    const matchFilter = currentFilter === 'all' || status === currentFilter;
+      r.desc.toLowerCase().includes(search) ||
+      (r.orderNo || '').toLowerCase().includes(search) ||
+      (r.styleNo || '').toLowerCase().includes(search) ||
+      (r.agent || '').toLowerCase().includes(search);
+    const status = getStatus(getEffectiveDaysLeft(r));
+    let matchFilter;
+    if (currentFilter === 'dispatched') matchFilter = r.dispatched;
+    else if (currentFilter === 'all') matchFilter = !r.dispatched;
+    else matchFilter = !r.dispatched && status === currentFilter;
     return matchSearch && matchFilter;
   });
 
   // Sort
   data.sort((a, b) => {
     let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === 'daysLeft') { va = getEffectiveDaysLeft(a) ?? 9999; vb = getEffectiveDaysLeft(b) ?? 9999; }
     if (sortCol === 'buyer') { va = va || ''; vb = vb || ''; }
-    if (sortCol === 'daysLeft') { va = va ?? 9999; vb = vb ?? 9999; }
     if (sortCol === 'shipDate' || sortCol === 'effectiveDate') {
       va = va ? va.getTime() : 9999999999; vb = vb ? vb.getTime() : 9999999999;
     }
@@ -865,66 +1389,112 @@ function renderTable() {
 
   filteredData = data;
 
-  // Stats
-  const critical = allData.filter(r => getStatus(r.daysLeft) === 'critical').length;
-  const warning = allData.filter(r => getStatus(r.daysLeft) === 'warning').length;
-  const safe = allData.filter(r => getStatus(r.daysLeft) === 'safe').length;
+  // Stats (dispatched items excluded from the active pipeline counts)
+  const active = allData.filter(r => !r.dispatched);
+  const critical = active.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'critical').length;
+  const warning = active.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'warning').length;
+  const safe = active.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'safe').length;
+  const dispatchedCount = allData.filter(r => r.dispatched).length;
   document.getElementById('statCritical').textContent = critical;
   document.getElementById('statWarning').textContent = warning;
   document.getElementById('statSafe').textContent = safe;
-  document.getElementById('statTotal').textContent = allData.length;
+  document.getElementById('statTotal').textContent = active.length;
+  document.getElementById('statDispatched').textContent = dispatchedCount;
 
   const fmt = (d) => d ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }) : '—';
 
   const body = document.getElementById('tableBody');
   if (data.length === 0) {
-    body.innerHTML = `<tr class="no-data-row"><td colspan="7">NO RECORDS FOUND</td></tr>`;
+    body.innerHTML = `<tr class="no-data-row"><td colspan="8">NO RECORDS FOUND</td></tr>`;
     return;
   }
 
-  body.innerHTML = data.map((r, i) => {
-    const status = getStatus(r.daysLeft);
-    const trClass = status === 'critical' ? 'urgent' : status === 'warning' ? 'warning' : 'safe';
+  const buildRowHTML = (r, i) => {
+    const daysLeft = getEffectiveDaysLeft(r);
+    const status = getStatus(daysLeft);
+    const trClass = r.dispatched ? 'safe' : (status === 'critical' ? 'urgent' : status === 'warning' ? 'warning' : 'safe');
 
     let badge = '';
-    if (r.daysLeft === null) {
+    if (daysLeft === null) {
       badge = `<span class="countdown grey">DATE MISSING</span>`;
-    } else if (r.daysLeft < 0) {
-      badge = `<span class="countdown red">⚠ ${Math.abs(r.daysLeft)}D OVERDUE</span>`;
-    } else if (r.daysLeft === 0) {
+    } else if (daysLeft < 0) {
+      badge = `<span class="countdown red">⚠ ${Math.abs(daysLeft)}D OVERDUE</span>`;
+    } else if (daysLeft === 0) {
       badge = `<span class="countdown red">🚨 TODAY!</span>`;
-    } else if (r.daysLeft <= 5) {
-      badge = `<span class="countdown red">🚨 ${r.daysLeft}D LEFT</span>`;
-    } else if (r.daysLeft <= 10) {
-      badge = `<span class="countdown amber">⚠ ${r.daysLeft}D LEFT</span>`;
+    } else if (daysLeft <= 5) {
+      badge = `<span class="countdown red">🚨 ${daysLeft}D LEFT</span>`;
+    } else if (daysLeft <= 10) {
+      badge = `<span class="countdown amber">⚠ ${daysLeft}D LEFT</span>`;
     } else {
-      badge = `<span class="countdown green">✓ ${r.daysLeft}D LEFT</span>`;
+      badge = `<span class="countdown green">✓ ${daysLeft}D LEFT</span>`;
     }
 
     const dateCell = r.revisedDate
       ? `<span style="color:#e0eaf8;font-family:'JetBrains Mono',monospace;font-size:13px">${fmt(r.revisedDate)}</span> <span style="color:var(--amber);font-size:9px;font-weight:700;letter-spacing:1px"> REV</span>`
       : `<span style="color:#8090a0;font-family:'JetBrains Mono',monospace;font-size:13px">${fmt(r.shipDate)}</span>`;
 
-    const statusLabel = status === 'critical' ? `<span style="color:var(--red-bright);font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px;text-shadow:0 0 8px var(--red-bright)">● CRITICAL</span>` :
+    const statusLabel = r.dispatched ? `<span style="color:#666;font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px">🚚 DISPATCHED</span>` :
+                        status === 'critical' ? `<span style="color:var(--red-bright);font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px;text-shadow:0 0 8px var(--red-bright)">● CRITICAL</span>` :
                         status === 'warning' ? `<span style="color:var(--amber);font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px;text-shadow:0 0 8px #ffd000">● WARNING</span>` :
                         `<span style="color:var(--green);font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px;text-shadow:0 0 6px #39ff14">● ON TRACK</span>`;
 
-    return `<tr class="${trClass}">
-      <td style="color:#3a4a5a;font-family:'JetBrains Mono',monospace;font-size:12px">${i+1}</td>
+    const actionCell = r.dispatched
+      ? `<button class="filter-btn" style="padding:4px 10px;font-size:10px;border-color:#444;color:#888" onclick="toggleDispatched('${r.id}')">↩ UNDO</button>`
+      : `<button class="filter-btn" style="padding:4px 10px;font-size:10px;border-color:var(--green);color:var(--green)" onclick="toggleDispatched('${r.id}')">✓ DISPATCH</button>`;
+
+    return `<tr class="${trClass}" style="${r.dispatched ? 'opacity:0.55' : ''}">
+      <td style="color:#3a4a5a;font-family:'JetBrains Mono',monospace;font-size:12px">${i}</td>
       <td><span class="buyer-tag">${r.buyer}</span></td>
       <td>${dateCell}</td>
       <td>${badge}</td>
-      <td style="color:#a0b0c0;max-width:220px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600">${r.desc}</td>
+      <td style="color:#a0b0c0;max-width:220px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600">
+        ${r.desc}
+        ${(r.orderNo || r.styleNo || r.agent) ? `<div style="font-size:10px;color:#5a6a7a;font-family:'JetBrains Mono',monospace;margin-top:2px;letter-spacing:0.5px">${[r.orderNo && 'Order: '+r.orderNo, r.styleNo && 'Style: '+r.styleNo, r.agent && 'Agent: '+r.agent].filter(Boolean).join(' | ')}</div>` : ''}
+      </td>
       <td style="color:var(--cyan);font-family:'Orbitron',monospace;font-size:12px;text-shadow:0 0 6px rgba(0,245,255,0.4)">${r.qty || '—'}</td>
       <td>${statusLabel}</td>
+      <td>${actionCell}</td>
     </tr>`;
-  }).join('');
+  };
 
-  // Ticker
-  const urgents = allData.filter(r => r.daysLeft !== null && r.daysLeft <= 10 && r.daysLeft >= 0);
+  if (groupByBuyer) {
+    // Group filtered/sorted data by buyer; each group keeps the current sort order internally
+    const groups = {};
+    data.forEach(r => { (groups[r.buyer] = groups[r.buyer] || []).push(r); });
+
+    // Order groups by their most urgent (lowest) daysLeft first
+    const groupNames = Object.keys(groups).sort((a, b) => {
+      const minA = Math.min(...groups[a].map(r => getEffectiveDaysLeft(r) ?? 9999));
+      const minB = Math.min(...groups[b].map(r => getEffectiveDaysLeft(r) ?? 9999));
+      return minA - minB;
+    });
+
+    let html = '';
+    let counter = 1;
+    groupNames.forEach(buyer => {
+      const rows = groups[buyer];
+      const critCount = rows.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'critical').length;
+      const warnCount = rows.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'warning').length;
+      const totalQty = rows.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+      html += `<tr class="group-header-row">
+        <td colspan="8" style="background:rgba(0,245,255,0.06);border-top:2px solid var(--cyan);border-bottom:1px solid #1a2a3a;padding:10px 14px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;font-size:14px;color:var(--cyan)">
+          👥 ${buyer} — ${rows.length} ORDERS ${totalQty ? `• Qty: ${totalQty}` : ''}
+          ${critCount ? `<span style="color:var(--red-bright);margin-left:12px">🚨 ${critCount} CRITICAL</span>` : ''}
+          ${warnCount ? `<span style="color:var(--amber);margin-left:12px">⚠ ${warnCount} WARNING</span>` : ''}
+        </td>
+      </tr>`;
+      rows.forEach(r => { html += buildRowHTML(r, counter++); });
+    });
+    body.innerHTML = html;
+  } else {
+    body.innerHTML = data.map((r, i) => buildRowHTML(r, i + 1)).join('');
+  }
+
+  // Ticker (dispatched items don't show up on the ticker)
+  const urgents = allData.filter(r => !r.dispatched && getEffectiveDaysLeft(r) !== null && getEffectiveDaysLeft(r) <= 10 && getEffectiveDaysLeft(r) >= 0);
   if (urgents.length > 0) {
     const tickerItems = urgents.map(r =>
-      `🚨 ${r.buyer} — ${r.desc.substring(0,30)} — ${r.daysLeft}D LEFT`
+      `🚨 ${r.buyer} — ${r.desc.substring(0,30)} — Qty: ${r.qty || '—'} — ${getEffectiveDaysLeft(r)}D LEFT`
     ).join(' <span class="ticker-sep">///</span> ');
     document.getElementById('tickerContent').innerHTML = tickerItems;
   } else {
@@ -932,20 +1502,313 @@ function renderTable() {
   }
 }
 
+function toggleDispatched(rowId) {
+  const row = allData.find(r => r.id === rowId);
+  if (!row) return;
+  row.dispatched = !row.dispatched;
+  saveBoardToStorage(Date.now());
+  renderTable();
+}
+
+function toggleWorkingDays() {
+  useWorkingDays = !useWorkingDays;
+  localStorage.setItem('shipmentTrackerUseWorkingDays', useWorkingDays ? '1' : '0');
+  document.getElementById('workingDaysBtn').classList.toggle('active', useWorkingDays);
+  renderTable();
+}
+
+function toggleGroupByBuyer() {
+  groupByBuyer = !groupByBuyer;
+  document.getElementById('groupToggleBtn').classList.toggle('active', groupByBuyer);
+  renderTable();
+}
+
+// ══════════════════════════════════════════════════════
+// SHARE CRITICAL LIST — WhatsApp / Email
+// ══════════════════════════════════════════════════════
+function buildCriticalListText() {
+  const items = allData
+    .filter(r => !r.dispatched && (getStatus(getEffectiveDaysLeft(r)) === 'critical' || getStatus(getEffectiveDaysLeft(r)) === 'warning'))
+    .sort((a, b) => (getEffectiveDaysLeft(a) ?? 9999) - (getEffectiveDaysLeft(b) ?? 9999));
+
+  const fmt = (d) => d ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) : '—';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  let text = `*SHIPMENT ALERT — ${dateStr}*\n\n`;
+  if (items.length === 0) {
+    text += `Sab shipments on-track hain, koi critical/warning nahi hai.`;
+    return text;
+  }
+
+  items.forEach((r, i) => {
+    const daysLeft = getEffectiveDaysLeft(r);
+    const status = getStatus(daysLeft);
+    const tag = status === 'critical' ? '🚨' : '⚠';
+    const daysTxt = daysLeft === null ? 'DATE MISSING'
+      : daysLeft < 0 ? `${Math.abs(daysLeft)}D OVERDUE`
+      : daysLeft === 0 ? 'TODAY!'
+      : `${daysLeft}D LEFT`;
+    text += `${tag} ${i+1}. *${r.buyer}* — ${r.desc}\n   Qty: ${r.qty || '—'} | Ship: ${fmt(r.effectiveDate)} | ${daysTxt}\n\n`;
+  });
+
+  const critCount = items.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'critical').length;
+  const warnCount = items.filter(r => getStatus(getEffectiveDaysLeft(r)) === 'warning').length;
+  text += `Total: ${critCount} Critical, ${warnCount} Warning`;
+  return text;
+}
+
+function shareCriticalList(mode) {
+  const text = buildCriticalListText();
+  if (mode === 'whatsapp') {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  } else if (mode === 'email') {
+    const subject = `Shipment Alert — ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ALERT FATIGUE CONTROL — alarm modal / notification sirf tab dikhega
+// jab koi NAYA critical/warning item ho ya koi item pehle se zyada urgent ho gaya ho.
+// Same items baar-baar (har ghante) nahi dikhaye jaayenge.
+// ══════════════════════════════════════════════════════
+const ALERT_HISTORY_KEY = 'shipmentTrackerAlertHistory';
+
+function severityRank(daysLeft) {
+  if (daysLeft === null) return 0;
+  if (daysLeft < 0) return 3;   // overdue — most severe
+  if (daysLeft <= 5) return 2;  // critical
+  if (daysLeft <= 10) return 1; // warning
+  return 0;
+}
+
+function getAlertHistory() {
+  try { return JSON.parse(localStorage.getItem(ALERT_HISTORY_KEY) || '{}'); } catch (e) { return {}; }
+}
+
+function saveAlertHistory(hist) {
+  try { localStorage.setItem(ALERT_HISTORY_KEY, JSON.stringify(hist)); } catch (e) {}
+}
+
+function resetAlertHistory() {
+  localStorage.removeItem(ALERT_HISTORY_KEY);
+}
+
+// ══════════════════════════════════════════════════════
+// FIREBASE CLOUD SYNC — hidable gear-box: save config + live cross-device sync
+// ══════════════════════════════════════════════════════
+const FB_CONFIG_KEY = 'shipmentTrackerFirebaseConfig';
+let fbDb = null;
+let fbInitialized = false;
+let _suppressCloudEcho = false; // avoid re-applying our own writes when the listener fires
+
+// ══════════════════════════════════════════════════════
+// TOAST — chhota notification popup (bottom-right)
+// ══════════════════════════════════════════════════════
+function toast(msg) {
+  let t = document.getElementById('_toastEl');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_toastEl';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0d1119;border:1px solid var(--cyan);color:var(--cyan);padding:12px 18px;border-radius:8px;font-family:\'JetBrains Mono\',monospace;font-size:12px;z-index:99999;box-shadow:0 0 20px rgba(0,245,255,0.3);transition:opacity 0.3s;opacity:0';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+function toggleFirebaseBox() {
+  const box = document.getElementById('firebaseBox');
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const cfg = getFirebaseConfig();
+    if (cfg) {
+      document.getElementById('fbApiKey').value = cfg.apiKey || '';
+      document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
+      document.getElementById('fbDatabaseURL').value = cfg.databaseURL || '';
+      document.getElementById('fbProjectId').value = cfg.projectId || '';
+    }
+    updateCloudDot();
+  }
+}
+
+function getFirebaseConfig() {
+  try { return JSON.parse(localStorage.getItem(FB_CONFIG_KEY) || 'null'); } catch (e) { return null; }
+}
+
+function updateCloudDot(state) {
+  const dot = document.getElementById('cloudSyncDot');
+  const cfg = getFirebaseConfig();
+  if (!cfg) { dot.textContent = '⚪ CLOUD OFF'; dot.style.color = '#666'; return; }
+  if (state === 'synced') { dot.textContent = '🟢 CLOUD SYNCED'; dot.style.color = 'var(--green)'; }
+  else if (state === 'error') { dot.textContent = '🔴 CLOUD ERROR'; dot.style.color = 'var(--red-bright)'; }
+  else { dot.textContent = '🟡 CLOUD CONNECTING'; dot.style.color = 'var(--amber)'; }
+}
+
+function initFirebase(cfg) {
+  try {
+    if (!fbInitialized) {
+      firebase.initializeApp(cfg);
+      fbInitialized = true;
+    }
+    fbDb = firebase.database();
+    listenForCloudUpdates();
+    updateCloudDot('synced');
+    return true;
+  } catch (e) {
+    console.warn('Firebase init failed:', e);
+    updateCloudDot('error');
+    return false;
+  }
+}
+
+function saveFirebaseConfig() {
+  const cfg = {
+    apiKey: document.getElementById('fbApiKey').value.trim(),
+    authDomain: document.getElementById('fbAuthDomain').value.trim(),
+    databaseURL: document.getElementById('fbDatabaseURL').value.trim(),
+    projectId: document.getElementById('fbProjectId').value.trim(),
+  };
+  if (!cfg.apiKey || !cfg.databaseURL) {
+    document.getElementById('fbStatus').innerHTML = '⚠️ API Key aur Database URL zaroori hain';
+    document.getElementById('fbStatus').style.color = 'var(--amber)';
+    return;
+  }
+  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
+  const ok = initFirebase(cfg);
+  const status = document.getElementById('fbStatus');
+  if (ok) {
+    status.innerHTML = '💾 Config saved — cloud sync ON hai';
+    status.style.color = 'var(--green)';
+    toast('☁️ Firebase config saved');
+    saveBoardToStorage(Date.now()); // push current board immediately
+  } else {
+    status.innerHTML = '❌ Config galat lag rahi hai, check karein';
+    status.style.color = 'var(--red-bright)';
+  }
+}
+
+async function testFirebaseConnection() {
+  const cfg = {
+    apiKey: document.getElementById('fbApiKey').value.trim(),
+    authDomain: document.getElementById('fbAuthDomain').value.trim(),
+    databaseURL: document.getElementById('fbDatabaseURL').value.trim(),
+    projectId: document.getElementById('fbProjectId').value.trim(),
+  };
+  const status = document.getElementById('fbStatus');
+  if (!cfg.apiKey || !cfg.databaseURL) {
+    status.innerHTML = '⚠️ Pehle API Key aur Database URL bharo';
+    status.style.color = 'var(--amber)';
+    return;
+  }
+  status.innerHTML = '⏳ Test ho raha hai...';
+  status.style.color = '#8090a0';
+  try {
+    if (!fbInitialized) { firebase.initializeApp(cfg); fbInitialized = true; }
+    const db = firebase.database();
+    const testRef = db.ref('shipmentTracker/_connTest');
+    await testRef.set({ ping: Date.now() });
+    const snap = await testRef.once('value');
+    if (snap.exists()) {
+      status.innerHTML = '✅ Connection sahi hai! Ab "Save" dabao.';
+      status.style.color = 'var(--green)';
+    } else {
+      status.innerHTML = '❌ Write hua par read nahi hua — Database Rules check karo';
+      status.style.color = 'var(--red-bright)';
+    }
+  } catch (e) {
+    status.innerHTML = '❌ Fail: ' + e.message;
+    status.style.color = 'var(--red-bright)';
+    updateCloudDot('error');
+  }
+}
+
+function pushBoardToCloud(payload) {
+  const cfg = getFirebaseConfig();
+  if (!cfg) return; // Firebase not configured — silently skip
+  if (!fbDb) { if (!initFirebase(cfg)) return; }
+  _suppressCloudEcho = true;
+  fbDb.ref('shipmentTracker/board').set(payload)
+    .then(() => { updateCloudDot('synced'); setTimeout(() => { _suppressCloudEcho = false; }, 1500); })
+    .catch(e => { console.warn('Cloud push failed:', e); updateCloudDot('error'); _suppressCloudEcho = false; });
+}
+
+function listenForCloudUpdates() {
+  if (!fbDb) return;
+  fbDb.ref('shipmentTracker/board').on('value', snap => {
+    const remote = snap.val();
+    if (!remote || !remote.allData) return;
+    if (_suppressCloudEcho) return; // this update is our own write echoing back
+    const localSavedAt = (() => { try { return JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY) || 'null')?.savedAt; } catch (e) { return null; } })();
+    if (remote.savedAt && remote.savedAt === localSavedAt) return; // already up to date
+    // Remote board is newer/different — apply it and update local cache
+    applyBoardPayload(remote, false);
+    localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(remote));
+    toast('☁️ Cloud se naya board update mila');
+    updateCloudDot('synced');
+  }, err => { console.warn('Cloud listener error:', err); updateCloudDot('error'); });
+}
+
+function loadBoardFromCloud() {
+  const cfg = getFirebaseConfig();
+  if (!cfg) { document.getElementById('fbStatus').innerHTML = '⚠️ Pehle config save karo'; return; }
+  if (!fbDb) { if (!initFirebase(cfg)) return; }
+  const status = document.getElementById('fbStatus');
+  status.innerHTML = '⏳ Cloud se load ho raha hai...';
+  fbDb.ref('shipmentTracker/board').once('value').then(snap => {
+    const remote = snap.val();
+    if (!remote || !remote.allData) { status.innerHTML = '⚪ Cloud mein abhi koi board nahi hai'; return; }
+    applyBoardPayload(remote, true);
+    localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(remote));
+    status.innerHTML = '✅ Cloud board load ho gaya';
+    status.style.color = 'var(--green)';
+    document.getElementById('firebaseBox').style.display = 'none';
+  }).catch(e => {
+    status.innerHTML = '❌ Fail: ' + e.message;
+    status.style.color = 'var(--red-bright)';
+  });
+}
+
+// Auto-connect on page load if Firebase was already configured earlier
+(function initFirebaseOnLoad(){
+  const cfg = getFirebaseConfig();
+  if (cfg) initFirebase(cfg);
+  else updateCloudDot();
+})();
+
 function checkAlarms() {
-  const alertItems = allData.filter(r =>
-    r.daysLeft !== null && r.daysLeft <= 10 && r.daysLeft >= 0
-  );
+  const urgentItems = allData.filter(r => !r.dispatched && getEffectiveDaysLeft(r) !== null && getEffectiveDaysLeft(r) <= 10);
+  if (urgentItems.length === 0) return;
 
-  if (alertItems.length === 0) return;
+  const hist = getAlertHistory();
+  // Only alert for items that are brand-new to the urgent list, OR have escalated
+  // (e.g. warning → critical → overdue) since the last time we alerted about them.
+  const newOrEscalated = urgentItems.filter(r => {
+    const rank = severityRank(getEffectiveDaysLeft(r));
+    const prevRank = hist[r.id];
+    return prevRank === undefined || rank > prevRank;
+  });
 
-  const html = alertItems.slice(0, 5).map(r => `
+  // Always update history so future checks know the latest severity we've alerted on
+  urgentItems.forEach(r => { hist[r.id] = severityRank(getEffectiveDaysLeft(r)); });
+  saveAlertHistory(hist);
+
+  if (newOrEscalated.length === 0) return; // nothing new — don't re-alert, avoid alert fatigue
+
+  const html = newOrEscalated.slice(0, 5).map(r => {
+    const daysLeft = getEffectiveDaysLeft(r);
+    return `
     <div class="alarm-item">
       <div class="alarm-buyer">${r.buyer}</div>
-      <div class="alarm-desc">${r.desc.substring(0, 60)}</div>
-      <div class="alarm-days">${r.daysLeft === 0 ? '🚨 AAJ HAI!' : `${r.daysLeft} DIN BAAKI`}</div>
+      <div class="alarm-desc">${r.desc.substring(0, 60)} <span style="color:var(--cyan);font-size:12px">(Qty: ${r.qty || '—'})</span></div>
+      <div class="alarm-days">${daysLeft === 0 ? '🚨 AAJ HAI!' : daysLeft < 0 ? `⚠ ${Math.abs(daysLeft)} DIN OVERDUE` : `${daysLeft} DIN BAAKI`}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   document.getElementById('alarmItems').innerHTML = html;
   document.getElementById('alarmModal').classList.add('show');
@@ -953,7 +1816,7 @@ function checkAlarms() {
   // Browser notification
   if (Notification.permission === 'granted') {
     new Notification('🚨 Ship Date Alert!', {
-      body: `${alertItems.length} orders ke 10 din se kam baaki hain!`,
+      body: `${newOrEscalated.length} naye/escalated orders alert list mein aaye hain!`,
       icon: '⚓'
     });
   } else if (Notification.permission !== 'denied') {
@@ -964,6 +1827,13 @@ function checkAlarms() {
 function closeAlarm() {
   document.getElementById('alarmModal').classList.remove('show');
 }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAlarm();
+});
 </script>
+<div class="dev-footer">
+  ⚓ Developed by <b>Dhiraj Kumar</b> <span class="sep">|</span> Contact: <b>9608405286</b>
+</div>
 </body>
 </html>
