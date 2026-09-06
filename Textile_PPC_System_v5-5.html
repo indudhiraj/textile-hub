@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
@@ -539,6 +540,62 @@
     .hamburger-btn { display:none; }
   }
 </style>
+<style>
+/* ── 📸 PRODUCTION DASHBOARD REPORT (separate page, WhatsApp-image style) ── */
+#pdCapture { background: var(--white); }
+.pd-banner {
+  background:linear-gradient(120deg,var(--navy) 0%,var(--blue) 100%); color:#fff;
+  border-radius:var(--radius); padding:18px 22px; margin-bottom:14px; text-align:center;
+}
+.pd-banner h1 { font-size:22px; font-weight:900; letter-spacing:.5px; }
+.pd-banner .pd-tagline { font-size:12px; font-weight:700; color:#FFD966; margin-top:4px; letter-spacing:1px; }
+.pd-banner .pd-sub { font-size:11.5px; opacity:.9; margin-top:2px; }
+.pd-meta-row {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;
+}
+.pd-meta-chip {
+  background:var(--navy); color:#fff; border-radius:8px; padding:8px 10px; text-align:center;
+}
+.pd-meta-chip .pd-meta-label { font-size:9.5px; opacity:.8; font-weight:700; letter-spacing:.5px; }
+.pd-meta-chip .pd-meta-val { font-size:13px; font-weight:800; margin-top:2px; }
+.pd-meta-chip select, .pd-meta-chip input {
+  background:transparent; border:1px solid rgba(255,255,255,0.4); color:#fff; border-radius:5px;
+  font-size:12px; font-weight:700; text-align:center; padding:2px 4px; width:100%; margin-top:2px;
+}
+.pd-panel-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-bottom:16px; }
+.pd-panel { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.pd-panel-head { padding:9px 14px; font-weight:800; font-size:13px; color:#fff; }
+.pd-panel-body { padding:12px 14px; }
+.pd-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px dashed var(--border); font-size:12.5px; }
+.pd-row:last-child { border-bottom:none; }
+.pd-row .pd-row-label { color:var(--dgrey); }
+.pd-row .pd-row-val { font-weight:800; }
+.pd-andon-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.pd-andon-box { border-radius:var(--radius); padding:14px; text-align:center; cursor:pointer; color:#fff; font-weight:800; opacity:.45; transition:opacity .15s, transform .15s; }
+.pd-andon-box:hover { transform:translateY(-2px); }
+.pd-andon-box.active { opacity:1; box-shadow:0 6px 18px rgba(0,0,0,0.25); }
+.pd-andon-box.running { background:var(--mgreen); }
+.pd-andon-box.attention { background:var(--amber); color:#5c4600; }
+.pd-andon-box.stopped { background:var(--red); }
+.pd-andon-box .pd-andon-icon { font-size:22px; }
+.pd-focus-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:16px; }
+.pd-focus-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; }
+.pd-focus-card h4 { font-size:12.5px; color:var(--navy); margin-bottom:8px; }
+.pd-focus-card ul { list-style:none; font-size:11.5px; color:var(--dgrey); }
+.pd-focus-card ul li { padding:3px 0; }
+.pd-footer-band {
+  background:linear-gradient(120deg,var(--navy) 0%,var(--blue) 100%); color:#fff; text-align:center;
+  border-radius:var(--radius); padding:12px; font-weight:800; font-size:13px; letter-spacing:.5px;
+}
+.pd-footer-band .pd-footer-sub { font-size:10.5px; opacity:.85; font-weight:600; letter-spacing:1px; margin-top:2px; }
+.pd-add-form { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.pd-add-form input { flex:1; min-width:90px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:12px; background:var(--white); color:var(--text); }
+body.dark-mode .pd-meta-chip select, body.dark-mode .pd-meta-chip input { color:#fff; }
+@media print {
+  .pd-add-form, .pd-andon-box:not(.active) { display:none !important; }
+  .pd-andon-strip { grid-template-columns:1fr; }
+}
+</style>
 </head>
 <body>
 
@@ -676,6 +733,155 @@
   </div>
 </div>
 
+<!-- ══════ PRODUCTION DASHBOARD REPORT — single shareable page (WhatsApp-image style) ══════ -->
+<div class="page" id="page-proddashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title">📸 Production Dashboard Report</div>
+      <div class="page-subtitle">Ek hi page me poora factory snapshot — Report Hub se alag, Excel/PDF/Image me shareable</div>
+    </div>
+    <div class="page-actions">
+      <label style="font-size:11px;color:var(--dgrey);align-self:center">Date:</label>
+      <input type="date" id="pd-date" onchange="renderProdDashboard()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px">
+      <button class="btn btn-pdf" onclick="generateProdDashboardPDF()">📄 PDF</button>
+      <button class="btn btn-excel" onclick="exportPageExcel('proddashboard')">📊 Excel</button>
+      <button class="btn" style="background:#25D366;color:#fff" onclick="downloadProdDashboardImage()">📷 Image / WhatsApp</button>
+      <button class="btn btn-primary" onclick="renderProdDashboard()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div id="pdCapture">
+    <!-- Banner -->
+    <div class="pd-banner">
+      <h1>🏭 PRODUCTION DASHBOARD</h1>
+      <div class="pd-tagline">MONITOR • MEASURE • IMPROVE</div>
+      <div class="pd-sub" id="pdBannerSub">Real Time Production Monitoring for Excellence</div>
+    </div>
+
+    <!-- Meta strip -->
+    <div class="pd-meta-row">
+      <div class="pd-meta-chip"><div class="pd-meta-label">📅 DATE</div><div class="pd-meta-val" id="pdMetaDate">—</div></div>
+      <div class="pd-meta-chip"><div class="pd-meta-label">🕐 SHIFT</div>
+        <select id="pd-shift" onchange="saveProdDashMeta()">
+          <option>A Shift</option><option>B Shift</option><option>C Shift</option><option>General</option>
+        </select>
+      </div>
+      <div class="pd-meta-chip"><div class="pd-meta-label">🏢 DEPARTMENT</div>
+        <input type="text" id="pd-dept" placeholder="e.g. Sewing" onchange="saveProdDashMeta()">
+      </div>
+      <div class="pd-meta-chip"><div class="pd-meta-label">🎯 DAILY TARGET</div><div class="pd-meta-val" id="pdMetaTarget">—</div></div>
+      <div class="pd-meta-chip"><div class="pd-meta-label">⏱️ WORKING HOURS</div>
+        <input type="text" id="pd-workhrs" placeholder="08:00" onchange="saveProdDashMeta()">
+      </div>
+      <div class="pd-meta-chip"><div class="pd-meta-label">📶 DATA STATUS</div><div class="pd-meta-val" style="color:#8FE3A0">● LIVE</div></div>
+    </div>
+
+    <!-- Management Summary KPIs -->
+    <div class="kpi-grid" id="pdKPIs"></div>
+
+    <!-- Row: Daily Production / OEE / Manpower -->
+    <div class="pd-panel-grid">
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:var(--navy)">1. Daily Production</div>
+        <div class="pd-panel-body" style="overflow-x:auto;padding:0">
+          <table>
+            <thead><tr><th>Line/Style</th><th>Target</th><th>Actual</th><th>Achv%</th></tr></thead>
+            <tbody id="pdProdBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:var(--blue)">2. Machine Performance (OEE)</div>
+        <div class="pd-panel-body">
+          <div class="chart-wrap" style="height:170px"><canvas id="pdOeeChart"></canvas></div>
+          <div class="pd-row"><span class="pd-row-label">Running Hours</span><span class="pd-row-val" id="pdRunHrs">—</span></div>
+          <div class="pd-row"><span class="pd-row-label">Breakdown/Loss Hours</span><span class="pd-row-val" id="pdLossHrs">—</span></div>
+        </div>
+      </div>
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:var(--purple)">3. Manpower</div>
+        <div class="pd-panel-body" id="pdManpowerBody"></div>
+      </div>
+    </div>
+
+    <!-- Row: Quality / Material / Dispatch -->
+    <div class="pd-panel-grid">
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:var(--mgreen)">4. Quality Monitoring</div>
+        <div class="pd-panel-body">
+          <div id="pdQualityBody"></div>
+          <div class="pd-add-form">
+            <input type="number" id="pd-complaints" min="0" placeholder="Complaints" onchange="saveQualityExtra()">
+            <input type="number" id="pd-deviations" min="0" placeholder="Deviations" onchange="saveQualityExtra()">
+          </div>
+        </div>
+      </div>
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:#1F4E79">5. Material Monitoring</div>
+        <div class="pd-panel-body" id="pdMaterialBody"></div>
+      </div>
+      <div class="pd-panel">
+        <div class="pd-panel-head" style="background:var(--orange)">6. Dispatch / FG Status</div>
+        <div class="pd-panel-body" id="pdDispatchBody"></div>
+      </div>
+    </div>
+
+    <!-- Charts: Loss Pareto / Hourly Trend -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">7. Loss Analysis (Pareto)</div>
+        <div class="chart-wrap"><canvas id="pdParetoChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">8. Hourly Production Trend</div>
+        <div class="chart-wrap"><canvas id="pdTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Andon status -->
+    <div class="pd-andon-strip">
+      <div class="pd-andon-box running" id="pdAndonRunning" onclick="setAndonStatus('running')">
+        <div class="pd-andon-icon">⚙️</div>RUNNING
+      </div>
+      <div class="pd-andon-box attention" id="pdAndonAttention" onclick="setAndonStatus('attention')">
+        <div class="pd-andon-icon">⚠️</div>ATTENTION
+      </div>
+      <div class="pd-andon-box stopped" id="pdAndonStopped" onclick="setAndonStatus('stopped')">
+        <div class="pd-andon-icon">⛔</div>STOPPED
+      </div>
+    </div>
+
+    <!-- Our Focus + Remember -->
+    <div class="pd-focus-grid">
+      <div class="pd-focus-card">
+        <h4>🎯 OUR FOCUS</h4>
+        <ul><li>✅ Quality — Do It Right The First Time</li><li>✅ Productivity — Work Smart Every Time</li>
+          <li>✅ Safety — Work Safe, Go Home Safe</li><li>✅ Cost — Save More Every Day</li></ul>
+      </div>
+      <div class="pd-focus-card">
+        <h4>💡 REMEMBER</h4>
+        <ul><li>✅ Follow Standard Work</li><li>✅ Ensure Quality at Every Step</li>
+          <li>✅ Report Problems Immediately</li><li>✅ Think Kaizen — Improve Daily</li></ul>
+      </div>
+      <div class="pd-focus-card">
+        <h4>💰 KAIZEN SAVINGS LOG</h4>
+        <div id="pdKaizenList" style="max-height:90px;overflow-y:auto;font-size:11.5px;color:var(--dgrey)"></div>
+        <div class="pd-add-form">
+          <input type="text" id="pd-kaizen-desc" placeholder="Idea/desc">
+          <input type="number" id="pd-kaizen-amt" placeholder="₹ Savings">
+          <button class="btn btn-success" style="padding:5px 10px;font-size:11px" onclick="addKaizenEntry()">➕ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer band -->
+    <div class="pd-footer-band">
+      TEAMWORK • QUALITY • SAFETY • DISCIPLINE • CONTINUOUS IMPROVEMENT<br>
+      <span style="font-size:15px">TOGETHER WE ACHIEVE MORE!</span>
+    </div>
+  </div>
+</div>
+
 <!-- ══ REPORTS HUB PAGE — single-page menu of report tiles, no nested popups ══ -->
 <div class="page" id="page-reportshub">
   <div class="page-header">
@@ -714,6 +920,10 @@
     <div class="report-card" onclick="showPage('processdash')">
       <div class="report-icon">🛤️</div>
       <div><div class="report-title">Process Route Dashboard</div><div class="report-desc">Order-wise stage completion status</div></div>
+    </div>
+    <div class="report-card" onclick="showPage('proddashboard')">
+      <div class="report-icon">📸</div>
+      <div><div class="report-title">Production Dashboard Report</div><div class="report-desc">Single-page shareable dashboard — OEE, Manpower, Quality, Material, Dispatch, Andon</div></div>
     </div>
   </div>
 
@@ -3474,6 +3684,18 @@ const MANPOWER_ROLES = ['Tailor','Loom Operator','Thread Cutting','Helper'];
 // suggest whether more manpower is needed; fully editable on the report.
 let manpowerCapacity = { tailor:28, finishing:58, packing:70 };
 
+// ═══════════════════════════════════════════════════
+// 📸 PRODUCTION DASHBOARD REPORT — extra data stores
+// (everything else on that page is computed live from existing
+// production / hourlyProdData / attendanceLog / fabricData / wip /
+// dispatchLog arrays above — these are just the few NEW fields that
+// don't exist anywhere else in the app yet)
+// ═══════════════════════════════════════════════════
+let kaizenLog = JSON.parse(localStorage.getItem('ppc_kaizen_log')||'[]');        // {date, desc, amt}
+let qualityExtraLog = JSON.parse(localStorage.getItem('ppc_quality_extra')||'[]'); // {date, complaints, deviations}
+let andonStatus = JSON.parse(localStorage.getItem('ppc_andon_status')||'{"state":"running"}');
+let prodDashMeta = JSON.parse(localStorage.getItem('ppc_proddash_meta')||'{"shift":"A Shift","dept":"","workhrs":"08:00"}');
+
 function getTodayKey(){ return new Date().toISOString().slice(0,10); }
 
 // Returns today's manpower record, creating one (with an empty entries map)
@@ -4030,6 +4252,303 @@ function renderCharts(){
       plugins:{legend:{display:false}},
       scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:gridClr}},x:{grid:{color:gridClr}}}}
   });
+}
+
+// ═══════════════════════════════════════════════════
+// 📸 PRODUCTION DASHBOARD REPORT (separate page, WhatsApp-image style)
+// Pulls from existing arrays (production, hourlyProdData, attendanceLog,
+// manpowerLog, fabricData, wip, dispatchLog) for a chosen date, plus the
+// few new stores above (kaizenLog, qualityExtraLog, andonStatus, prodDashMeta)
+// ═══════════════════════════════════════════════════
+function pdSelectedDate(){
+  const el = document.getElementById('pd-date');
+  if(el && !el.value) el.value = today.toISOString().slice(0,10);
+  return el ? el.value : today.toISOString().slice(0,10);
+}
+
+function saveProdDashMeta(){
+  prodDashMeta.shift   = document.getElementById('pd-shift').value;
+  prodDashMeta.dept    = document.getElementById('pd-dept').value.trim();
+  prodDashMeta.workhrs = document.getElementById('pd-workhrs').value.trim();
+  localStorage.setItem('ppc_proddash_meta', JSON.stringify(prodDashMeta));
+  renderProdDashboard();
+}
+
+function setAndonStatus(state){
+  andonStatus.state = state;
+  localStorage.setItem('ppc_andon_status', JSON.stringify(andonStatus));
+  ['running','attention','stopped'].forEach(s=>{
+    const el = document.getElementById('pdAndon'+s.charAt(0).toUpperCase()+s.slice(1));
+    if(el) el.classList.toggle('active', s===state);
+  });
+  showToast('green','🚦 Andon Updated', state.toUpperCase());
+}
+
+function addKaizenEntry(){
+  const desc = document.getElementById('pd-kaizen-desc').value.trim();
+  const amt  = parseFloat(document.getElementById('pd-kaizen-amt').value)||0;
+  if(!desc || !amt){ showToast('amber','⚠️ Missing Info','Description aur ₹ savings dono bharo'); return; }
+  kaizenLog.push({date:pdSelectedDate(), desc, amt});
+  localStorage.setItem('ppc_kaizen_log', JSON.stringify(kaizenLog));
+  document.getElementById('pd-kaizen-desc').value='';
+  document.getElementById('pd-kaizen-amt').value='';
+  renderProdDashboard();
+  showToast('green','💰 Kaizen Saved!',desc+' — ₹'+fmtNum(amt));
+}
+
+function saveQualityExtra(){
+  const date = pdSelectedDate();
+  const complaints = parseInt(document.getElementById('pd-complaints').value)||0;
+  const deviations = parseInt(document.getElementById('pd-deviations').value)||0;
+  let rec = qualityExtraLog.find(q=>q.date===date);
+  if(!rec){ rec={date,complaints,deviations}; qualityExtraLog.push(rec); }
+  else { rec.complaints=complaints; rec.deviations=deviations; }
+  localStorage.setItem('ppc_quality_extra', JSON.stringify(qualityExtraLog));
+  renderProdDashboard();
+}
+
+function renderProdDashboard(){
+  const date = pdSelectedDate();
+  document.getElementById('pdMetaDate').textContent = fmtDate(date);
+  document.getElementById('pdBannerSub').textContent =
+    (prodDashMeta.dept ? prodDashMeta.dept+' • ' : '') + 'Real Time Production Monitoring for Excellence';
+  document.getElementById('pd-shift').value = prodDashMeta.shift || 'A Shift';
+  document.getElementById('pd-dept').value  = prodDashMeta.dept || '';
+  document.getElementById('pd-workhrs').value = prodDashMeta.workhrs || '08:00';
+  ['running','attention','stopped'].forEach(s=>{
+    const el = document.getElementById('pdAndon'+s.charAt(0).toUpperCase()+s.slice(1));
+    if(el) el.classList.toggle('active', s===andonStatus.state);
+  });
+
+  // ── 1. Daily Production (selected date) ──
+  const dayProd = production.filter(p=>p.date===date);
+  const totalTarget = dayProd.reduce((s,p)=>s+(p.target||0),0);
+  const totalOutput = dayProd.reduce((s,p)=>s+netGoodSewing(p),0);
+  const totalReject = dayProd.reduce((s,p)=>s+(p.reject||0),0);
+  const totalAlter  = dayProd.reduce((s,p)=>s+(p.alter||0),0);
+  document.getElementById('pdMetaTarget').textContent = fmtNum(totalTarget)+' Units';
+  document.getElementById('pdProdBody').innerHTML = dayProd.length ? dayProd.map(p=>{
+    const out = netGoodSewing(p);
+    const achv = p.target ? (out/p.target*100).toFixed(1) : '0.0';
+    return `<tr><td>${p.line} — ${p.style}</td><td>${fmtNum(p.target)}</td><td>${fmtNum(out)}</td>
+      <td style="color:${achv>=95?'var(--mgreen)':achv>=80?'var(--amber)':'var(--red)'};font-weight:700">${achv}%</td></tr>`;
+  }).join('') : `<tr><td colspan="4" style="color:var(--dgrey);padding:10px">Is date ke liye production entry nahi hai.</td></tr>`;
+
+  // ── 2. OEE (Availability × Performance × Quality) from Hourly data ──
+  const hourRows = hourlyProdData.filter(h=>h.date===date);
+  const totalAvailMin = hourRows.length*60;
+  const totalLossMin  = hourRows.reduce((s,h)=>s+(h.lossMin||0),0);
+  const availability  = totalAvailMin ? Math.max(0,(totalAvailMin-totalLossMin)/totalAvailMin) : 0;
+  const hTarget = hourRows.reduce((s,h)=>s+(h.target||0),0);
+  const hOutput = hourRows.reduce((s,h)=>s+(h.output||0),0);
+  const performance = hTarget ? Math.min(1,hOutput/hTarget) : 0;
+  const quality = totalOutput+totalReject ? Math.max(0,(totalOutput)/(totalOutput+totalReject)) : (dayProd.length?1:0);
+  const oee = availability*performance*quality;
+  document.getElementById('pdRunHrs').textContent = ((totalAvailMin-totalLossMin)/60).toFixed(2)+' Hrs';
+  document.getElementById('pdLossHrs').textContent = (totalLossMin/60).toFixed(2)+' Hrs';
+  renderPdOeeChart(availability,performance,quality,oee);
+
+  // ── 3. Manpower ──
+  const attDay = attendanceLog.filter(a=>a.date===date);
+  const sanc = attDay.reduce((s,a)=>s+(a.sanc||0),0);
+  const present = attDay.reduce((s,a)=>s+(a.present||0),0);
+  const absPct = sanc ? ((sanc-present)/sanc*100).toFixed(1) : '0.0';
+  const workHrs = parseFloat(prodDashMeta.workhrs)||8;
+  const manHours = present*workHrs;
+  const prodPerMan = present ? (totalOutput/present).toFixed(1) : '0.0';
+  document.getElementById('pdManpowerBody').innerHTML = `
+    <div class="pd-row"><span class="pd-row-label">Planned Manpower</span><span class="pd-row-val">${fmtNum(sanc)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">Actual Manpower</span><span class="pd-row-val">${fmtNum(present)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">Absenteeism</span><span class="pd-row-val" style="color:${absPct>10?'var(--red)':'var(--mgreen)'}">${absPct}%</span></div>
+    <div class="pd-row"><span class="pd-row-label">Man-Hours</span><span class="pd-row-val">${fmtNum(manHours)} Hrs</span></div>
+    <div class="pd-row"><span class="pd-row-label">Productivity/Man</span><span class="pd-row-val">${prodPerMan} Units</span></div>`;
+
+  // ── 4. Quality Monitoring ──
+  const qExtra = qualityExtraLog.find(q=>q.date===date) || {complaints:0,deviations:0};
+  const dayRework = totalAlter;
+  const rejPct = totalOutput+totalReject ? (totalReject/(totalOutput+totalReject)*100).toFixed(2) : '0.00';
+  document.getElementById('pdQualityBody').innerHTML = `
+    <div class="pd-row"><span class="pd-row-label">Total Production</span><span class="pd-row-val">${fmtNum(totalOutput)} Units</span></div>
+    <div class="pd-row"><span class="pd-row-label">Rejection Qty / %</span><span class="pd-row-val" style="color:var(--red)">${fmtNum(totalReject)} / ${rejPct}%</span></div>
+    <div class="pd-row"><span class="pd-row-label">Rework Qty</span><span class="pd-row-val">${fmtNum(dayRework)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">Customer Complaints</span><span class="pd-row-val">${fmtNum(qExtra.complaints)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">Quality Deviations</span><span class="pd-row-val">${fmtNum(qExtra.deviations)}</span></div>`;
+  document.getElementById('pd-complaints').value = qExtra.complaints||'';
+  document.getElementById('pd-deviations').value = qExtra.deviations||'';
+
+  // ── 5. Material Monitoring (from Fabric/Trim requirement data) ──
+  const totalReq = fabricData.reduce((s,f)=>s+(f.req||0),0);
+  const totalRecd = fabricData.reduce((s,f)=>s+(f.recd||0),0);
+  const bomPct = totalReq ? (totalRecd/totalReq*100).toFixed(1) : '0.0';
+  const shortageItems = fabricData.filter(f=>f.recd<f.req);
+  document.getElementById('pdMaterialBody').innerHTML = `
+    <div class="pd-row"><span class="pd-row-label">Material Required (BOM)</span><span class="pd-row-val">${fmtNum(totalReq)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">Material Received</span><span class="pd-row-val">${fmtNum(totalRecd)}</span></div>
+    <div class="pd-row"><span class="pd-row-label">BOM vs Actual</span><span class="pd-row-val" style="color:${bomPct>=95?'var(--mgreen)':bomPct>=80?'var(--amber)':'var(--red)'}">${bomPct}%</span></div>
+    <div class="pd-row"><span class="pd-row-label">Material Shortage</span><span class="pd-row-val" style="color:${shortageItems.length?'var(--red)':'var(--mgreen)'}">${shortageItems.length} Items</span></div>
+    <div class="pd-row"><span class="pd-row-label">Packing Material Status</span><span class="pd-row-val" style="color:${shortageItems.length?'var(--red)':'var(--mgreen)'}">${shortageItems.length?'⚠️ SHORTAGE':'✅ OK'}</span></div>`;
+
+  // ── 6. Dispatch / FG Status ──
+  const fgReady = wip.reduce((s,w)=>s+Math.max(0,(w.packing||0)-(w.dispatch||0)),0);
+  const dispToday = dispatchLog.filter(d=>d.date===date).reduce((s,d)=>s+(d.qty||0),0);
+  const dispPlanned = wip.reduce((s,w)=>s+Math.max(0,(w.packing||0)-(w.dispatch||0)),0);
+  const dispTotal = orders.reduce((s,o)=>s+(o.dispatch||0),0);
+  document.getElementById('pdDispatchBody').innerHTML = `
+    <div class="pd-row"><span class="pd-row-label">FG Ready (Godown)</span><span class="pd-row-val">${fmtNum(fgReady)} Units</span></div>
+    <div class="pd-row"><span class="pd-row-label">Dispatch Planned (Available)</span><span class="pd-row-val">${fmtNum(dispPlanned)} Units</span></div>
+    <div class="pd-row"><span class="pd-row-label">Dispatch — This Date</span><span class="pd-row-val">${fmtNum(dispToday)} Units</span></div>
+    <div class="pd-row"><span class="pd-row-label">Dispatch — Total (All Orders)</span><span class="pd-row-val">${fmtNum(dispTotal)} Units</span></div>`;
+
+  // ── Kaizen list + total ──
+  const kaizenTotal = kaizenLog.reduce((s,k)=>s+(k.amt||0),0);
+  const kList = [...kaizenLog].slice(-6).reverse();
+  document.getElementById('pdKaizenList').innerHTML = kList.length ? kList.map(k=>
+    `<div>• ${fmtDate(k.date)} — ${k.desc} <strong style="color:var(--mgreen)">₹${fmtNum(k.amt)}</strong></div>`).join('')
+    : 'Abhi tak koi Kaizen entry nahi hai.';
+
+  // ── Downtime (minutes) ──
+  const downtimeMin = totalLossMin;
+
+  // ── Management Summary KPI tiles ──
+  const kpis = [
+    {label:"Total Production",val:fmtNum(totalOutput)+" Units",sub:totalTarget?((totalOutput/totalTarget*100).toFixed(1)+"% of target"):"—",icon:"📦",cls:""},
+    {label:"OEE",val:(oee*100).toFixed(1)+"%",sub:oee>=0.85?"GOOD":oee>=0.6?"AVERAGE":"LOW",icon:"⚙️",cls:oee>=0.85?"green":oee>=0.6?"amber":"red"},
+    {label:"Productivity",val:(performance*100).toFixed(1)+"%",sub:"vs Hourly Target",icon:"📈",cls:performance>=0.9?"green":"amber"},
+    {label:"Rejection",val:rejPct+"%",sub:rejPct<=2?"GOOD":"ATTENTION",icon:"❌",cls:rejPct<=2?"green":"red"},
+    {label:"Downtime",val:downtimeMin+" Mins",sub:downtimeMin>60?"ATTENTION":"GOOD",icon:"⏱️",cls:downtimeMin>60?"red":"green"},
+    {label:"FG Ready",val:fmtNum(fgReady),sub:"Units",icon:"📦",cls:""},
+    {label:"Dispatch (This Date)",val:fmtNum(dispToday),sub:"Units",icon:"🚚",cls:""},
+    {label:"Kaizen Savings",val:"₹"+fmtNum(kaizenTotal),sub:"Total Logged",icon:"💰",cls:"purple"},
+  ];
+  document.getElementById('pdKPIs').innerHTML = kpis.map(k=>`
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  renderPdParetoChart(date);
+  renderPdTrendChart(date);
+}
+
+function renderPdOeeChart(a,p,q,oee){
+  const isDark = document.body.classList.contains('dark-mode');
+  const canvas = document.getElementById('pdOeeChart');
+  if(!canvas) return;
+  if(charts.pdOee){ try{ charts.pdOee.destroy(); }catch(e){} }
+  charts.pdOee = new Chart(canvas,{
+    type:'doughnut',
+    data:{ labels:['Availability','Performance','Quality'],
+      datasets:[{ data:[+(a*100).toFixed(1),+(p*100).toFixed(1),+(q*100).toFixed(1)],
+        backgroundColor:['#2E75B6','#70AD47','#FFC000'] }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{position:'bottom',labels:{font:{size:10},color:isDark?'#E4E9F2':'#222'}},
+        tooltip:{callbacks:{label:c=>c.label+': '+c.raw+'%'}} } },
+    plugins:[{ id:'oeeCenter', afterDraw(chart){
+      const {ctx,chartArea:{width,height,left,top}} = chart;
+      ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font='bold 18px Segoe UI'; ctx.fillStyle = isDark?'#E4E9F2':'#1F3864';
+      ctx.fillText((oee*100).toFixed(1)+'%', left+width/2, top+height/2-6);
+      ctx.font='10px Segoe UI'; ctx.fillStyle = isDark?'#A8B2C4':'#595959';
+      ctx.fillText('OEE', left+width/2, top+height/2+12);
+      ctx.restore();
+    }}]
+  });
+}
+
+function renderPdParetoChart(date){
+  const isDark = document.body.classList.contains('dark-mode');
+  const gridClr = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const rows = hourlyProdData.filter(h=>h.date===date && h.lossReason && h.lossMin>0);
+  const reasonCount = {};
+  rows.forEach(h=>{ reasonCount[h.lossReason] = (reasonCount[h.lossReason]||0)+h.lossMin; });
+  const arr = Object.entries(reasonCount).sort((a,b)=>b[1]-a[1]);
+  const totalMin = arr.reduce((s,[,v])=>s+v,0);
+  let cum=0;
+  const cumArr = arr.map(([r,v])=>{ cum += totalMin? v/totalMin*100:0; return +cum.toFixed(1); });
+  const canvas = document.getElementById('pdParetoChart');
+  if(!canvas) return;
+  if(charts.pdPareto){ try{ charts.pdPareto.destroy(); }catch(e){} }
+  charts.pdPareto = new Chart(canvas,{
+    data:{ labels:arr.map(([r])=>r),
+      datasets:[
+        {type:'bar', label:'Loss Minutes', data:arr.map(([,v])=>v), backgroundColor:'#C00000', yAxisID:'y'},
+        {type:'line', label:'Cumulative %', data:cumArr, borderColor:'#2E75B6', backgroundColor:'rgba(46,117,182,0.15)', yAxisID:'y1', tension:0.3, pointRadius:4}
+      ] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true,labels:{font:{size:10}}} },
+      scales:{ y:{beginAtZero:true,grid:{color:gridClr}}, y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%'}}, x:{grid:{color:gridClr}} } }
+  });
+  if(!arr.length && canvas.parentElement) canvas.title = 'Is date ke liye loss entry nahi hai';
+}
+
+function renderPdTrendChart(date){
+  const isDark = document.body.classList.contains('dark-mode');
+  const gridClr = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const rows = hourlyProdData.filter(h=>h.date===date).sort((a,b)=>a.hour.localeCompare(b.hour));
+  const hours = [...new Set(rows.map(h=>h.hour))];
+  const actual = hours.map(hr=>rows.filter(h=>h.hour===hr).reduce((s,h)=>s+(h.output||0),0));
+  const targetV = hours.map(hr=>rows.filter(h=>h.hour===hr).reduce((s,h)=>s+(h.target||0),0));
+  const canvas = document.getElementById('pdTrendChart');
+  if(!canvas) return;
+  if(charts.pdTrend){ try{ charts.pdTrend.destroy(); }catch(e){} }
+  charts.pdTrend = new Chart(canvas,{
+    data:{ labels:hours,
+      datasets:[
+        {type:'bar', label:'Actual', data:actual, backgroundColor:'#70AD47'},
+        {type:'line', label:'Target', data:targetV, borderColor:'#2E75B6', tension:0.3, pointRadius:4}
+      ] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:true,labels:{font:{size:10}}} },
+      scales:{ y:{beginAtZero:true,grid:{color:gridClr}}, x:{grid:{color:gridClr}} } }
+  });
+}
+
+// ── PDF export (matches the KPI + table content) ──
+function generateProdDashboardPDF(){
+  const date = pdSelectedDate();
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait',format:'a4'});
+  const startY = addCompanyHeaderToPDF(doc,'Production Dashboard Report — '+fmtDate(date));
+  const dayProd = production.filter(p=>p.date===date);
+  doc.autoTable({
+    head:[['Line/Style','Target','Actual','Achv%']],
+    body: dayProd.map(p=>{
+      const out=netGoodSewing(p); const achv=p.target?(out/p.target*100).toFixed(1):'0.0';
+      return [p.line+' — '+p.style, fmtNum(p.target), fmtNum(out), achv+'%'];
+    }),
+    startY, headStyles:{fillColor:[31,56,100]}, margin:{left:14,right:14}
+  });
+  addDevFooterToPDF(doc);
+  doc.save('Production_Dashboard_'+date+'.pdf');
+  showToast('green','📄 PDF Downloaded!','Production Dashboard Report');
+}
+
+// ── Image / WhatsApp export — captures the whole #pdCapture block as PNG ──
+function downloadProdDashboardImage(){
+  const el = document.getElementById('pdCapture');
+  if(!el || typeof html2canvas==='undefined'){ showToast('amber','⚠️ Not Ready','Image library load ho rahi hai, thodi der me try karo'); return; }
+  showToast('blue','⏳ Image Ban Rahi Hai…','Thoda intezaar karo');
+  html2canvas(el, {backgroundColor:document.body.classList.contains('dark-mode')?'#0F1420':'#F4F6F9', scale:2}).then(function(canvas){
+    const date = pdSelectedDate();
+    canvas.toBlob(function(blob){
+      const file = new File([blob], 'Production_Dashboard_'+date+'.png', {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], title:'Production Dashboard', text:'Production Dashboard — '+fmtDate(date)})
+          .catch(()=>{ downloadCanvasPng(canvas,date); });
+      } else {
+        downloadCanvasPng(canvas,date);
+      }
+      showToast('green','📷 Image Ready!','Production Dashboard');
+    }, 'image/png');
+  }).catch(function(e){ console.warn(e); showToast('amber','⚠️ Failed','Image nahi ban payi'); });
+}
+function downloadCanvasPng(canvas,date){
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'Production_Dashboard_'+date+'.png';
+  a.click();
 }
 
 // ═══════════════════════════════════════════════════
@@ -9142,11 +9661,12 @@ function showPage(id,el){
   if(id==='buyermaster') renderMasters();
   if(id==='processroute') renderProcessRoute();
   if(id==='processdash') setTimeout(renderProcessDash,50);
+  if(id==='proddashboard') setTimeout(renderProdDashboard,50);
   if(id==='backup')      setTimeout(updateBackupUI,50);
   if(id==='settings')    setTimeout(function(){applyIndustryMode();renderTNASettings();renderShiftRateSettings();applyCompanyDisplay();},50);
   var PRINTABLE=['orders','mps','tna','dpr','production','wip','embroidery','quality','rejection',
     'buyer','buyermaster','monthly','embroReport','fabric','loomproduction','capacityplanning','dyeing','fabricstock','wipsummary','inventory','shipmentplan','attendance','manpower','capacity','costing',
-    'shiftmaster','stagecost','variance','otreport','masters','processroute','processdash','backup','hourlyprod','lossanalysis'];
+    'shiftmaster','stagecost','variance','otreport','masters','processroute','processdash','backup','hourlyprod','lossanalysis','proddashboard'];
   if(PRINTABLE.indexOf(id)>=0) setTimeout(function(){injectPrintToolbar(id);},100);
 }
 
